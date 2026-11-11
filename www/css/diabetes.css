@@ -21,26 +21,50 @@
   --sky:#82B1FF; --sky-soft:#15264A; --grape:#B49CFF; --grape-soft:#29204A; --leaf:#5AD68E; --leaf-soft:#11321E;
   --hero1:#08332F; --hero2:#0D5650; --on-hero:#F2FBF9; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+
+/* Eliminate all web browser artifacts */
+html, body {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+
+input, select, textarea {
+  user-select: text;
+}
+
+.rx, .rx-body, table, td, th {
+  user-select: text;
+}
+
+/* Sleek custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 124, 116, 0.28);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 124, 116, 0.55);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(14, 124, 116, 0.28) transparent;
+}
+
 .wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
-/* hero */
-.hero{background:
-  radial-gradient(circle at 92% 20%,rgba(255,255,255,.12) 0 70px,transparent 71px),
-  radial-gradient(circle at 80% 110%,rgba(255,255,255,.08) 0 120px,transparent 121px),
-  radial-gradient(circle at 4% -30%,rgba(255,194,79,.22) 0 140px,transparent 141px),
-  linear-gradient(125deg,var(--hero1),var(--hero2));color:var(--on-hero)}
-.hero .wrap{padding-block:22px 22px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
-.hero .eyebrow{font:600 11.5px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;opacity:.8}
-.hero h1{font:800 clamp(24px,4.4vw,40px)/1.05 var(--f-display);margin:4px 0 0;letter-spacing:-.015em;text-wrap:balance}
-.hero h1 em{font-style:normal;color:#FFC24F}
-.byline{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 14px 6px 6px;font-size:13.5px}
-.byline .av{width:30px;height:30px;border-radius:50%;background:#FFC24F;color:#0A4F4B;display:grid;place-items:center;font:800 13px var(--f-display)}
-.byline b{font-weight:600}
-
 /* tabs */
-.tabbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+.tabbar{position:relative;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
 nav.tabs{display:flex;gap:8px;overflow-x:auto;padding-block:10px}
 nav.tabs button{--c:var(--teal);font:600 14px var(--f-body);color:var(--ink);background:var(--surface2);border:1px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
 nav.tabs button::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
@@ -48,9 +72,36 @@ nav.tabs button[aria-selected="true"]{background:var(--c);color:var(--surface)}
 nav.tabs button[aria-selected="true"]::before{background:var(--surface)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 
-main{padding-block:22px 40px}
-.grid{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+main{padding-block:14px 40px}
+
+/* Grid & Tablet Workstation Two-Pane Split-Screen */
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+
+@media (min-width:768px){
+  .grid{grid-template-columns:minmax(340px,460px) minmax(0,1fr);gap:20px;align-items:start}
+
+  /* Left pane (Patient Inputs) */
+  .grid > :first-child,
+  #pform,
+  #ins .grid > .panel:first-child {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Right pane (Live Rx & Recommendations) */
+  .grid > :nth-child(2),
+  #result,
+  #iresult {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    position: sticky;
+    top: 110px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow);min-width:0}
 .ph{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .ph .ic{width:30px;height:30px;border-radius:9px;background:var(--cs,var(--teal-soft));color:var(--c,var(--teal));display:grid;place-items:center;font:800 15px var(--f-display);flex:none}
@@ -151,7 +202,7 @@ td.cls{font:700 13px var(--f-display);background:var(--cs);color:var(--c)}
 .ck input{margin-top:4px;accent-color:var(--leaf);width:16px;height:16px}
 .ck small{display:block;color:var(--muted);font-size:12.5px}
 .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-@media (max-width:880px){.two{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:767px){.two{grid-template-columns:minmax(0,1fr)}}
 .progress{font:600 13px var(--f-mono);color:var(--leaf)}
 
 /* prescription */

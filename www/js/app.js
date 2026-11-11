@@ -23,6 +23,15 @@
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    const quickJumpBtn = document.getElementById('quick-jump-rx-btn');
+    if (quickJumpBtn) {
+      if (tabId === 'tab-diabetes' || tabId === 'tab-htn') {
+        quickJumpBtn.style.display = '';
+      } else {
+        quickJumpBtn.style.display = 'none';
+      }
+    }
+
     if (tabId === 'tab-drugs') {
       DrugDirectory.render();
     } else if (tabId === 'tab-recent') {
@@ -174,6 +183,25 @@
         switchMainTab(tab);
       });
     });
+
+    // Mobile Quick-Jump Button to Live Rx / Recommendation
+    const quickJumpBtn = document.getElementById('quick-jump-rx-btn');
+    if (quickJumpBtn) {
+      quickJumpBtn.addEventListener('click', () => {
+        triggerHaptic();
+        const diaSec = document.getElementById('tab-diabetes');
+        const htnSec = document.getElementById('tab-htn');
+        let target = null;
+        if (diaSec && diaSec.style.display !== 'none') {
+          target = document.querySelector('#tab-diabetes .rx-sec') || document.getElementById('result');
+        } else if (htnSec && htnSec.style.display !== 'none') {
+          target = document.getElementById('out') || document.querySelector('#tab-htn .sheet');
+        }
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
 
     // Save Patient Draft button
     const savePtBtn = document.getElementById('save-pt-btn');

@@ -43,16 +43,7 @@
 
   <!-- MAIN TAB 1: DIABETES NAVIGATOR -->
   <section id="tab-diabetes" class="main-view-section">
-    <header class="hero">
-  <div class="wrap">
-    <div>
-      <div class="eyebrow" data-i18n="dia_eyebrow">Type 2 diabetes · adults · family practice</div>
-      <h1 data-i18n="dia_hero_title">Osrawy <em>Diabetes</em><br>Treatment Navigator</h1>
-    </div>
-    <div class="byline"><span class="av">HY</span><span data-i18n="dia_hero_byline">by <b>Dr Hossam Yousuf</b></span></div>
-  </div>
-</header>
-<div class="tabbar"><div class="wrap">
+    <div class="tabbar"><div class="wrap">
   <nav class="tabs" role="tablist">
     <button role="tab" id="t-plan" aria-selected="true" data-tab="plan" style="--c:var(--teal)" data-i18n="tab_plan">Treatment &amp; prescription</button>
     <button role="tab" id="t-scr" aria-selected="false" data-tab="scr" style="--c:var(--sky)" data-i18n="tab_scr">Screening</button>
@@ -234,17 +225,12 @@
   <!-- MAIN TAB 2: HYPERTENSION NAVIGATOR -->
   <section id="tab-htn" class="main-view-section" style="display: none;">
     <div class="wrap">
-<header>
-  <div>
-    <h1 data-i18n="htn_title">Osrawya HTN Treatment <span>Navigator</span></h1>
-    <p class="byline" data-i18n="htn_byline">by Dr Hossam Yousuf</p>
-    <p class="sub" data-i18n="htn_sub">For family physicians. Enter the confirmed average BP and the patient's comorbidities; the sheet updates the stage, target and next drug step. Pre-filled with an example patient.</p>
-  </div>
+<div class="htn-top-toolbar">
   <div class="lens" role="group" aria-label="Guideline">
     <button id="lens-acc" type="button" aria-pressed="true">ACC/AHA 2025</button>
     <button id="lens-esc" type="button" aria-pressed="false">ESC 2024</button>
   </div>
-</header>
+</div>
 
 <div class="grid">
 <form class="panel" id="f" autocomplete="off">
@@ -420,6 +406,12 @@
       </div>
     </div>
   </section>
+
+  <!-- Mobile Quick-Jump Button (for phones) -->
+  <button id="quick-jump-rx-btn" class="quick-jump-pill" type="button" title="انتقال سريع للروشتة والتوصيات" data-i18n-title="quick_jump_title">
+    <span class="jump-icon">⚡</span>
+    <span class="jump-text" data-i18n="quick_jump_rx">الروشتة والتوصيات ⬇</span>
+  </button>
 
   <!-- Bottom Navigation Bar -->
   <nav class="bottom-nav-bar">

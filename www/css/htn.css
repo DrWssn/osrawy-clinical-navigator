@@ -20,18 +20,82 @@
   --ok:#6fd39c; --ok-soft:#123326; --warn:#f0bd5c; --warn-soft:#352812; --bad:#ff8a80; --bad-soft:#3a1b19;
 }
 
-#tab-htn header { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:18px; }
-#tab-htn h1 { font-family:var(--f-display); font-weight:700; font-size:clamp(24px,4.5vw,34px); line-height:1.05; margin:0; text-wrap:balance; letter-spacing:-.01em; }
-#tab-htn h1 span { color:var(--mercury); }
-#tab-htn .byline { font-family:var(--f-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:6px 0 0; }
-#tab-htn .sub { color:var(--muted); margin:6px 0 0; max-width:60ch; }
+/* Eliminate all web browser artifacts */
+html, body {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input, select, textarea {
+  user-select: text;
+}
+#tab-htn .sheet, #tab-htn #out, #tab-htn table, #tab-htn td, #tab-htn th {
+  user-select: text;
+}
+
+/* Sleek custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 90, 107, 0.28);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 90, 107, 0.55);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(14, 90, 107, 0.28) transparent;
+}
+
+#tab-htn .htn-top-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0 14px;
+}
 #tab-htn .lens { display:flex; border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:3px; }
 #tab-htn .lens button { font:inherit; font-size:13px; border:0; background:none; color:var(--muted); padding:6px 12px; border-radius:999px; cursor:pointer; }
 #tab-htn .lens button[aria-pressed="true"] { background:var(--accent); color:var(--bg); font-weight:700; }
-#tab-htn .grid { display:grid; grid-template-columns:1fr; gap:18px; }
-@media (min-width:900px){
-  #tab-htn .grid { grid-template-columns:minmax(0,5fr) minmax(0,6fr); }
-  #tab-htn .sheet { position:sticky; top:calc(env(safe-area-inset-top,0px) + 68px); align-self:start; max-height:calc(100vh - 120px); overflow:auto; }
+
+#tab-htn .grid { display:grid; grid-template-columns:1fr; gap:16px; }
+
+/* Tablet Two-Pane Split-Screen Workstation (screens >= 768px) */
+@media (min-width: 768px) {
+  #tab-htn .grid {
+    grid-template-columns: minmax(340px, 460px) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* Left pane (Patient Inputs) */
+  #tab-htn .grid > :first-child,
+  #tab-htn #f {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Right pane (Live Rx & Recommendations) */
+  #tab-htn .grid > :nth-child(2),
+  #tab-htn .sheet {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    position: sticky;
+    top: 110px;
+    align-self: start;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
 }
 #tab-htn .panel { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:16px; min-width:0; }
 #tab-htn fieldset { border:0; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
@@ -88,7 +152,7 @@
 #tab-htn .tools > h2 { font-family:var(--f-display); font-size:22px; margin:0; }
 #tab-htn .tools > p { color:var(--muted); max-width:70ch; }
 #tab-htn .tgrid { display:grid; grid-template-columns:1fr; gap:18px; }
-@media (min-width:900px){ #tab-htn .tgrid { grid-template-columns:1fr 1fr; } }
+@media (min-width:768px){ #tab-htn .tgrid { grid-template-columns:1fr 1fr; } }
 #tab-htn .panel h3 { font-family:var(--f-display); font-size:18px; margin:0; }
 #tab-htn .conv { display:grid; grid-template-columns:1fr; gap:10px; }
 #tab-htn .arrow { font-family:var(--f-mono); color:var(--muted); text-align:center; font-size:18px; }

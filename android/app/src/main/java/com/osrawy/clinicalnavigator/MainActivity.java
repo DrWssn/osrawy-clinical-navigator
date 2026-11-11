@@ -1,24 +1,58 @@
 package com.osrawy.clinicalnavigator;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setupSystemBars();
+        setupWebView();
         setupPrintInterface();
     }
 
     @Override
     public void onStart() {
         super.onStart();
+        setupSystemBars();
+        setupWebView();
         setupPrintInterface();
+    }
+
+    private void setupSystemBars() {
+        try {
+            Window window = getWindow();
+            if (window != null) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                int brandTeal = Color.parseColor("#0A4F4B");
+                window.setStatusBarColor(brandTeal);
+                window.setNavigationBarColor(brandTeal);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void setupWebView() {
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+                webView.setVerticalScrollBarEnabled(false);
+                webView.setHorizontalScrollBarEnabled(false);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void setupPrintInterface() {

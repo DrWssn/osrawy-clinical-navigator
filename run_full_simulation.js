@@ -72,7 +72,7 @@ const knownIds = [
   'set-clinic-name', 'set-clinic-phone', 'set-clinic-addr', 'copy', 'btn-share-htn-whatsapp', 'btn-print-htn',
   'egfr-modal', 'close-egfr-modal-btn', 'btn-apply-calculated-egfr', 'calc-scr', 'calc-scr-unit', 'calc-age',
   'calc-sex', 'calc-wt', 'calc-egfr-output', 'ldl-modal', 'close-ldl-modal-btn', 'ldl-matrix-container',
-  'btn-open-ldl-modal'
+  'btn-open-ldl-modal', 'quick-jump-rx-btn'
 ];
 knownIds.forEach(id => getOrCreate(id));
 

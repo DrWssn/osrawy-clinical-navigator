@@ -36,6 +36,8 @@ const I18n = (function() {
       nav_htn: "الضغط",
       nav_drugs: "الأدوية والأسعار",
       nav_drafts: "المسودات",
+      quick_jump_rx: "الروشتة والتوصيات ⬇",
+      quick_jump_title: "انتقال سريع للروشتة والتوصيات",
 
       // Common Options & Labels
       opt_male: "ذكر",
@@ -324,6 +326,8 @@ const I18n = (function() {
       nav_htn: "Hypertension",
       nav_drugs: "Drugs & Prices",
       nav_drafts: "Drafts",
+      quick_jump_rx: "Live Rx & Plan ⬇",
+      quick_jump_title: "Quick jump to prescription & plan",
 
       // Common Options & Labels
       opt_male: "Male",
