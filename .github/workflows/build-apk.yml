@@ -61,7 +61,10 @@ jobs:
 
       - name: Rename APK Output
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk Osrawy_Clinical_Navigator.apk
+          APK_PATH=$(find android/ -name "*debug.apk" -o -name "*.apk" | head -n 1)
+          echo "Found APK at: $APK_PATH"
+          cp "$APK_PATH" Osrawy_Clinical_Navigator.apk
+          ls -lh Osrawy_Clinical_Navigator.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
