@@ -481,11 +481,240 @@ const OsrawyPrimaryCareEngine = (function() {
     };
   }
 
+  // --- 5. Interactive Primary Care Tab UI Renderer ---
+  function renderPrimaryCareTab(containerId) {
+    if (typeof document === 'undefined') return;
+    const cid = containerId || 'primary-care-container';
+    const container = document.getElementById(cid);
+    if (!container) return;
+
+    const pt = (typeof window.PatientSync !== 'undefined' && typeof window.PatientSync.get === 'function') ? window.PatientSync.get() : {};
+    const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function')
+      ? window.I18n.getLang() === 'ar'
+      : true;
+
+    container.innerHTML = `
+      <div class="primary-care-suite" style="margin-bottom:20px;">
+        <div class="panel" style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h2 style="margin:0 0 4px 0;">🫁 ${isAr ? 'بروتوكولات الرعاية الأولية (الربو، السدة الرئوية، الغدة الدرقية)' : 'Primary Care Protocols (Asthma GINA, COPD GOLD, Thyroid)'}</h2>
+              <p class="sub" style="margin:0;">${isAr ? 'أدوات تصعيد البخاخات (MART) وتقييم GOLD 2024 وحساب جرعات الليفوثيروكسين' : 'Interactive Asthma GINA Track 1 MART, COPD GOLD Group A/B/E, and Thyroid management'}</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;" id="pc-subtabs">
+            <button type="button" class="filter-chip active" data-pc-tab="asthma">🌬️ ${isAr ? 'الربو القصبي (GINA 2024)' : 'Asthma (GINA)'}</button>
+            <button type="button" class="filter-chip" data-pc-tab="copd">🫁 ${isAr ? 'السدة الرئوية (GOLD 2024)' : 'COPD (GOLD)'}</button>
+            <button type="button" class="filter-chip" data-pc-tab="thyroid">🦋 ${isAr ? 'الغدة الدرقية (Thyroid)' : 'Thyroid'}</button>
+          </div>
+        </div>
+
+        <!-- 1. Asthma Panel -->
+        <div class="panel" id="pc-panel-asthma">
+          <div class="ph" style="--c:var(--sky);--cs:var(--sky-soft)"><span class="ic">🌬️</span><h2>${isAr ? 'مُصعّد علاج الربو (GINA 2024 Track 1 MART)' : 'GINA 2024 Asthma Controller Escalator'}</h2></div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:12px 0;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'مرات الفنتولين أسبوعياً (SABA):' : 'SABA puffs/week:'}</label>
+              <input type="number" id="pc-asthma-saba" value="2" min="0" max="50" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الخطوة العلاجية الحالية:' : 'Current Step:'}</label>
+              <select id="pc-asthma-step" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+                <option value="1">Step 1</option>
+                <option value="2" selected>Step 2</option>
+                <option value="3">Step 3</option>
+                <option value="4">Step 4</option>
+                <option value="5">Step 5</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'مسار العلاج:' : 'Treatment Track:'}</label>
+              <select id="pc-asthma-track" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+                <option value="1" selected>${isAr ? 'المسار 1 (MART - المفضل)' : 'Track 1 (MART Preferred)'}</option>
+                <option value="2">${isAr ? 'المسار 2 (البديل SABA)' : 'Track 2 (Alternative)'}</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-asthma-day"> <span>${isAr ? 'أعراض نهارية > مرتين/أسبوع' : 'Daytime symptoms >2x/wk'}</span></label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-asthma-night"> <span>${isAr ? 'استيقاظ ليلي بسبب الربو' : 'Night waking'}</span></label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-asthma-limit"> <span>${isAr ? 'تقييد النشاط اليومي' : 'Activity limitation'}</span></label>
+          </div>
+          <div id="pc-asthma-output" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
+        </div>
+
+        <!-- 2. COPD Panel -->
+        <div class="panel" id="pc-panel-copd" style="display:none;">
+          <div class="ph" style="--c:var(--teal);--cs:var(--teal-soft)"><span class="ic">🫁</span><h2>${isAr ? 'مقيّم السدة الرئوية المزمنة (GOLD 2024 A/B/E)' : 'GOLD 2024 COPD Group Classifier'}</h2></div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin:12px 0;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'النوبات المتوسطة آخر سنة:' : 'Exacerbations/yr:'}</label>
+              <input type="number" id="pc-copd-exac" value="1" min="0" max="20" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'دخول المستشفى (آخر سنة):' : 'Hospitalizations/yr:'}</label>
+              <input type="number" id="pc-copd-hosp" value="0" min="0" max="10" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">mMRC Dyspnea (0–4):</label>
+              <input type="number" id="pc-copd-mmrc" value="2" min="0" max="4" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">CAT Score (0–40):</label>
+              <input type="number" id="pc-copd-cat" value="14" min="0" max="40" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الحمضات بالدم (Eosinophils/µL):' : 'Blood Eosinophils (/µL):'}</label>
+              <input type="number" id="pc-copd-eos" value="180" min="0" max="2000" step="10" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+          </div>
+          <div id="pc-copd-output" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
+        </div>
+
+        <!-- 3. Thyroid Panel -->
+        <div class="panel" id="pc-panel-thyroid" style="display:none;">
+          <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)"><span class="ic">🦋</span><h2>${isAr ? 'تقييم الغدة الدرقية والليفوثيروكسين (ATA / AACE)' : 'Thyroid Disease & Levothyroxine Dosing'}</h2></div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin:12px 0;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">TSH (mIU/L):</label>
+              <input type="number" id="pc-thy-tsh" value="6.8" step="0.1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">Free T4 (ng/dL):</label>
+              <input type="number" id="pc-thy-ft4" value="1.1" step="0.1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
+              <input type="number" id="pc-thy-wt" value="${pt.wt || 75}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-ascvd" ${pt.ascvd ? 'checked' : ''}> <span>${isAr ? 'أمراض شرايين القلب / كبار السن' : 'ASCVD / Elderly'}</span></label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-preg" ${pt.pregnancy ? 'checked' : ''}> <span>${isAr ? 'حامل (Pregnancy)' : 'Pregnant'}</span></label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-asthma" ${pt.asthma ? 'checked' : ''}> <span>${isAr ? 'مريض ربو (Asthma)' : 'Asthma'}</span></label>
+          </div>
+          <div id="pc-thy-output" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
+        </div>
+      </div>
+    `;
+
+    function updatePrimaryCareUi() {
+      // Asthma eval
+      const saba = parseFloat(document.getElementById('pc-asthma-saba')?.value) || 0;
+      const step = parseInt(document.getElementById('pc-asthma-step')?.value, 10) || 2;
+      const track = parseInt(document.getElementById('pc-asthma-track')?.value, 10) || 1;
+      const day = !!document.getElementById('pc-asthma-day')?.checked;
+      const night = !!document.getElementById('pc-asthma-night')?.checked;
+      const limit = !!document.getElementById('pc-asthma-limit')?.checked;
+
+      const aRes = evaluateAsthmaGina({
+        sabaUsePerWeek: saba,
+        asthmaReliever: saba > 2,
+        asthmaDaytime: day,
+        asthmaNightWaking: night,
+        asthmaActivityLimit: limit,
+        currentStep: step,
+        preferredTrack: track
+      });
+
+      const aOut = document.getElementById('pc-asthma-output');
+      if (aOut) {
+        const aColor = aRes.controlLevel === 'uncontrolled' ? '#DC2626' : (aRes.controlLevel === 'partly_controlled' ? '#D97706' : '#16A34A');
+        const alertsHtml = (aRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FEF2F2; color:#991B1B; font-size:12px; border:1px solid #FCA5A5;">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        aOut.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span style="font-weight:700; color:${aColor}; font-size:14px;">${isAr ? aRes.controlNameAr : aRes.controlNameEn}</span>
+            <span style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:4px; background:var(--teal); color:#fff;">Step ${aRes.recommendedStep}</span>
+          </div>
+          <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'العلاج الموصى به:' : 'Recommended Regimen:'}</b> ${isAr ? (aRes.stepDetails?.nameAr || aRes.rxAr) : (aRes.stepDetails?.nameEn || aRes.rxEn)}</div>
+          <div style="margin-top:4px; font-size:12px; color:var(--muted);">${isAr ? (aRes.stepDetails?.descAr || '') : (aRes.stepDetails?.descEn || '')}</div>
+          ${alertsHtml}
+        `;
+      }
+
+      // COPD eval
+      const exac = parseInt(document.getElementById('pc-copd-exac')?.value, 10) || 0;
+      const hosp = parseInt(document.getElementById('pc-copd-hosp')?.value, 10) || 0;
+      const mmrc = parseInt(document.getElementById('pc-copd-mmrc')?.value, 10) || 0;
+      const cat = parseInt(document.getElementById('pc-copd-cat')?.value, 10) || 0;
+      const eos = parseInt(document.getElementById('pc-copd-eos')?.value, 10) || 0;
+
+      const cRes = evaluateCopdGold({
+        exacerbationsLastYear: exac,
+        hospitalizationsLastYear: hosp,
+        mmrcScore: mmrc,
+        catScore: cat,
+        eosinophilsPerUl: eos
+      });
+
+      const cOut = document.getElementById('pc-copd-output');
+      if (cOut) {
+        const cAlerts = (cRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FFFBEB; color:#92400E; font-size:12px; border:1px solid #FDE68A;">⚠️ <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        cOut.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; font-size:14px; color:var(--teal);">${isAr ? cRes.groupNameAr : cRes.groupNameEn}</span>
+            <span style="font-size:12px; padding:2px 8px; border-radius:4px; background:var(--sky); color:#fff;">Group ${cRes.group}</span>
+          </div>
+          <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'العلاج القياسي:' : 'Therapy:'}</b> ${isAr ? cRes.rxAr : cRes.rxEn}</div>
+          ${cAlerts}
+        `;
+      }
+
+      // Thyroid eval
+      const tsh = parseFloat(document.getElementById('pc-thy-tsh')?.value) || 2.5;
+      const ft4 = parseFloat(document.getElementById('pc-thy-ft4')?.value) || 1.1;
+      const twt = parseFloat(document.getElementById('pc-thy-wt')?.value) || 70;
+      const ascvd = !!document.getElementById('pc-thy-ascvd')?.checked;
+      const tPreg = !!document.getElementById('pc-thy-preg')?.checked;
+      const tAsthma = !!document.getElementById('pc-thy-asthma')?.checked;
+
+      const tRes = evaluateThyroid({
+        tsh: tsh,
+        ft4: ft4,
+        wt: twt,
+        ascvd: ascvd,
+        pregnancy: tPreg,
+        asthma: tAsthma
+      });
+
+      const tOut = document.getElementById('pc-thy-output');
+      if (tOut) {
+        const tAlerts = (tRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FEF2F2; color:#991B1B; font-size:12px; border:1px solid #FCA5A5;">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        tOut.innerHTML = `
+          <div style="font-weight:700; font-size:14px; color:var(--grape);">${isAr ? tRes.statusNameAr : tRes.statusNameEn}</div>
+          <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'الخطة العلاجية:' : 'Management:'}</b> ${isAr ? tRes.rxAr : tRes.rxEn}</div>
+          ${tAlerts}
+        `;
+      }
+    }
+
+    // Bind subtab switcher
+    container.querySelectorAll('[data-pc-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-pc-tab');
+        container.querySelectorAll('[data-pc-tab]').forEach(b => b.classList.toggle('active', b === btn));
+        ['asthma', 'copd', 'thyroid'].forEach(p => {
+          const el = document.getElementById('pc-panel-' + p);
+          if (el) el.style.display = (p === target) ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Bind inputs
+    container.querySelectorAll('input, select').forEach(inp => {
+      inp.addEventListener('input', updatePrimaryCareUi);
+      inp.addEventListener('change', updatePrimaryCareUi);
+    });
+
+    updatePrimaryCareUi();
+  }
+
   return {
     evaluateAsthmaGina,
     evaluateCopdGold,
     evaluateThyroid,
-    evaluatePrimaryCare
+    evaluatePrimaryCare,
+    renderPrimaryCareTab
   };
 })();
 

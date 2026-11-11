@@ -359,6 +359,24 @@
   global.OsrawyDrugsDirectory = OsrawyDrugsDirectory;
   global.DrugDirectory = OsrawyDrugsDirectory;
 
+  // Auto-detect container ID if legacy HTML uses #drugs-list or #drugs-container
+  function initLegacyDrugsMount() {
+    if (!global.document) return;
+    const fallbackIds = ['drugs-directory-container', 'drug-directory-list', 'drugs-container', 'drugs-list', 'tab-drugs'];
+    for (const id of fallbackIds) {
+      if (global.document.getElementById(id)) {
+        renderDirectory(id);
+        break;
+      }
+    }
+  }
+
+  if (global.document && global.document.readyState !== 'loading') {
+    initLegacyDrugsMount();
+  } else if (global.document && typeof global.document.addEventListener === 'function') {
+    global.document.addEventListener('DOMContentLoaded', initLegacyDrugsMount);
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = OsrawyDrugsDirectory;
   }

@@ -359,6 +359,9 @@
   // Expose on global
   global.OsrawyFormularyData = FORMULARY_DATA;
   global.FORMULARY_DATA = FORMULARY_DATA;
+  // Backward-compatible alias for legacy UI scripts
+  global.DRUGS_DATA = FORMULARY_DATA;
+  global.drugsData = FORMULARY_DATA;
 
   // Compatibility mapping for legacy DRUG_DATABASE lookups
   const DRUG_DATABASE = {};

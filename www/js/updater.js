@@ -4,7 +4,7 @@
 
 const AppUpdater = (function() {
   const CONFIG = {
-    currentVersion: '1.2.8',
+    currentVersion: '1.2.9',
     repoOwner: 'DrWssn',
     repoName: 'osrawy-clinical-navigator',
     apiUrl: 'https://api.github.com/repos/DrWssn/osrawy-clinical-navigator/releases/latest',

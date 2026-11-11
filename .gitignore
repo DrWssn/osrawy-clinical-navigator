@@ -19,7 +19,6 @@ android_sdk/
 *.apk
 *.aab
 *.keystore
-!android/app/release.keystore
 *.jks
 
 # Legacy browser snapshots

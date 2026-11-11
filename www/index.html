@@ -424,6 +424,42 @@
 
   <!-- MAIN TAB: LIPIDS & DYSLIPIDEMIA (DLP) -->
   <section id="tab-dlp" class="tab-panel main-view-section wrap" hidden style="display: none; padding-top: 14px;">
+    <div class="panel" style="margin-bottom:14px;" id="dlp-inputs-panel">
+      <div class="ph" style="--c:var(--teal);--cs:var(--teal-soft)"><span class="ic">🩸</span><h2 data-i18n="dlp_inputs_title">بيانات الدهون ومخاطر القلب (Lipids &amp; ASCVD)</h2></div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:10px;">
+        <div>
+          <label style="font-size:12px; color:var(--muted);">LDL-C:</label>
+          <input type="number" id="dlp-ldl" value="130" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label style="font-size:12px; color:var(--muted);">Total Chol (TC):</label>
+          <input type="number" id="dlp-tc" value="210" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label style="font-size:12px; color:var(--muted);">HDL-C:</label>
+          <input type="number" id="dlp-hdl" value="42" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label style="font-size:12px; color:var(--muted);">Triglycerides (TG):</label>
+          <input type="number" id="dlp-tg" value="180" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label style="font-size:12px; color:var(--muted);">ALT (U/L):</label>
+          <input type="number" id="dlp-alt" value="28" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_unit">الوحدة:</label>
+          <select id="dlp-unit" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            <option value="mg">mg/dL</option>
+            <option value="mmol">mmol/L</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:13px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-statin-intol"> <span>عدم تحمل الستاتين (Statin Intolerant)</span></label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-ezetimibe"> <span>يتناول Ezetimibe</span></label>
+      </div>
+    </div>
     <div id="lipid-engine-summary"></div>
     <div id="lipids-container"></div>
     <div id="dlp-container"></div>
@@ -506,7 +542,7 @@
               <b data-i18n="update_sec_title">🔄 تحديثات التطبيق (GitHub)</b>
               <div style="font-size:11.5px;color:var(--muted);" data-i18n="update_sec_sub">فحص وتحميل أحدث الإصدارات من GitHub</div>
             </div>
-            <span class="update-version-tag" id="current-app-version">v1.2.8</span>
+            <span class="update-version-tag" id="current-app-version">v1.2.9</span>
           </div>
           <button type="button" class="btn btn-sm btn-primary" id="btn-check-updates" style="margin-top:6px;width:100%;" data-i18n="btn_check_updates">
             🔍 التحقق من وجود تحديثات الآن

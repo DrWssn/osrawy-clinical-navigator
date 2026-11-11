@@ -65,22 +65,27 @@
       return Array.from(buf.slice(data.length));
     }
 
-    // Convert string to UTF-8 byte array
-    function toUtf8Bytes(str) {
+    // Convert string to UTF-8 byte array, safely truncating at whole character boundaries
+    function toUtf8Bytes(str, maxBytes) {
+      const s = String(str || '');
+      const limit = (typeof maxBytes === 'number' && maxBytes > 0) ? maxBytes : 134;
       const bytes = [];
-      for (let i = 0; i < str.length; i++) {
-        let code = str.charCodeAt(i);
+      for (let i = 0; i < s.length; i++) {
+        let code = s.charCodeAt(i);
+        let charBytes;
         if (code < 0x80) {
-          bytes.push(code);
+          charBytes = [code];
         } else if (code < 0x800) {
-          bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+          charBytes = [0xc0 | (code >> 6), 0x80 | (code & 0x3f)];
         } else if (code < 0xd800 || code >= 0xe000) {
-          bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+          charBytes = [0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f)];
         } else {
           i++;
-          code = 0x10000 + (((code & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
-          bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+          code = 0x10000 + (((code & 0x3ff) << 10) | (s.charCodeAt(i) & 0x3ff));
+          charBytes = [0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f)];
         }
+        if (bytes.length + charBytes.length > limit) break;
+        for (let k = 0; k < charBytes.length; k++) bytes.push(charBytes[k]);
       }
       return bytes;
     }
@@ -113,8 +118,7 @@
       // 1. Prepare data bitstream for Version 6-L
       // Total data codewords = 136 (2 blocks of 68), Total EC codewords = 36 (2 blocks of 18)
       // Max raw data bytes in 8-bit byte mode: (136*8 - 4(mode) - 8(count)) / 8 = 134 bytes
-      const rawBytes = toUtf8Bytes(text);
-      const dataBytes = rawBytes.slice(0, 134);
+      const dataBytes = toUtf8Bytes(text, 134);
 
       const bb = new BitBuffer();
       // Mode indicator: 0100 (Byte mode)
@@ -255,31 +259,14 @@
         goingUp = !goingUp;
       }
 
-      // 6. Write Format Information (Level L = 01, Mask 0 = 000 -> 15 bits = 111011111000100)
-      const formatStr = "111011111000100";
-      // Top-left
-      matrix[8][0] = parseInt(formatStr[0], 10);
-      matrix[8][1] = parseInt(formatStr[1], 10);
-      matrix[8][2] = parseInt(formatStr[2], 10);
-      matrix[8][3] = parseInt(formatStr[3], 10);
-      matrix[8][4] = parseInt(formatStr[4], 10);
-      matrix[8][5] = parseInt(formatStr[5], 10);
-      matrix[8][7] = parseInt(formatStr[6], 10);
-      matrix[8][8] = parseInt(formatStr[7], 10);
-      matrix[7][8] = parseInt(formatStr[8], 10);
-      matrix[5][8] = parseInt(formatStr[9], 10);
-      matrix[4][8] = parseInt(formatStr[10], 10);
-      matrix[3][8] = parseInt(formatStr[11], 10);
-      matrix[2][8] = parseInt(formatStr[12], 10);
-      matrix[1][8] = parseInt(formatStr[13], 10);
-      matrix[0][8] = parseInt(formatStr[14], 10);
-
-      // Bottom-left and Top-right
-      for (let i = 0; i < 7; i++) {
-        matrix[SIZE - 1 - i][8] = parseInt(formatStr[i], 10);
-      }
-      for (let i = 0; i < 8; i++) {
-        matrix[8][SIZE - 8 + i] = parseInt(formatStr[7 + i], 10);
+      // 6. Write Format Information MSB-first (Level L = 01, Mask 0 = 000 -> 15 bits = 0x77c4)
+      const fmt = 0x77c4;
+      const fmtCoords1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+      const fmtCoords2 = [[SIZE-1,8],[SIZE-2,8],[SIZE-3,8],[SIZE-4,8],[SIZE-5,8],[SIZE-6,8],[SIZE-7,8],[8,SIZE-8],[8,SIZE-7],[8,SIZE-6],[8,SIZE-5],[8,SIZE-4],[8,SIZE-3],[8,SIZE-2],[8,SIZE-1]];
+      for (let i = 0; i < 15; i++) {
+        const bit = (fmt >> (14 - i)) & 1;
+        matrix[fmtCoords1[i][0]][fmtCoords1[i][1]] = bit;
+        matrix[fmtCoords2[i][0]][fmtCoords2[i][1]] = bit;
       }
 
       return matrix;
@@ -953,7 +940,7 @@
       if (qrBtn && qrModal) {
         qrBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          const compactQrText = `Osrawy Patient Plan: ${targets.patientName} | A1c Target: ${targets.dm.targetA1c} | BP Target: ${targets.htn.targetBp} | LDL Target: ${targets.dlp.targetLdl} | Rule of 15: 15g sugar, wait 15m | SADMANS: Hold meds during dehydration | Red Flags: Call EMS (997/123)`;
+          const compactQrText = `Osrawy Rx: ${targets.patientName} | A1c:${targets.dm.targetA1c} BP:${targets.htn.targetBp} LDL:${targets.dlp.targetLdl} | Rule15: 15g sugar/15m | SADMANS | EMS 997`;
           if (qrContainer) {
             qrContainer.innerHTML = OsrawyQRCode.generateSVG(compactQrText, { size: 240, margin: 4, darkColor: '#0A4F4B' });
           }

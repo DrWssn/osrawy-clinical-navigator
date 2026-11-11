@@ -1,54 +1,59 @@
-name: Build Android APK
+name: Build & Release Android APK
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - "v*"
+    branches: [ main ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  build-apk:
     name: Build, Validate & Release APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install Node Dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Validate JavaScript Syntax
-        run: node check_js_syntax.js
+      - name: Run JS syntax and clinical simulation checks
+        run: |
+          node check_js_syntax.js
+          node run_full_simulation.js
 
-      - name: Run Clinical Engine Simulations
-        run: node run_full_simulation.js
-
-      - name: Sync Capacitor Web Assets
+      - name: Sync web assets to Capacitor Android
         run: npx cap sync android
 
-      - name: Configure Android SDK Location & Permissions
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Configure Android SDK & Restore Keystore Secret
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+          echo "sdk.dir=${ANDROID_HOME:-/usr/local/lib/android/sdk}" > android/local.properties
           mkdir -p android/capacitor-cordova-android-plugins
           if [ ! -f "android/capacitor-cordova-android-plugins/cordova.variables.gradle" ]; then
             echo "// Fallback variables" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
+          fi
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Restoring release.keystore from GitHub Secrets..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           fi
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
@@ -61,58 +66,83 @@ jobs:
           cd android
           ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Build Android Release APK
+      - name: Assemble Release APK
+        working-directory: ./android
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../build.log
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Capture Gradle Build Output
-        if: always()
-        run: |
-          if [ -f build.log ]; then
-            echo "### Gradle Build Log" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Prepare Signed Release APK
+      - name: Verify or Sign Release APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
           APK_NAME="Osrawy_Clinical_Navigator_v${VERSION}.apk"
-          echo "Target Release APK: $APK_NAME"
+          RELEASE_DIR="android/app/build/outputs/apk/release"
+          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/* | sort -V | tail -n 1)
 
-          if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
-            cp -f "android/app/build/outputs/apk/release/app-release.apk" "$APK_NAME"
+          if [ -f "$RELEASE_DIR/app-release.apk" ]; then
+            echo "Gradle already signed app-release.apk via build.gradle"
+            cp -f "$RELEASE_DIR/app-release.apk" "$APK_NAME"
+          elif [ -f "$RELEASE_DIR/app-release-unsigned.apk" ]; then
+            echo "Signing app-release-unsigned.apk..."
+            if [ -n "$KEYSTORE_BASE64" ]; then
+              echo "$KEYSTORE_BASE64" | base64 -d > temp.keystore
+              KS_PASS="${KEYSTORE_PASSWORD:-osrawy_clinical_pass}"
+              K_ALIAS="${KEY_ALIAS:-osrawy}"
+              K_PASS="${KEY_PASSWORD:-osrawy_clinical_pass}"
+            elif [ -f "android/app/release.keystore" ]; then
+              cp android/app/release.keystore temp.keystore
+              KS_PASS="osrawy_clinical_pass"
+              K_ALIAS="osrawy"
+              K_PASS="osrawy_clinical_pass"
+            else
+              echo "WARNING: Generating ephemeral keystore (set KEYSTORE_BASE64 secret for seamless updates)"
+              keytool -genkey -v -keystore temp.keystore -alias osrawy \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass osrawy123 -keypass osrawy123 \
+                -dname "CN=Osrawy, OU=Clinical, O=Osrawy, L=Riyadh, S=Riyadh, C=SA"
+              KS_PASS="osrawy123"
+              K_ALIAS="osrawy"
+              K_PASS="osrawy123"
+            fi
+            $BUILD_TOOLS_DIR/zipalign -v -p 4 "$RELEASE_DIR/app-release-unsigned.apk" app-aligned.apk
+            $BUILD_TOOLS_DIR/apksigner sign --ks temp.keystore \
+              --ks-pass pass:"$KS_PASS" --key-pass pass:"$K_PASS" \
+              --ks-key-alias "$K_ALIAS" \
+              --out "$APK_NAME" app-aligned.apk
+            rm -f temp.keystore app-aligned.apk
           else
-            BUILT_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-            cp -f "$BUILT_APK" "$APK_NAME"
+            echo "ERROR: No APK found in $RELEASE_DIR!"
+            ls -la "$RELEASE_DIR" || true
+            exit 1
           fi
 
-          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/* | sort -V | tail -n 1)
-          echo "Verifying permanent APK signature:"
+          echo "Verifying APK signature:"
           $BUILD_TOOLS_DIR/apksigner verify --verbose "$APK_NAME"
-
           ls -lh "$APK_NAME"
           sha256sum "$APK_NAME"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Osrawy_Clinical_Navigator_APK
+          name: Osrawy-Clinical-Navigator-APK
           path: Osrawy_Clinical_Navigator_v*.apk
 
-      - name: Create GitHub Release (On Tag Push)
+      - name: Publish APK to GitHub Releases on version tag
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: Osrawy_Clinical_Navigator_v*.apk
           name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

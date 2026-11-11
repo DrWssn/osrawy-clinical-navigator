@@ -249,10 +249,13 @@ const PatientSync = (function() {
     return alerts;
   }
 
+  let isDispatching = false;
+
   function notifyUpdated() {
     const guardrails = evaluateSafetyGuardrails(currentPatient);
-    if (typeof window !== 'undefined') {
+    if (!isDispatching && typeof window !== 'undefined') {
       try {
+        isDispatching = true;
         if (typeof window.CustomEvent === 'function') {
           const ev = new CustomEvent('osrawy:patient-updated', {
             detail: { state: Object.assign({}, currentPatient), guardrails }
@@ -263,7 +266,10 @@ const PatientSync = (function() {
           ev.initCustomEvent('osrawy:patient-updated', false, false, { state: Object.assign({}, currentPatient), guardrails });
           window.dispatchEvent(ev);
         }
-      } catch(e) {}
+      } catch(e) {
+      } finally {
+        isDispatching = false;
+      }
     }
     return guardrails;
   }
