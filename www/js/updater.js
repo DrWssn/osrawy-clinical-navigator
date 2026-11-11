@@ -4,11 +4,12 @@
 
 const AppUpdater = (function() {
   const CONFIG = {
-    currentVersion: '1.0.0',
+    currentVersion: '1.2.0',
     repoOwner: 'DrWssn',
     repoName: 'osrawy-clinical-navigator',
     apiUrl: 'https://api.github.com/repos/DrWssn/osrawy-clinical-navigator/releases/latest',
-    releasesUrl: 'https://github.com/DrWssn/osrawy-clinical-navigator/releases/latest'
+    tagsUrl: 'https://api.github.com/repos/DrWssn/osrawy-clinical-navigator/tags',
+    releasesUrl: 'https://github.com/DrWssn/osrawy-clinical-navigator/releases'
   };
 
   function compareSemver(v1, v2) {
@@ -39,20 +40,61 @@ const AppUpdater = (function() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 9000);
       
-      const response = await fetch(CONFIG.apiUrl, {
+      let latestTag = '';
+      let releaseNotes = '';
+      let downloadUrl = CONFIG.releasesUrl;
+      let publishedAt = Date.now();
+
+      // 1. Try releases/latest
+      let res = await fetch(CONFIG.apiUrl, {
         signal: controller.signal,
         headers: { 'Accept': 'application/vnd.github.v3+json' }
       });
+
+      if (res.ok) {
+        const release = await res.json();
+        latestTag = release.tag_name || release.name || '';
+        releaseNotes = release.body || '';
+        publishedAt = release.published_at || Date.now();
+        if (release.assets && release.assets.length > 0) {
+          const apk = release.assets.find(a => a.name.endsWith('.apk'));
+          if (apk && apk.browser_download_url) {
+            downloadUrl = apk.browser_download_url;
+          }
+        } else if (release.html_url) {
+          downloadUrl = release.html_url;
+        }
+      } else if (res.status === 404) {
+        // Fallback to tags if releases haven't been published yet
+        const tagsRes = await fetch(CONFIG.tagsUrl, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (tagsRes.ok) {
+          const tags = await tagsRes.json();
+          if (tags && tags.length > 0) {
+            latestTag = tags[0].name;
+            downloadUrl = `${CONFIG.releasesUrl}/tag/${latestTag}`;
+            releaseNotes = `New release ${latestTag} is ready on GitHub.`;
+          }
+        }
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (!latestTag) {
+        if (statusEl) {
+          statusEl.textContent = (window.I18n && window.I18n.getLang() === 'ar')
+            ? `✅ أنت تستخدم أحدث إصدار (v${CONFIG.currentVersion})`
+            : `✅ You have the latest version (v${CONFIG.currentVersion})`;
+          statusEl.className = 'update-status uptodate';
+        }
+        return;
       }
 
-      const release = await response.json();
-      const latestTag = release.tag_name || release.name || '';
       const isNewer = compareSemver(latestTag, CONFIG.currentVersion) > 0;
 
       if (isNewer) {
@@ -62,7 +104,12 @@ const AppUpdater = (function() {
             : `🚀 New update available: ${latestTag}`;
           statusEl.className = 'update-status available';
         }
-        showUpdateModal(release);
+        showUpdateModal({
+          tag_name: latestTag,
+          body: releaseNotes,
+          published_at: publishedAt,
+          downloadUrl: downloadUrl
+        });
       } else {
         if (statusEl) {
           statusEl.textContent = (window.I18n && window.I18n.getLang() === 'ar')
@@ -82,14 +129,14 @@ const AppUpdater = (function() {
       console.warn('Update check failed:', err.message);
       if (statusEl) {
         statusEl.textContent = (window.I18n && window.I18n.getLang() === 'ar')
-          ? 'تعذر الاتصال بـ GitHub (تأكد من اتصال الإنترنت)'
-          : 'Could not connect to GitHub (Check internet)';
+          ? 'تعذر التحقق من التحديثات (تأكد من الاتصال بالإنترنت)'
+          : 'Could not check for updates (Check internet)';
         statusEl.className = 'update-status error';
       }
       if (isManual && window.RxShare && window.RxShare.showToast) {
         window.RxShare.showToast(
           (window.I18n && window.I18n.getLang() === 'ar')
-            ? 'تعذر الاتصال بـ GitHub للتحقق من التحديثات'
+            ? 'تعذر التحقق من التحديثات'
             : 'Check internet connection for updates'
         );
       }
@@ -109,7 +156,7 @@ const AppUpdater = (function() {
 
     const tag = release.tag_name || 'New Version';
     const releaseNotes = release.body || 'New clinical updates and improvements.';
-    let apkUrl = CONFIG.releasesUrl;
+    let apkUrl = release.downloadUrl || CONFIG.releasesUrl;
     if (release.assets && release.assets.length > 0) {
       const apkAsset = release.assets.find(a => a.name.endsWith('.apk'));
       if (apkAsset && apkAsset.browser_download_url) {
