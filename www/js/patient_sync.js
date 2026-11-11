@@ -220,8 +220,23 @@ const PatientSync = (function() {
     if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
   }
 
+  function setEGFR(val) {
+    const num = Math.round(parseFloat(val) || 0);
+    currentPatient.egfr = num;
+    const $ = id => document.getElementById(id);
+    if ($('egfr')) $('egfr').value = num;
+    if ($('htn-egfr')) $('htn-egfr').value = num;
+    saveActive();
+    updatePatientBar();
+    if (typeof window.plan === 'function') window.plan();
+    if (typeof window.htnRender === 'function') window.htnRender();
+    if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+    return num;
+  }
+
   return {
     get: () => currentPatient,
+    setEGFR,
     loadActive,
     saveActive,
     getRecentList,

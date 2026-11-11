@@ -396,6 +396,29 @@ const DRUG_DATABASE = {
     })
   },
 
+  rosuva: {
+    id: "rosuva", category: "diabetes", cls: "Statin", name: "Rosuvastatin",
+    ar: ["روستاتين", "روزوفاستاتين", "كريستور", "روستور", "جستور", "أديتور"],
+    saudi: {
+      brands: ["Crestor (AstraZeneca)", "Rosuvast (SPIMACO)", "Justor", "Aditor"],
+      orig: 0, tier: 2, tierDesc: "●● Medium cost (40 – 160 SAR)",
+      priceEst: "42 – 160 SAR / mo"
+    },
+    egypt: {
+      brands: ["Crestor (AstraZeneca)", "Rosutor (Eva Pharma)", "Aditor", "Rosuvast"],
+      orig: 0, tier: 2, tierDesc: "●● Medium cost (65 – 350 EGP)",
+      priceEst: "65 – 320 EGP / mo"
+    },
+    dose: "5–10 mg (moderate) or 20–40 mg (high intensity) once daily",
+    renal: (egfr) => (egfr < 30 ? "Start 5 mg, max 10 mg/day in severe CKD" : "No dose adjustment for eGFR ≥30"),
+    caut: "Start with 5-10 mg in severe renal impairment (eGFR <30). Monitor for muscle symptoms. ADA 2025 goal <55 mg/dL in ASCVD, <70 in DM.",
+    rx: (p, b) => ({
+      b: `${b} ${p.ascvd ? 20 : 10} mg tab`,
+      s: "1 tab once daily",
+      a: "قرص واحد يومياً"
+    })
+  },
+
   // --- HYPERTENSION MEDICATIONS & SPCs (Saudi & Egyptian Formularies) ---
   amlodipine: {
     id: "amlodipine", category: "htn", cls: "DHP CCB", name: "Amlodipine",

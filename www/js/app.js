@@ -86,9 +86,9 @@
   };
 
   window.handleAndroidBack = function() {
-    const modal = document.getElementById('settings-modal');
-    if (modal && modal.classList.contains('open')) {
-      modal.classList.remove('open');
+    const openModal = document.querySelector('.modal-overlay.open');
+    if (openModal) {
+      openModal.classList.remove('open');
       return true;
     }
     const activeBtn = document.querySelector('.main-nav-btn.active');
@@ -149,6 +149,9 @@
     PatientSync.loadActive();
     PatientSync.updatePatientBar();
     DrugDirectory.init();
+    if (typeof ClinicalTools !== 'undefined') {
+      ClinicalTools.init();
+    }
     if (typeof AppUpdater !== 'undefined') {
       AppUpdater.init();
     }

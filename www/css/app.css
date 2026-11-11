@@ -680,3 +680,581 @@ html[dir="rtl"] .now {
 .update-status.available { color: var(--teal); font-weight: 700; }
 .update-status.error { color: var(--muted); }
 
+/* ==============================================================
+   Clinical Tools: CKD-EPI 2021 Calculator & ASCVD LDL-C Goals Matrix
+   ============================================================== */
+
+/* Modal Width Variants */
+.modal-card.modal-medium {
+  max-width: 580px;
+}
+
+.modal-card.modal-wide {
+  max-width: 820px;
+}
+
+/* Header Trigger Pill for LDL Goals */
+.ldl-pill-btn {
+  background: rgba(255, 194, 79, 0.22);
+  border: 1px solid rgba(255, 194, 79, 0.65);
+  color: #FFFFFF;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ldl-pill-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 194, 79, 0.45);
+}
+
+/* Field Label Row with Calculator Pill Trigger */
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.field-label-row label,
+.field-label-row span {
+  margin-bottom: 0 !important;
+}
+
+.btn-calc-pill {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-calc-pill:hover,
+.btn-calc-pill:active {
+  background: var(--teal);
+  color: #FFFFFF;
+  transform: scale(0.96);
+}
+
+/* CKD-EPI Calculator Modal Inputs */
+.calc-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.calc-input-with-unit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.calc-input-with-unit input {
+  flex: 1;
+}
+
+.calc-input-with-unit select {
+  width: auto;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+/* Calculator Result Card */
+.calc-result-card {
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.calc-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calc-stage-pill {
+  font-family: var(--f-mono);
+  font-weight: 800;
+  font-size: 14px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+html[dir="rtl"] .calc-stage-pill {
+  margin-right: 0;
+  margin-left: 6px;
+}
+
+.calc-stage-title {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.calc-egfr-big {
+  font-family: var(--f-mono);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--teal);
+  line-height: 1;
+}
+
+.calc-egfr-big small {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.calc-result-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.calc-sub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.calc-sub-item {
+  font-size: 12px;
+}
+
+.calc-sub-lbl {
+  color: var(--muted);
+  display: block;
+  font-size: 11px;
+}
+
+.calc-clinical-pearls {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pearl-row {
+  font-size: 12.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pearl-tag {
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.pearl-text {
+  flex: 1;
+}
+
+/* Staging Badge Color Tints */
+.badge-stage-g1 { border-left: 5px solid #2ECC71; }
+.badge-stage-g1 .calc-stage-pill { background: rgba(46, 204, 113, 0.2); color: #1B7A43; }
+
+.badge-stage-g2 { border-left: 5px solid #3498DB; }
+.badge-stage-g2 .calc-stage-pill { background: rgba(52, 152, 219, 0.2); color: #1B5882; }
+
+.badge-stage-g3a { border-left: 5px solid #F39C12; }
+.badge-stage-g3a .calc-stage-pill { background: rgba(243, 156, 18, 0.2); color: #9E6004; }
+
+.badge-stage-g3b { border-left: 5px solid #E67E22; }
+.badge-stage-g3b .calc-stage-pill { background: rgba(230, 126, 34, 0.25); color: #A04A05; }
+
+.badge-stage-g4 { border-left: 5px solid #E74C3C; }
+.badge-stage-g4 .calc-stage-pill { background: rgba(231, 76, 60, 0.25); color: #961E12; }
+
+.badge-stage-g5 { border-left: 5px solid #8E44AD; }
+.badge-stage-g5 .calc-stage-pill { background: rgba(142, 68, 173, 0.25); color: #5B1E75; }
+
+html[dir="rtl"] .calc-result-card {
+  border-left: 1px solid var(--line);
+}
+html[dir="rtl"] .badge-stage-g1 { border-right: 5px solid #2ECC71; }
+html[dir="rtl"] .badge-stage-g2 { border-right: 5px solid #3498DB; }
+html[dir="rtl"] .badge-stage-g3a { border-right: 5px solid #F39C12; }
+html[dir="rtl"] .badge-stage-g3b { border-right: 5px solid #E67E22; }
+html[dir="rtl"] .badge-stage-g4 { border-right: 5px solid #E74C3C; }
+html[dir="rtl"] .badge-stage-g5 { border-right: 5px solid #8E44AD; }
+
+/* ASCVD LDL-C Goals Matrix Styling */
+.ldl-patient-eval-banner {
+  background: linear-gradient(135deg, rgba(10, 79, 75, 0.12), rgba(255, 194, 79, 0.15));
+  border: 1.5px solid var(--teal);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.ldl-eval-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ldl-badge-glow {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ldl-badge-glow.very_high { background: #FFD2D2; color: #9C0006; border: 1px solid #FF8989; }
+.ldl-badge-glow.high { background: #FFE8CC; color: #944000; border: 1px solid #FFB866; }
+.ldl-badge-glow.moderate { background: #FFF3CD; color: #856404; border: 1px solid #FFEBAA; }
+.ldl-badge-glow.low { background: #D4EDDA; color: #155724; border: 1px solid #C3E6CB; }
+
+.ldl-eval-name {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ldl-target-highlight {
+  text-align: right;
+}
+
+html[dir="rtl"] .ldl-target-highlight {
+  text-align: left;
+}
+
+.ldl-target-highlight small {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+}
+
+.ldl-target-highlight .target-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--teal);
+  font-family: var(--f-mono);
+}
+
+.ldl-eval-reason,
+.ldl-eval-action {
+  font-size: 12.5px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Market Switcher Chips inside LDL Modal */
+.ldl-market-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.ldl-mkt-lbl {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ldl-mkt-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-mkt-chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-mkt-chip.active {
+  background: var(--teal);
+  color: #FFFFFF;
+  border-color: var(--teal);
+  box-shadow: 0 2px 6px rgba(10, 79, 75, 0.25);
+}
+
+.ldl-section-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+}
+
+.ldl-section-title .sub {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Matrix Table Styling */
+.ldl-matrix-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+
+.ldl-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.ldl-matrix-table th {
+  background: var(--surface2);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 2px solid var(--line);
+  white-space: nowrap;
+}
+
+html[dir="rtl"] .ldl-matrix-table th {
+  text-align: right;
+}
+
+.ldl-matrix-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.ldl-matrix-table tr:hover {
+  background: var(--surface2);
+}
+
+.ldl-matrix-table tr.selected-patient-tier {
+  background: rgba(10, 79, 75, 0.08);
+  font-weight: 500;
+  outline: 2px solid var(--teal);
+}
+
+.ldl-risk-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ldl-risk-tag.very_high { background: rgba(231, 76, 60, 0.15); color: #C0392B; }
+.ldl-risk-tag.high { background: rgba(230, 126, 34, 0.15); color: #D35400; }
+.ldl-risk-tag.moderate { background: rgba(243, 156, 18, 0.15); color: #B77700; }
+.ldl-risk-tag.low { background: rgba(46, 204, 113, 0.15); color: #27AE60; }
+
+.patient-match-pill {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--teal);
+  margin-top: 3px;
+}
+
+.target-cell {
+  font-family: var(--f-mono);
+  color: var(--teal);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Statin Intensity Cards */
+.statin-intensity-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statin-regimen-card {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+.regimen-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.regimen-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.badge-intensity-high .regimen-header { border-left: 4px solid #C0392B; }
+.badge-intensity-moderate .regimen-header { border-left: 4px solid #F39C12; }
+.badge-intensity-low .regimen-header { border-left: 4px solid #3498DB; }
+
+html[dir="rtl"] .badge-intensity-high .regimen-header { border-left: none; border-right: 4px solid #C0392B; }
+html[dir="rtl"] .badge-intensity-moderate .regimen-header { border-left: none; border-right: 4px solid #F39C12; }
+html[dir="rtl"] .badge-intensity-low .regimen-header { border-left: none; border-right: 4px solid #3498DB; }
+
+.regimen-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statin-drug-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.statin-drug-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.drug-main-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drug-name {
+  font-size: 13.5px;
+}
+
+.drug-dose-badge {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.drug-brand-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.brand-pill {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--ink);
+}
+
+.drug-price-tier {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Addon Therapies Grid */
+.addon-therapies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.addon-card {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.addon-header {
+  font-size: 13.5px;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.addon-effect {
+  font-size: 12px;
+  margin: 0 0 8px 0;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.addon-brands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.addon-brand-lbl {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Clinical Notes Box */
+.ldl-clinical-notes {
+  background: rgba(255, 194, 79, 0.12);
+  border: 1px solid rgba(255, 194, 79, 0.5);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  margin-top: 18px;
+}
+
+.ldl-clinical-notes ul {
+  margin: 6px 0 0 0;
+  padding-left: 20px;
+}
+
+html[dir="rtl"] .ldl-clinical-notes ul {
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+.ldl-clinical-notes li {
+  margin-bottom: 4px;
+}
+
+

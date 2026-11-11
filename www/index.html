@@ -28,6 +28,7 @@
       <div class="top-actions">
         <button id="lang-toggle-btn" class="lang-pill-btn" title="Switch interface to English / التبديل للإنجليزية">🌐 English</button>
         <button id="market-toggle-btn" class="market-pill-btn" title="تبديل السوق (سعودي / مصري)">🇸🇦 السوق السعودي (SAR)</button>
+        <button id="btn-open-ldl-modal" class="ldl-pill-btn" title="أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)" data-i18n-title="title_ldl_matrix">🎯 <span data-i18n="btn_ldl_matrix_nav">أهداف LDL والستاتين</span></button>
         <button id="save-pt-btn" class="icon-btn" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">💾</button>
         <button id="theme-toggle-btn" class="icon-btn" title="تبديل الوضع الليلي" aria-label="الوضع الليلي" data-i18n-title="btn_theme" data-i18n-aria-label="btn_theme">🌓</button>
         <button id="open-settings-btn" class="icon-btn" title="إعدادات الطبيب والعيادة" aria-label="الإعدادات" data-i18n-title="btn_settings" data-i18n-aria-label="btn_settings">⚙️</button>
@@ -84,7 +85,13 @@
       <div class="fields">
         <div class="field"><label for="a1c" data-i18n="lbl_a1c">HbA1c (%)</label><input id="a1c" type="number" step="0.1" value="8.9"></div>
         <div class="field"><label for="fpg" data-i18n="lbl_fpg">Fasting glucose (mg/dL)</label><input id="fpg" type="number" value="190"></div>
-        <div class="field"><label for="egfr" data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</label><input id="egfr" type="number" value="68"></div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="egfr" data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</label>
+            <button type="button" class="btn-calc-pill btn-open-egfr-calc" title="حاسبة وظائف الكلى CKD-EPI 2021" data-i18n-title="calc_egfr_btn_title">🧮 <span data-i18n="btn_calc">حاسبة</span></button>
+          </div>
+          <input id="egfr" type="number" value="68">
+        </div>
         <div class="field"><label for="uacr" data-i18n="lbl_uacr">UACR (mg/g)</label><input id="uacr" type="number" value="45"></div>
       </div>
       <h3 data-i18n="dia_h3_comorb">Comorbidities &amp; risk</h3>
@@ -100,6 +107,7 @@
         <label><input type="checkbox" id="geni"><span data-i18n="chk_geni">Recurrent genital infections / UTI</span></label>
         <label><input type="checkbox" id="preg"><span data-i18n="chk_preg">Pregnant or planning pregnancy</span></label>
       </div>
+      <button type="button" class="btn btn-sm btn-outline-primary btn-open-ldl-calc" style="margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" data-i18n="btn_ldl_dia_trigger">🎯 أهداف LDL وخطة الستاتين (ADA 2025)</button>
       <h3 data-i18n="dia_h3_therapy">Current therapy</h3>
       <div class="checks">
         <label><input type="checkbox" id="c-met" checked><span data-i18n="chk_met">Metformin</span></label>
@@ -279,7 +287,13 @@
   <fieldset>
     <legend data-i18n="htn_legend_labs">Labs</legend>
     <div class="row">
-      <label class="f"><span data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</span><input type="number" id="htn-egfr" value="72" min="3" max="150"></label>
+      <label class="f">
+        <div class="field-label-row">
+          <span data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</span>
+          <button type="button" class="btn-calc-pill btn-open-egfr-calc" title="حاسبة وظائف الكلى CKD-EPI 2021" data-i18n-title="calc_egfr_btn_title">🧮 <span data-i18n="btn_calc">حاسبة</span></button>
+        </div>
+        <input type="number" id="htn-egfr" value="72" min="3" max="150">
+      </label>
       <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="120" min="0" max="10000"></label>
       <label class="f"><span data-i18n="lbl_k">K⁺ (mmol/L)</span><input type="number" id="k" value="4.6" min="2" max="8" step="0.1"></label>
     </div>
@@ -297,6 +311,7 @@
       <label class="chip"><input type="checkbox" id="smk"><span data-i18n="chk_smoker">Current smoker</span></label>
       <label class="chip"><input type="checkbox" id="statin"><span data-i18n="chk_statin">On statin</span></label>
     </div>
+    <button type="button" class="btn btn-sm btn-outline-primary btn-open-ldl-calc" style="margin-top:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" data-i18n="btn_ldl_htn_trigger">🎯 أهداف LDL وخطة الستاتين (ESC/ADA)</button>
     <div class="riskbox" id="riskbox"></div>
     <p class="hint" data-i18n="hint_prevent">Uses age, sex, SBP, diabetes, eGFR and BP-drug use from above. Base model, total CVD (ASCVD + heart failure). Valid for ages 30–79 without known CVD. The result fills the risk field automatically; type in that field to override it.</p>
   </fieldset>
@@ -476,10 +491,90 @@
     </div>
   </div>
 
+  <!-- CKD-EPI 2021 eGFR & CrCl Calculator Modal -->
+  <div class="modal-overlay" id="egfr-modal">
+    <div class="modal-card modal-medium">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;">🧮</span>
+          <div>
+            <h3 style="margin:0;font-size:16px;" data-i18n="calc_modal_title">حاسبة وظائف الكلى (CKD-EPI 2021)</h3>
+            <span style="font-size:11px;color:var(--muted);" data-i18n="calc_modal_sub">معادلة CKD-EPI 2021 الخالية من العرق + Cockcroft-Gault CrCl</span>
+          </div>
+        </div>
+        <button type="button" class="icon-btn" id="close-egfr-modal-btn" style="color:var(--ink)" aria-label="إغلاق">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="calc-inputs-grid">
+          <div class="field">
+            <label data-i18n="calc_lbl_scr">الكرياتينين بالدم (Serum Creatinine):</label>
+            <div class="calc-input-with-unit">
+              <input type="number" id="calc-scr" step="0.01" min="0.1" max="25" placeholder="1.0" value="1.0">
+              <select id="calc-scr-unit">
+                <option value="mg" selected>mg/dL</option>
+                <option value="umol">µmol/L</option>
+              </select>
+            </div>
+            <small style="color:var(--muted);font-size:11px;" data-i18n="calc_hint_unit">1 mg/dL = 88.4 µmol/L</small>
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_age">العمر (سنة):</label>
+            <input type="number" id="calc-age" min="18" max="115" value="52">
+          </div>
+          <div class="field">
+            <label data-i18n="lbl_sex">الجنس البيولوجي:</label>
+            <select id="calc-sex">
+              <option value="m" data-i18n="opt_male">ذكر (Male)</option>
+              <option value="f" data-i18n="opt_female">أنثى (Female)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="calc_lbl_wt">الوزن (كجم - لحساب CrCl):</label>
+            <input type="number" id="calc-wt" min="20" max="300" value="96">
+          </div>
+        </div>
+
+        <!-- Live calculation output -->
+        <div id="calc-egfr-output" style="margin-top:14px;">
+          <!-- Populated by ClinicalTools.renderEgfrCalculation() -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="ClinicalTools.closeEgfrModal()" data-i18n="btn_cancel">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="btn-apply-calculated-egfr" data-i18n="btn_apply_egfr">
+          ✅ تطبيق الناتج على المريض
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASCVD LDL-C Goals & Statin Intensity Guide Modal -->
+  <div class="modal-overlay" id="ldl-modal">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;">🎯</span>
+          <div>
+            <h3 style="margin:0;font-size:16px;" data-i18n="ldl_modal_title">أهداف الكوليسترول وخطة الستاتين (ASCVD LDL-C Goals & Statins)</h3>
+            <span style="font-size:11px;color:var(--muted);" data-i18n="ldl_modal_sub">إرشادات الجمعية الأمريكية للسكري ADA 2025 والجمعية الأوروبية لأمراض القلب ESC 2023</span>
+          </div>
+        </div>
+        <button type="button" class="icon-btn" id="close-ldl-modal-btn" style="color:var(--ink)" aria-label="إغلاق">✕</button>
+      </div>
+      <div class="modal-body" id="ldl-matrix-container">
+        <!-- Populated dynamically by ClinicalTools.renderLdlMatrix() -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="ClinicalTools.closeLdlModal()" data-i18n="btn_close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/i18n.js"></script>
   <script src="js/drugs_data.js"></script>
   <script src="js/patient_sync.js"></script>
+  <script src="js/clinical_tools.js"></script>
   <script src="js/prescription_share.js"></script>
   <script src="js/drugs_directory.js"></script>
   <script src="js/diabetes_engine.js"></script>

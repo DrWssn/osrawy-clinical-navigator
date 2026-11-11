@@ -69,7 +69,10 @@ const knownIds = [
   'drug-directory-list', 'drug-search-input', 'market-btn-sa', 'market-btn-eg', 'market-toggle-btn', 'lang-toggle-btn',
   'save-pt-btn', 'theme-toggle-btn', 'open-settings-btn', 'patient-summary-bar', 'recent-patients-list',
   'settings-modal', 'close-settings-btn', 'save-settings-btn', 'set-dr-name', 'set-dr-title',
-  'set-clinic-name', 'set-clinic-phone', 'set-clinic-addr', 'copy', 'btn-share-htn-whatsapp', 'btn-print-htn'
+  'set-clinic-name', 'set-clinic-phone', 'set-clinic-addr', 'copy', 'btn-share-htn-whatsapp', 'btn-print-htn',
+  'egfr-modal', 'close-egfr-modal-btn', 'btn-apply-calculated-egfr', 'calc-scr', 'calc-scr-unit', 'calc-age',
+  'calc-sex', 'calc-wt', 'calc-egfr-output', 'ldl-modal', 'close-ldl-modal-btn', 'ldl-matrix-container',
+  'btn-open-ldl-modal'
 ];
 knownIds.forEach(id => getOrCreate(id));
 
@@ -119,6 +122,8 @@ const windowObj = {
     clipboard: { writeText: async (t) => t },
     vibrate: () => true
   },
+  setTimeout: (fn, ms) => { try { fn(); } catch(e){} },
+  clearTimeout: () => {},
   scrollTo: () => {},
   document: {
     getElementById: (id) => getOrCreate(id),
@@ -141,6 +146,7 @@ const files = [
   'i18n.js',
   'drugs_data.js',
   'patient_sync.js',
+  'clinical_tools.js',
   'prescription_share.js',
   'drugs_directory.js',
   'diabetes_engine.js',
@@ -255,5 +261,71 @@ const finalLang = context.I18n.getLang();
 const finalStorage = mockStorage.get('osrawy_lang');
 const finalPass = finalLang === 'ar' && finalStorage === 'ar';
 console.log("  Language toggle back to Arabic verified:", finalPass ? "✅ PASS" : "❌ FAIL");
+
+console.log("\nTesting ClinicalTools: CKD-EPI 2021 & Cockcroft-Gault Calculator...");
+// Test 1: Male 52 yo, Scr 1.0 mg/dL
+const resMale = context.ClinicalTools.calculateCKDEPI(1.0, 'mg', 52, 'm');
+console.log(`  Male 52y Scr 1.0 mg/dL -> eGFR: ${resMale.egfr} (Stage ${resMale.stage.code})`);
+const egfrMalePass = resMale.egfr >= 88 && resMale.egfr <= 92 && resMale.stage.code === 'G1';
+console.log("  CKD-EPI 2021 Race-Free (mg/dL):", egfrMalePass ? "✅ PASS" : "❌ FAIL");
+
+// Test 2: Female 65 yo, Scr 120 µmol/L (converted from µmol/L)
+const resFemale = context.ClinicalTools.calculateCKDEPI(120, 'umol', 65, 'f');
+console.log(`  Female 65y Scr 120 µmol/L -> eGFR: ${resFemale.egfr} (Stage ${resFemale.stage.code})`);
+const egfrFemalePass = resFemale.egfr >= 42 && resFemale.egfr <= 45 && resFemale.stage.code === 'G3b';
+console.log("  CKD-EPI 2021 Race-Free (µmol/L):", egfrFemalePass ? "✅ PASS" : "❌ FAIL");
+
+// Test 3: Cockcroft-Gault CrCl
+const crcl = context.ClinicalTools.calculateCrCl(1.1, 'mg', 52, 'm', 96);
+console.log(`  Cockcroft-Gault CrCl (52y, 96kg, Scr 1.1) -> CrCl: ${crcl.crcl} mL/min`);
+const crclPass = crcl.crcl >= 105 && crcl.crcl <= 108;
+console.log("  Cockcroft-Gault CrCl equation:", crclPass ? "✅ PASS" : "❌ FAIL");
+
+// Test 4: Apply eGFR Button workflow
+console.log("\nTesting Apply eGFR button flow...");
+getOrCreate('calc-scr', 'input').value = '1.3';
+getOrCreate('calc-scr-unit', 'select').value = 'mg';
+getOrCreate('calc-age', 'input').value = '55';
+getOrCreate('calc-sex', 'select').value = 'm';
+getOrCreate('calc-wt', 'input').value = '85';
+context.ClinicalTools.init();
+
+// Simulate calculated value and apply
+const calcRes = context.ClinicalTools.calculateCKDEPI(1.3, 'mg', 55, 'm');
+getOrCreate('btn-apply-calculated-egfr').setAttribute('data-calculated-egfr', calcRes.egfrInt);
+context.ClinicalTools.applyCalculatedEGFR();
+
+const appliedDia = getOrCreate('egfr').value;
+const appliedHtn = getOrCreate('htn-egfr').value;
+const appliedPt = context.PatientSync.get().egfr;
+console.log(`  Calculated eGFR: ${calcRes.egfrInt} -> Dia: ${appliedDia}, HTN: ${appliedHtn}, PtSync: ${appliedPt}`);
+const applyPass = (appliedDia == calcRes.egfrInt && appliedHtn == calcRes.egfrInt && appliedPt == calcRes.egfrInt);
+console.log("  Apply eGFR button sets PatientSync, #egfr, #htn-egfr:", applyPass ? "✅ PASS" : "❌ FAIL");
+
+console.log("\nTesting ASCVD LDL-C Goals Matrix & Statin Intensity...");
+// Test 5: Very High Risk with established ASCVD
+const ptVeryHigh = { ascvd: true, age: 62, dm: true };
+const assessVh = context.ClinicalTools.assessPatientLdlRisk(ptVeryHigh);
+console.log(`  Patient with established ASCVD -> Risk: ${assessVh.riskKey}, Target: ${assessVh.goal.targetMg} mg/dL`);
+const vhPass = (assessVh.riskKey === 'very_high' && assessVh.goal.targetMg === 55);
+console.log("  Very High Risk target (<55 mg/dL):", vhPass ? "✅ PASS" : "❌ FAIL");
+
+// Test 6: High Risk with DM + age >= 50
+const ptHigh = { ascvd: false, dm: true, age: 52, dur: 4, sbp: 148 };
+const assessHigh = context.ClinicalTools.assessPatientLdlRisk(ptHigh);
+console.log(`  Patient with DM + HTN -> Risk: ${assessHigh.riskKey}, Target: ${assessHigh.goal.targetMg} mg/dL`);
+const highPass = (assessHigh.riskKey === 'high' && assessHigh.goal.targetMg === 70);
+console.log("  High Risk / DM target (<70 mg/dL):", highPass ? "✅ PASS" : "❌ FAIL");
+
+// Test 7: Statin Intensity Formulary Data (Saudi & Egypt)
+const highStatin = context.ClinicalTools.STATIN_REGIMENS.find(r => r.intensity === 'high');
+const atorva = highStatin.drugs.find(d => d.name === 'Atorvastatin');
+const rosuva = highStatin.drugs.find(d => d.name === 'Rosuvastatin');
+console.log(`  High-intensity statins: ${atorva.name} (${atorva.dose}), ${rosuva.name} (${rosuva.dose})`);
+const statinDataPass = atorva.saudi.brands.some(b => b.includes('Lipitor')) &&
+                       atorva.egypt.brands.some(b => b.includes('Ator')) &&
+                       rosuva.saudi.brands.some(b => b.includes('Crestor')) &&
+                       rosuva.egypt.brands.some(b => b.includes('Rosutor'));
+console.log("  Statin trade names and price tiers in SAR and EGP:", statinDataPass ? "✅ PASS" : "❌ FAIL");
 
 console.log("\nALL SIMULATION TESTS PASSED SUCCESSFULLY! 🎯");

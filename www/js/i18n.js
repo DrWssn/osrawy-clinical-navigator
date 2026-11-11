@@ -276,7 +276,25 @@ const I18n = (function() {
       settings_btn_save: "حفظ الإعدادات",
       update_sec_title: "🔄 تحديثات التطبيق (GitHub)",
       update_sec_sub: "فحص وتحميل أحدث الإصدارات من GitHub",
-      btn_check_updates: "🔍 التحقق من وجود تحديثات الآن"
+      btn_check_updates: "🔍 التحقق من وجود تحديثات الآن",
+
+      // Clinical Tools: CKD-EPI 2021 & ASCVD LDL-C Goals
+      title_ldl_matrix: "أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)",
+      btn_ldl_matrix_nav: "أهداف LDL والستاتين",
+      btn_calc: "حاسبة",
+      calc_egfr_btn_title: "حاسبة وظائف الكلى CKD-EPI 2021",
+      btn_ldl_dia_trigger: "🎯 أهداف LDL وخطة الستاتين (ADA 2025)",
+      btn_ldl_htn_trigger: "🎯 أهداف LDL وخطة الستاتين (ESC/ADA)",
+      calc_modal_title: "حاسبة وظائف الكلى (CKD-EPI 2021)",
+      calc_modal_sub: "معادلة CKD-EPI 2021 الخالية من العرق + Cockcroft-Gault CrCl",
+      calc_lbl_scr: "الكرياتينين بالدم (Serum Creatinine):",
+      calc_lbl_wt: "الوزن (كجم - لحساب CrCl):",
+      calc_hint_unit: "1 mg/dL = 88.4 µmol/L",
+      btn_apply_egfr: "✅ تطبيق الناتج على المريض",
+      btn_cancel: "إلغاء",
+      btn_close: "إغلاق",
+      ldl_modal_title: "أهداف الكوليسترول وخطة الستاتين (ASCVD LDL-C Goals & Statins)",
+      ldl_modal_sub: "إرشادات الجمعية الأمريكية للسكري ADA 2025 والجمعية الأوروبية لأمراض القلب ESC 2023"
     },
 
     en: {
@@ -546,7 +564,25 @@ const I18n = (function() {
       settings_btn_save: "Save Settings",
       update_sec_title: "🔄 App Updates (GitHub)",
       update_sec_sub: "Check and download latest releases from GitHub",
-      btn_check_updates: "🔍 Check for Updates Now"
+      btn_check_updates: "🔍 Check for Updates Now",
+
+      // Clinical Tools: CKD-EPI 2021 & ASCVD LDL-C Goals
+      title_ldl_matrix: "🎯 ASCVD LDL-C Goals & Statin Intensity (ADA 2025 / ESC 2023)",
+      btn_ldl_matrix_nav: "🎯 LDL & Statins",
+      btn_calc: "Calculator",
+      calc_egfr_btn_title: "CKD-EPI 2021 eGFR Calculator",
+      btn_ldl_dia_trigger: "🎯 LDL Goals & Statin Strategy (ADA 2025)",
+      btn_ldl_htn_trigger: "🎯 LDL Goals & Statin Strategy (ESC/ADA)",
+      calc_modal_title: "Kidney Function Calculator (CKD-EPI 2021)",
+      calc_modal_sub: "Race-Free CKD-EPI 2021 equation + Cockcroft-Gault CrCl",
+      calc_lbl_scr: "Serum Creatinine:",
+      calc_lbl_wt: "Weight (kg - for CrCl):",
+      calc_hint_unit: "1 mg/dL = 88.4 µmol/L",
+      btn_apply_egfr: "✅ Apply eGFR to Patient",
+      btn_cancel: "Cancel",
+      btn_close: "Close",
+      ldl_modal_title: "ASCVD LDL-C Goals & Statin Intensity Guide",
+      ldl_modal_sub: "ADA Standards of Care 2025 & ESC 2023 Guidelines"
     }
   };
 
