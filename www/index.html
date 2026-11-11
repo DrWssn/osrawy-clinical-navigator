@@ -25,6 +25,35 @@
     </div>
   </header>
 
+  <!-- Tap-to-Edit Vitals Quick Drawer -->
+  <section id="osrawy-vitals-quick-drawer" class="osrawy-vitals-quick-drawer" aria-hidden="true">
+    <div class="osrawy-vitals-quick-grid">
+      <div class="osrawy-vitals-field">
+        <label for="quick-vital-egfr" data-i18n="vitals_egfr_label">الترشيح الكبيبي eGFR</label>
+        <input type="number" id="quick-vital-egfr" min="1" max="250" step="1" inputmode="numeric" />
+      </div>
+      <div class="osrawy-vitals-field">
+        <label for="quick-vital-k" data-i18n="vitals_k_label">البوتاسيوم K+</label>
+        <input type="number" id="quick-vital-k" min="1.0" max="12.0" step="0.1" inputmode="decimal" />
+      </div>
+      <div class="osrawy-vitals-field">
+        <label for="quick-vital-sbp" data-i18n="vitals_sbp_label">الضغط الانقباضي SBP</label>
+        <input type="number" id="quick-vital-sbp" min="40" max="320" step="1" inputmode="numeric" />
+      </div>
+      <div class="osrawy-vitals-field">
+        <label for="quick-vital-dbp" data-i18n="vitals_dbp_label">الضغط الانبساطي DBP</label>
+        <input type="number" id="quick-vital-dbp" min="20" max="220" step="1" inputmode="numeric" />
+      </div>
+      <div class="osrawy-vitals-field">
+        <label for="quick-vital-pregnancy" data-i18n="vitals_preg_label">الحمل / Pregnancy</label>
+        <select id="quick-vital-pregnancy">
+          <option value="false" data-i18n="vitals_preg_no">لا</option>
+          <option value="true" data-i18n="vitals_preg_yes">نعم (حامل)</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
   <!-- Clinical Safety Guardrails Banner -->
   <div id="clinical-guardrail-banner" class="clinical-guardrail-banner" hidden></div>
 
@@ -474,6 +503,16 @@
 
   <!-- MAIN TAB: PATIENT LEAFLETS -->
   <section id="tab-leaflets" class="tab-panel main-view-section" hidden style="display: none;">
+    <div class="osrawy-handoff-exit-bar">
+      <button type="button" id="osrawy-exit-handoff-btn" class="osrawy-ux-btn">
+        <span data-i18n="handoff_exit_btn">✕ إنهاء وضع المريض</span>
+      </button>
+    </div>
+    <div class="clinician-only-controls">
+      <button type="button" id="osrawy-enter-handoff-btn" class="osrawy-ux-btn">
+        <span data-i18n="handoff_enter_btn">📱 وضع شاشة المريض</span>
+      </button>
+    </div>
     <div id="patient-leaflet-container"></div>
   </section>
 
@@ -482,6 +521,35 @@
     <span class="jump-icon">⚡</span>
     <span class="jump-text" data-i18n="quick_jump_rx">الروشتة والتوصيات ⬇</span>
   </button>
+
+  <!-- Floating SOAP Consultation Cart Pill & Drawer -->
+  <button type="button" id="osrawy-soap-fab" class="osrawy-soap-fab" aria-label="EMR SOAP Summary">
+    <span>📋 <span data-i18n="soap_fab_label">ملخص SOAP</span></span>
+    <span id="osrawy-soap-count" class="osrawy-soap-badge">0</span>
+  </button>
+
+  <div id="osrawy-soap-backdrop" class="osrawy-soap-backdrop" aria-hidden="true"></div>
+
+  <aside id="osrawy-soap-drawer" class="osrawy-soap-drawer" aria-hidden="true">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <strong id="osrawy-soap-title" data-i18n="soap_drawer_title" style="font-size:0.98rem;">
+        ملخص الاستشارة الطبية (SOAP)
+      </strong>
+      <button type="button" id="osrawy-soap-close" class="osrawy-ux-btn" style="min-height:38px; padding:4px 12px;">✕</button>
+    </div>
+    <textarea id="osrawy-soap-textarea" class="osrawy-soap-textarea" readonly></textarea>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" id="osrawy-soap-sync-active" class="osrawy-ux-btn" style="flex:1;" data-i18n="soap_pull_btn">
+        🔄 تحديث من المحركات
+      </button>
+      <button type="button" id="osrawy-soap-copy" class="osrawy-ux-btn is-primary" style="flex:1;" data-i18n="soap_copy_btn">
+        📋 نسخ الملاحظة
+      </button>
+      <button type="button" id="osrawy-soap-clear" class="osrawy-ux-btn" aria-label="Clear SOAP">
+        🗑️
+      </button>
+    </div>
+  </aside>
 
   <!-- Osrawy Bottom Navigation Bar -->
   <nav class="osrawy-bottom-nav bottom-nav-bar">

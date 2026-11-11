@@ -521,6 +521,12 @@ html[dir="rtl"] .now {
   align-items: center;
 }
 
+.modal-header .icon-btn {
+  color: var(--ink, #0f172a);
+  background: var(--surface2, #f1f5f9);
+  border-color: var(--line, #cbd5e1);
+}
+
 .modal-body {
   padding: 16px 20px;
 }
@@ -2406,4 +2412,251 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
 }
 :root[data-theme="dark"] .guardrail-item.info {
   color: #93C5FD;
+}
+
+/* ==========================================================================
+   v1.2.11 VERIFIED UX PATCH: Vitals Drawer, SOAP Cart, Handoff & 48px Touch
+   ========================================================================== */
+:root {
+  --osrawy-touch-min: 48px;
+  --vitals-drawer-top: 44px;
+}
+
+/* 1. 48px Ergonomic Touch Targets */
+.osrawy-seg-btn,
+.osrawy-ux-btn,
+#tab-leaflets button:not(.icon-tool-btn):not(.icon-btn),
+.osrawy-vitals-field input,
+.osrawy-vitals-field select {
+  min-height: var(--osrawy-touch-min);
+}
+
+.osrawy-ux-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--surface2, #f1f5f9);
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.osrawy-ux-btn.is-primary {
+  background: var(--app-primary, var(--teal, #0d9488));
+  border-color: var(--app-primary, var(--teal, #0d9488));
+  color: #ffffff;
+}
+
+/* 2. Sticky Tap-to-Edit Vitals Quick Drawer */
+#sticky-vitals-summary.sticky-vitals-bar {
+  cursor: pointer;
+}
+
+.osrawy-vitals-quick-drawer {
+  display: none;
+  position: sticky;
+  top: var(--vitals-drawer-top, 44px);
+  z-index: 998;
+  background: var(--surface, #ffffff);
+  color: var(--ink, #0f172a);
+  border-bottom: 2px solid var(--app-primary, var(--teal, #0d9488));
+  padding: 12px 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.osrawy-vitals-quick-drawer.is-open {
+  display: block;
+}
+
+.osrawy-vitals-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+  gap: 10px;
+  align-items: end;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.osrawy-vitals-field label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  margin-bottom: 4px;
+}
+
+.osrawy-vitals-field input,
+.osrawy-vitals-field select {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--surface2, #f8fafc);
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+/* 3. Floating SOAP Cart Pill (Opposite #quick-jump-rx-btn at inset-inline-start) */
+.osrawy-soap-fab {
+  position: fixed;
+  bottom: calc(var(--nav-h, 64px) + 14px + env(safe-area-inset-bottom, 0px));
+  inset-inline-start: 16px;
+  z-index: 950;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.15));
+  background: var(--surface, #ffffff);
+  color: var(--ink, #0f172a);
+  font-weight: 700;
+  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
+
+.osrawy-soap-badge {
+  background: var(--app-primary, var(--teal, #0d9488));
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+/* SOAP Backdrop & Drawer (z-index: 1050 above .osrawy-bottom-nav at 1000) */
+.osrawy-soap-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.osrawy-soap-backdrop.is-open {
+  display: block;
+}
+
+.osrawy-soap-drawer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 1050;
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--surface, #ffffff);
+  color: var(--ink, #0f172a);
+  border-top: 2px solid var(--app-primary, var(--teal, #0d9488));
+  border-radius: 18px 18px 0 0;
+  padding: 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+  box-shadow: 0 -12px 32px rgba(15, 23, 42, 0.28);
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(105%);
+  transition: transform 0.22s ease-out, visibility 0s linear 0.22s;
+}
+
+.osrawy-soap-drawer.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: transform 0.22s ease-out, visibility 0s linear 0s;
+}
+
+.osrawy-soap-textarea {
+  width: 100%;
+  min-height: 160px;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--surface2, #f8fafc);
+  color: var(--ink, #0f172a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  direction: ltr;
+  text-align: left;
+  resize: vertical;
+}
+
+/* 4. Full-Screen Patient Handoff Mode (#tab-leaflets) */
+body.osrawy-patient-mode #sticky-vitals-summary,
+body.osrawy-patient-mode .sticky-vitals-bar,
+body.osrawy-patient-mode .osrawy-vitals-quick-drawer,
+body.osrawy-patient-mode .top-nav-bar,
+body.osrawy-patient-mode #clinical-guardrail-banner,
+body.osrawy-patient-mode #patient-summary-bar,
+body.osrawy-patient-mode #quick-jump-rx-btn,
+body.osrawy-patient-mode .quick-jump-pill,
+body.osrawy-patient-mode .osrawy-bottom-nav,
+body.osrawy-patient-mode .osrawy-soap-fab,
+body.osrawy-patient-mode .osrawy-soap-drawer,
+body.osrawy-patient-mode .osrawy-soap-backdrop,
+body.osrawy-patient-mode .clinician-only-controls {
+  display: none !important;
+}
+
+body.osrawy-patient-mode {
+  padding-top: env(safe-area-inset-top, 12px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 16px) !important;
+}
+
+.osrawy-handoff-exit-bar {
+  display: none;
+  margin: 10px 14px 4px;
+  justify-content: flex-end;
+}
+
+body.osrawy-patient-mode .osrawy-handoff-exit-bar {
+  display: flex;
+}
+
+.clinician-only-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin: 10px 14px 4px;
+}
+
+.osrawy-vitals-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .osrawy-soap-fab {
+    inset-inline-start: 10px;
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 0.76rem;
+    gap: 5px;
+    max-width: calc(50vw - 14px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .quick-jump-pill {
+    inset-inline-end: 10px !important;
+    padding: 7px 10px !important;
+    max-width: calc(50vw - 14px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .quick-jump-pill .jump-text {
+    font-size: 11.5px !important;
+  }
 }

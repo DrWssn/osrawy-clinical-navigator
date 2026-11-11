@@ -728,7 +728,7 @@
                   <span style="font-size:11px;color:var(--muted);">${isAr ? 'ISO/IEC 18004 الإصدار 6-L (بدون إنترنت 100%)' : 'ISO/IEC 18004 Version 6-L (100% Offline)'}</span>
                 </div>
               </div>
-              <button type="button" class="icon-btn" id="close-qr-modal-btn" aria-label="Close">✕</button>
+              <button type="button" class="icon-btn" id="close-qr-modal-btn" style="color:var(--ink)" aria-label="Close">✕</button>
             </div>
             <div class="modal-body text-center" style="padding:20px 10px;">
               <div id="leaflet-qr-svg-container" class="qr-svg-box">
@@ -962,17 +962,44 @@
         if (qrModal) qrModal.classList.remove('open');
       }
 
+      if (qrModal) {
+        qrModal.addEventListener('click', (e) => {
+          if (e.target === qrModal) closeQrModal();
+        });
+      }
       if (closeQrBtn) closeQrBtn.addEventListener('click', closeQrModal);
       if (dismissQrBtn) dismissQrBtn.addEventListener('click', closeQrModal);
       if (copyQrTextBtn) {
         copyQrTextBtn.addEventListener('click', async () => {
           const shareText = buildShareText(targets, currentLang, currentCondition);
-          if (navigator && navigator.clipboard) {
-            await navigator.clipboard.writeText(shareText);
+          const notifyQrCopied = () => {
             if (window.RxShare && typeof window.RxShare.showToast === 'function') {
               window.RxShare.showToast(currentLang === 'ar' ? '✅ تم نسخ نص النشرة بنجاح' : '✅ Leaflet text copied');
             }
+          };
+          let copied = false;
+          if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+              await navigator.clipboard.writeText(shareText);
+              copied = true;
+            } catch (_) {}
           }
+          if (!copied && typeof document !== 'undefined' && typeof document.createElement === 'function') {
+            try {
+              const ta = document.createElement('textarea');
+              ta.value = shareText;
+              if (ta.style) {
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+              }
+              document.body.appendChild(ta);
+              if (typeof ta.focus === 'function') ta.focus();
+              if (typeof ta.select === 'function') ta.select();
+              copied = Boolean(typeof document.execCommand === 'function' && document.execCommand('copy'));
+              ta.remove();
+            } catch (_) {}
+          }
+          if (copied) notifyQrCopied();
           closeQrModal();
         });
       }

@@ -308,7 +308,20 @@ const I18n = (function() {
       chk_statin_intol: "عدم تحمل الستاتين (Statin Intolerant)",
       chk_on_ezetimibe: "يتناول إيزيتيميب (Ezetimibe)",
       ldl_modal_title: "أهداف الكوليسترول وخطة الستاتين (ASCVD LDL-C Goals & Statins)",
-      ldl_modal_sub: "إرشادات الجمعية الأمريكية للسكري ADA 2025 والجمعية الأوروبية لأمراض القلب ESC 2023"
+      ldl_modal_sub: "إرشادات الجمعية الأمريكية للسكري ADA 2025 والجمعية الأوروبية لأمراض القلب ESC 2023",
+      vitals_egfr_label: "الترشيح الكبيبي eGFR",
+      vitals_k_label: "البوتاسيوم K+",
+      vitals_sbp_label: "الضغط الانقباضي SBP",
+      vitals_dbp_label: "الضغط الانبساطي DBP",
+      vitals_preg_label: "الحمل / Pregnancy",
+      vitals_preg_no: "لا",
+      vitals_preg_yes: "نعم (حامل)",
+      soap_fab_label: "ملخص SOAP",
+      soap_drawer_title: "ملخص الاستشارة الطبية (SOAP)",
+      soap_pull_btn: "🔄 تحديث من المحركات",
+      soap_copy_btn: "📋 نسخ الملاحظة",
+      handoff_enter_btn: "📱 وضع شاشة المريض",
+      handoff_exit_btn: "✕ إنهاء وضع المريض"
     },
 
     en: {
@@ -610,7 +623,20 @@ const I18n = (function() {
       chk_statin_intol: "Statin Intolerant",
       chk_on_ezetimibe: "On Ezetimibe",
       ldl_modal_title: "ASCVD LDL-C Goals & Statin Intensity Guide",
-      ldl_modal_sub: "ADA Standards of Care 2025 & ESC 2023 Guidelines"
+      ldl_modal_sub: "ADA Standards of Care 2025 & ESC 2023 Guidelines",
+      vitals_egfr_label: "eGFR (mL/min)",
+      vitals_k_label: "Serum K+ (mmol/L)",
+      vitals_sbp_label: "Systolic BP (SBP)",
+      vitals_dbp_label: "Diastolic BP (DBP)",
+      vitals_preg_label: "Pregnancy Status",
+      vitals_preg_no: "No",
+      vitals_preg_yes: "Yes (Pregnant)",
+      soap_fab_label: "SOAP Note",
+      soap_drawer_title: "EMR SOAP Consultation Summary",
+      soap_pull_btn: "🔄 Pull Active Engines",
+      soap_copy_btn: "📋 Copy SOAP Note",
+      handoff_enter_btn: "📱 Patient Handoff Mode",
+      handoff_exit_btn: "✕ Exit Patient Mode"
     }
   };
 

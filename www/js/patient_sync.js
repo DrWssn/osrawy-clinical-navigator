@@ -317,9 +317,9 @@ const PatientSync = (function() {
     return l === 'ezetimibe' || l.includes('ezetimibe');
   }
 
-  function setDomValue(el, val) {
+  function setDomValue(el, val, force) {
     if (!el || val === undefined || val === null) return;
-    if (typeof document !== 'undefined' && document.activeElement === el) return;
+    if (!force && typeof document !== 'undefined' && document.activeElement === el) return;
     const str = String(val);
     if (String(el.value) !== str) el.value = str;
   }
@@ -483,21 +483,22 @@ const PatientSync = (function() {
   function syncDomFromState(isFullResetOrApply) {
     if (typeof document === 'undefined') return;
     const $ = id => document.getElementById(id);
+    const force = Boolean(isFullResetOrApply);
 
     // Diabetes inputs
-    setDomValue($('pname'), currentPatient.name || '');
-    setDomValue($('age'), currentPatient.age);
-    setDomValue($('sex'), currentPatient.sex || 'm');
-    setDomValue($('wt'), currentPatient.wt);
-    setDomValue($('iwt'), currentPatient.wt);
-    setDomValue($('ht'), currentPatient.ht);
-    setDomValue($('dur'), currentPatient.dur);
-    setDomValue($('hf'), currentPatient.hf || 'none');
-    setDomValue($('a1c'), currentPatient.a1c);
-    setDomValue($('fpg'), currentPatient.fpg);
-    setDomValue($('ifpg'), currentPatient.fpg);
-    setDomValue($('egfr'), currentPatient.egfr);
-    setDomValue($('uacr'), currentPatient.uacr);
+    setDomValue($('pname'), currentPatient.name || '', force);
+    setDomValue($('age'), currentPatient.age, force);
+    setDomValue($('sex'), currentPatient.sex || 'm', force);
+    setDomValue($('wt'), currentPatient.wt, force);
+    setDomValue($('iwt'), currentPatient.wt, force);
+    setDomValue($('ht'), currentPatient.ht, force);
+    setDomValue($('dur'), currentPatient.dur, force);
+    setDomValue($('hf'), currentPatient.hf || 'none', force);
+    setDomValue($('a1c'), currentPatient.a1c, force);
+    setDomValue($('fpg'), currentPatient.fpg, force);
+    setDomValue($('ifpg'), currentPatient.fpg, force);
+    setDomValue($('egfr'), currentPatient.egfr, force);
+    setDomValue($('uacr'), currentPatient.uacr, force);
     setDomChecked($('cheap'), currentPatient.cheap !== false);
     setDomChecked($('ascvd'), currentPatient.ascvd);
     setDomChecked($('hrisk'), currentPatient.hrisk);
@@ -523,15 +524,15 @@ const PatientSync = (function() {
     setDomChecked($('c-ins'), dmTx.ins);
 
     // HTN inputs
-    setDomValue($('sbp'), currentPatient.sbp);
-    setDomValue($('dbp'), currentPatient.dbp);
-    setDomValue($('htn-age'), currentPatient.age);
-    setDomValue($('htn-sex'), currentPatient.sex || 'm');
-    setDomValue($('meds'), String(currentPatient.medsCount !== undefined ? currentPatient.medsCount : '0'));
+    setDomValue($('sbp'), currentPatient.sbp, force);
+    setDomValue($('dbp'), currentPatient.dbp, force);
+    setDomValue($('htn-age'), currentPatient.age, force);
+    setDomValue($('htn-sex'), currentPatient.sex || 'm', force);
+    setDomValue($('meds'), String(currentPatient.medsCount !== undefined ? currentPatient.medsCount : '0'), force);
     setDomChecked($('oob'), currentPatient.oob);
-    setDomValue($('htn-egfr'), currentPatient.egfr);
-    setDomValue($('htn-uacr'), currentPatient.uacr);
-    setDomValue($('k'), currentPatient.k);
+    setDomValue($('htn-egfr'), currentPatient.egfr, force);
+    setDomValue($('htn-uacr'), currentPatient.uacr, force);
+    setDomValue($('k'), currentPatient.k, force);
     setDomChecked($('dm'), currentPatient.diabetes !== false && currentPatient.dm !== false);
     setDomChecked($('cad'), currentPatient.ascvd);
     setDomChecked($('hf-htn'), currentPatient.hf === 'hfref');
@@ -549,37 +550,56 @@ const PatientSync = (function() {
     const tcVal = currentPatient.tc !== undefined ? currentPatient.tc : currentPatient.totalCholesterol;
     const hdlVal = currentPatient.hdl !== undefined ? currentPatient.hdl : currentPatient.hdlC;
     const lunitVal = currentPatient.lunit || currentPatient.lipidUnit || 'mg';
-    setDomValue($('tc'), tcVal);
-    setDomValue($('hdl'), hdlVal);
-    setDomValue($('lunit'), lunitVal);
+    setDomValue($('tc'), tcVal, force);
+    setDomValue($('hdl'), hdlVal, force);
+    setDomValue($('lunit'), lunitVal, force);
 
     // DLP inputs
-    setDomValue($('dlp-ldl'), currentPatient.ldlC);
-    setDomValue($('dlp-tc'), tcVal);
-    setDomValue($('dlp-hdl'), hdlVal);
-    setDomValue($('dlp-tg'), currentPatient.triglycerides);
-    setDomValue($('dlp-alt'), currentPatient.altUl);
-    setDomValue($('dlp-unit'), lunitVal);
+    setDomValue($('dlp-ldl'), currentPatient.ldlC, force);
+    setDomValue($('dlp-tc'), tcVal, force);
+    setDomValue($('dlp-hdl'), hdlVal, force);
+    setDomValue($('dlp-tg'), currentPatient.triglycerides, force);
+    setDomValue($('dlp-alt'), currentPatient.altUl, force);
+    setDomValue($('dlp-unit'), lunitVal, force);
     setDomChecked($('dlp-statin-intol'), currentPatient.statinIntolerant);
     setDomChecked($('dlp-ezetimibe'), currentPatient.onEzetimibe || allMeds.some(isEzetMed));
 
     // Tools / Primary Care mounted inputs if currently rendered
-    setDomValue($('tab-age'), currentPatient.age);
-    setDomValue($('tab-sex'), currentPatient.sex || 'm');
-    setDomValue($('tab-wt'), currentPatient.wt);
-    if (currentPatient.scr !== undefined && currentPatient.scr !== null && currentPatient.scr !== '') {
-      setDomValue($('tab-scr'), currentPatient.scr);
-      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg');
+    setDomValue($('tab-age'), currentPatient.age, force);
+    setDomValue($('tab-sex'), currentPatient.sex || 'm', force);
+    setDomValue($('tab-wt'), currentPatient.wt, force);
+    if (currentPatient.scr !== undefined && currentPatient.scr !== null && currentPatient.scr !== '' && parseFloat(currentPatient.scr) > 0) {
+      setDomValue($('tab-scr'), currentPatient.scr, force);
+      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg', force);
     } else if (isFullResetOrApply) {
-      setDomValue($('tab-scr'), 1.1);
-      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg');
+      setDomValue($('tab-scr'), 1.1, force);
+      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg', force);
     }
-    setDomValue($('tab-kdigo-egfr'), currentPatient.egfr);
-    setDomValue($('tab-kdigo-uacr'), currentPatient.uacr);
-    setDomValue($('pc-thy-wt'), currentPatient.wt);
+    setDomValue($('tab-kdigo-egfr'), currentPatient.egfr, force);
+    setDomValue($('tab-kdigo-uacr'), currentPatient.uacr, force);
+    setDomValue($('pc-thy-wt'), currentPatient.wt, force);
     setDomChecked($('pc-thy-ascvd'), currentPatient.ascvd);
     setDomChecked($('pc-thy-preg'), isPreg);
     setDomChecked($('pc-thy-asthma'), currentPatient.asthma);
+
+    if (isFullResetOrApply) {
+      setDomValue($('pc-asthma-saba'), 2, true);
+      setDomValue($('pc-asthma-step'), 2, true);
+      setDomValue($('pc-asthma-track'), 1, true);
+      setDomChecked($('pc-asthma-day'), false);
+      setDomChecked($('pc-asthma-night'), false);
+      setDomChecked($('pc-asthma-limit'), false);
+      setDomValue($('pc-copd-exac'), 1, true);
+      setDomValue($('pc-copd-hosp'), 0, true);
+      setDomValue($('pc-copd-mmrc'), 2, true);
+      setDomValue($('pc-copd-cat'), 14, true);
+      setDomValue($('pc-copd-eos'), 180, true);
+      setDomValue($('pc-thy-tsh'), 6.8, true);
+      setDomValue($('pc-thy-ft4'), 1.1, true);
+      setDomValue($('tab-fib4-ast'), 38, true);
+      setDomValue($('tab-fib4-alt'), 42, true);
+      setDomValue($('tab-fib4-plt'), 210, true);
+    }
   }
 
   function renderEngines() {
@@ -901,6 +921,7 @@ const PatientSync = (function() {
     updatePatientBar();
     notifyUpdated();
     renderEngines();
+    return currentPatient;
   }
 
   function setEGFR(val) {

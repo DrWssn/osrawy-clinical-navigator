@@ -1243,7 +1243,11 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
       this._innerHTML = '';
       this.textContent = '';
       this.innerText = '';
-      this.style = {};
+      this.style = {
+        _props: {},
+        setProperty(k, v) { this._props[k] = String(v); },
+        getPropertyValue(k) { return this._props[k] || ''; }
+      };
       this.dataset = {};
       this.attributes = {};
       this.listeners = {};
@@ -1262,6 +1266,7 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
             else self.classList.classes.add(c);
           } else if (f) self.classList.classes.add(c);
           else self.classList.classes.delete(c);
+          return self.classList.classes.has(c);
         }
       };
     }
@@ -1333,6 +1338,11 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
     const valM = /\bvalue="([^"]*)"/i.exec(attrs);
     if (valM) el.value = valM[1];
     if (/\bchecked\b/i.test(attrs)) el.checked = true;
+    const clsM = /\bclass="([^"]*)"/i.exec(attrs);
+    if (clsM) {
+      el.className = clsM[1];
+      clsM[1].split(/\s+/).filter(Boolean).forEach(c => el.classList.add(c));
+    }
     const onclickM = /\bonclick="([^"]*)"/i.exec(attrs);
     if (onclickM) el.setAttribute('onclick', onclickM[1]);
     if (tag.toLowerCase() === 'select') {
@@ -1392,15 +1402,25 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
     scrollTo: () => {},
     document: {
       readyState: 'loading',
+      activeElement: null,
       documentElement: docEl2,
       body: body2,
       getElementById: id => domMap.get(id) || null,
       createElement: tag => new RealMockEl(tag),
-      querySelector: sel => sel.startsWith('#') ? (domMap.get(sel.slice(1)) || null) : null,
+      querySelector: sel => {
+        if (sel.startsWith('#')) return domMap.get(sel.slice(1)) || null;
+        if (sel === '.modal-overlay.open') {
+          return [...domMap.values()].find(el => el.classList.contains('modal-overlay') && el.classList.contains('open')) || null;
+        }
+        return null;
+      },
       querySelectorAll: sel => {
         if (sel.includes('main-view-section')) {
           return ['tab-diabetes', 'tab-htn', 'tab-drugs', 'tab-recent', 'tab-dlp', 'tab-tools', 'tab-leaflets']
             .map(id => domMap.get(id)).filter(Boolean);
+        }
+        if (sel === '.modal-overlay.open') {
+          return [...domMap.values()].filter(el => el.classList.contains('modal-overlay') && el.classList.contains('open'));
         }
         return [];
       },
@@ -1423,6 +1443,17 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
     vm.runInContext(fs.readFileSync(path.join(jsDir, s), 'utf8'), ctx2, { filename: s });
   }
   win2.document.dispatchEvent({ type: 'DOMContentLoaded' });
+  const bootUxSnapshot = {
+    egfr: domMap.get('quick-vital-egfr').value,
+    k: domMap.get('quick-vital-k').value,
+    sbp: domMap.get('quick-vital-sbp').value,
+    dbp: domMap.get('quick-vital-dbp').value,
+    preg: domMap.get('quick-vital-pregnancy').value,
+    pregDisabled: domMap.get('quick-vital-pregnancy').disabled,
+    drawerTopVar: docEl2.style.getPropertyValue('--vitals-drawer-top'),
+    soapVal: domMap.get('osrawy-soap-textarea').value
+  };
+  global.__case23Env = { win2, domMap, body2, docEl2, bootUxSnapshot };
 
   // Verify fresh startup HTN defaults align with DM & PatientSync.defaultState (before any edits)
   assert(
@@ -1689,6 +1720,563 @@ runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical 
       failedTests++;
       console.error("  ❌ Exception in Case 22:", err);
     }
+  }
+
+  if (global.__case23Env) {
+    runCase(23, "Verified UX Controller (Vitals Drawer, SOAP Cart, Patient Handoff, Back Priority)", () => {
+      const { win2, domMap, body2, bootUxSnapshot } = global.__case23Env;
+      const doc2 = win2.document;
+
+      // 23a: Synchronous boot initialization even when setTimeout is stubbed
+      assert(
+        bootUxSnapshot.egfr === '68' &&
+        bootUxSnapshot.k === '4.6' &&
+        bootUxSnapshot.sbp === '148' &&
+        bootUxSnapshot.dbp === '94' &&
+        bootUxSnapshot.preg === 'false' &&
+        bootUxSnapshot.pregDisabled === true &&
+        bootUxSnapshot.drawerTopVar === '44px' &&
+        bootUxSnapshot.soapVal.includes('BP 148/94 mmHg'),
+        `bootVerifiedUX() syncs quick vitals, CSS top offset, male preg lock, and SOAP header synchronously on DOMContentLoaded (snap=${JSON.stringify({ ...bootUxSnapshot, soapVal: undefined })})`
+      );
+
+      // 23b: Vitals Quick Drawer open/toggle, focused input protection, range guard & male pregnancy safety
+      win2.PatientSync.resetPatient();
+      const stickyBar = domMap.get('sticky-vitals-summary');
+      const vDrawer = domMap.get('osrawy-vitals-quick-drawer');
+      const qEgfr = domMap.get('quick-vital-egfr');
+      const qSbp = domMap.get('quick-vital-sbp');
+      const qPreg = domMap.get('quick-vital-pregnancy');
+
+      stickyBar.click();
+      assert(
+        vDrawer.classList.contains('is-open') &&
+        vDrawer.getAttribute('aria-hidden') === 'false' &&
+        stickyBar.getAttribute('aria-expanded') === 'true',
+        "Clicking #sticky-vitals-summary opens Vitals Quick Drawer and updates ARIA attributes"
+      );
+
+      // Active focus protection: don't overwrite actively typed partial text
+      doc2.activeElement = qEgfr;
+      qEgfr.value = '4.';
+      win2.PatientSync.updatePatient({ egfr: 77 });
+      assert(qEgfr.value === '4.', `Focused quick vital input preserves in-progress typing (got='${qEgfr.value}')`);
+      doc2.activeElement = null;
+
+      // Live input physiological bounds: partial '1' shouldn't push bogus SBP=1; valid '162' updates PatientSync synchronously
+      const sbpBeforePartial = win2.PatientSync.get().sbp;
+      qSbp.value = '1';
+      qSbp.dispatchEvent('input');
+      assert(win2.PatientSync.get().sbp === sbpBeforePartial, `Partial keystroke SBP='1' does not overwrite PatientSync.sbp (${win2.PatientSync.get().sbp})`);
+      qSbp.value = '162';
+      qSbp.dispatchEvent('input');
+      assert(
+        win2.PatientSync.get().sbp === 162 &&
+        domMap.get('osrawy-soap-textarea').value.includes('BP 162/'),
+        "Valid live SBP='162' input syncs PatientSync and updates SOAP Objective vitals line"
+      );
+
+      // Commit out-of-range eGFR=-10 restores last valid state
+      qEgfr.value = '-10';
+      qEgfr.dispatchEvent('change');
+      assert(qEgfr.value === '77' && win2.PatientSync.get().egfr === 77, `Invalid committed eGFR='-10' restores valid state (egfr=${qEgfr.value})`);
+
+      // Male pregnancy guard vs female toggle
+      win2.PatientSync.updatePatient({ sex: 'm', pregnancy: false });
+      assert(qPreg.disabled === true, "Male patient disables #quick-vital-pregnancy control");
+      qPreg.value = 'true';
+      qPreg.dispatchEvent('change');
+      assert(win2.PatientSync.get().pregnancy === false && qPreg.value === 'false', "Forcing quick pregnancy change on male patient does not trigger pregnancy mode");
+      win2.PatientSync.updatePatient({ sex: 'f' });
+      assert(qPreg.disabled === false, "Female patient enables #quick-vital-pregnancy control");
+      qPreg.value = 'true';
+      qPreg.dispatchEvent('change');
+      assert(win2.PatientSync.get().pregnancy === true && domMap.get('osrawy-soap-textarea').value.includes('Pregnancy: YES'), "Toggling pregnancy in quick drawer for female updates PatientSync and SOAP header");
+      win2.PatientSync.resetPatient();
+
+      // 23c: SOAP Consultation Cart harvesting, hidden/untouched Primary Care gating, stale deletion, reset isolation, copy fallback
+      win2.PrimaryCareEngine.renderPrimaryCareTab('primary-care-container');
+      const soapFab = domMap.get('osrawy-soap-fab');
+      const soapDrawer = domMap.get('osrawy-soap-drawer');
+      const soapTxt = domMap.get('osrawy-soap-textarea');
+      const soapCount = domMap.get('osrawy-soap-count');
+      const soapSyncBtn = domMap.get('osrawy-soap-sync-active');
+      const soapClearBtn = domMap.get('osrawy-soap-clear');
+      const soapCopyBtn = domMap.get('osrawy-soap-copy');
+
+      soapFab.click();
+      assert(
+        soapDrawer.classList.contains('is-open') &&
+        soapTxt.value.includes('[Diabetes]') &&
+        soapTxt.value.includes('[Hypertension]') &&
+        !soapTxt.value.includes('[Asthma (GINA)]') &&
+        !soapTxt.value.includes('[COPD (GOLD)]') &&
+        !soapTxt.value.includes('[Thyroid]'),
+        "SOAP Cart harvests DM/HTN without injecting untouched/hidden Primary Care defaults (Asthma/COPD/Thyroid)"
+      );
+
+      // Rx Plan capture + stale deletion when cleared
+      const origGetRx = win2.RxShare.getPrescriptionData;
+      try {
+        win2.RxShare.getPrescriptionData = () => ({ items: [{ drug: 'Metformin 500mg', directions: '1 tab BID' }] });
+        soapSyncBtn.click();
+        assert(soapTxt.value.includes('[Rx Plan] Metformin 500mg (1 tab BID)'), "SOAP Cart captures structured RxShare items");
+
+        win2.RxShare.getPrescriptionData = () => ({ items: [] });
+        soapSyncBtn.click();
+        assert(!soapTxt.value.includes('[Rx Plan]'), "SOAP Cart removes stale [Rx Plan] section when prescription items become empty");
+      } finally {
+        win2.RxShare.getPrescriptionData = origGetRx;
+      }
+
+      // Explicit Primary Care COPD reveal allows COPD capture; Asthma explicit event allows Asthma capture
+      domMap.get('pc-panel-copd').style.display = 'block';
+      soapSyncBtn.click();
+      assert(soapTxt.value.includes('[COPD (GOLD)]') && parseInt(soapCount.textContent, 10) >= 3, "Revealing COPD panel and syncing captures [COPD (GOLD)] cleanly");
+
+      doc2.dispatchEvent({ type: 'click', target: { dataset: { pcTab: 'asthma' }, getAttribute: () => 'asthma' } });
+      soapSyncBtn.click();
+      assert(soapTxt.value.includes('[Asthma (GINA)]'), "Explicitly interacting with Asthma subtab allows [Asthma (GINA)] capture");
+
+      soapClearBtn.click();
+      assert(soapCount.textContent === '0' && soapTxt.value.includes('No active engine outputs captured yet'), "SOAP Clear resets count to 0 and clears captured sections");
+
+      soapSyncBtn.click();
+      assert(parseInt(soapCount.textContent, 10) >= 1, "Precondition: SOAP cart repopulated before patient reset");
+      win2.PatientSync.resetPatient();
+      assert(soapCount.textContent === '0' && !soapTxt.value.includes('[COPD (GOLD)]') && !soapTxt.value.includes('[Asthma (GINA)]'), "PatientSync.resetPatient() wipes prior patient's SOAP cart sections");
+
+      soapSyncBtn.click();
+      assert(parseInt(soapCount.textContent, 10) >= 1, "Precondition: SOAP cart repopulated before switching patient");
+      win2.PatientSync.applyPatient({ name: 'Patient B', age: 48, sex: 'f', sbp: 126, dbp: 78, egfr: 92, k: 4.1 });
+      assert(soapCount.textContent === '0' && soapTxt.value.includes('BP 126/78 mmHg') && !soapTxt.value.includes('[Diabetes]'), "PatientSync.applyPatient() wipes prior patient's SOAP sections and updates Objective vitals");
+
+      // Clipboard fallback check
+      const origClip = win2.navigator.clipboard;
+      const origExec = doc2.execCommand;
+      const origToast = win2.RxShare.showToast;
+      let toastCalls = 0;
+      try {
+        win2.navigator.clipboard = undefined;
+        win2.RxShare.showToast = () => { toastCalls++; };
+        doc2.execCommand = () => false;
+        soapCopyBtn.click();
+        assert(toastCalls === 0 && soapTxt.getAttribute('readonly') === 'readonly', "Fallback copy does not fire fake toast when execCommand returns false and restores readonly");
+        doc2.execCommand = () => true;
+        soapCopyBtn.click();
+        assert(toastCalls === 1 && soapTxt.getAttribute('readonly') === 'readonly', "Fallback copy shows toast when execCommand succeeds and restores readonly");
+      } finally {
+        win2.navigator.clipboard = origClip;
+        doc2.execCommand = origExec;
+        win2.RxShare.showToast = origToast;
+      }
+
+      // 23d: Patient Handoff Mode + Android Back / Escape Priority Order
+      win2.switchMainTab('tab-leaflets');
+      const qrModal = domMap.get('leaflet-qr-modal');
+      const settingsModal = domMap.get('settings-modal');
+      const enterHandoff = domMap.get('osrawy-enter-handoff-btn');
+
+      // Open both drawers before entering handoff mode
+      if (!vDrawer.classList.contains('is-open')) stickyBar.click();
+      if (!soapDrawer.classList.contains('is-open')) soapFab.click();
+      enterHandoff.click();
+      assert(
+        body2.classList.contains('osrawy-patient-mode') &&
+        !vDrawer.classList.contains('is-open') &&
+        !soapDrawer.classList.contains('is-open'),
+        "Entering Patient Handoff Mode sets body.osrawy-patient-mode and closes open Vitals & SOAP drawers"
+      );
+
+      // Opening #leaflet-qr-modal inside Handoff Mode: Back closes QR modal FIRST, then Handoff Mode
+      qrModal.classList.add('open');
+      const back1 = win2.handleAndroidBack();
+      assert(back1 === true && !qrModal.classList.contains('open') && body2.classList.contains('osrawy-patient-mode'), "handleAndroidBack() closes #leaflet-qr-modal BEFORE exiting Patient Handoff Mode");
+      const back2 = win2.handleAndroidBack();
+      assert(back2 === true && !body2.classList.contains('osrawy-patient-mode'), "Second handleAndroidBack() exits Patient Handoff Mode");
+
+      // Modal over SoapDrawer over VitalsDrawer Escape priority order
+      stickyBar.click();
+      soapFab.click();
+      settingsModal.classList.add('open');
+      win2.dispatchEvent({ type: 'keydown', key: 'Escape' });
+      assert(!settingsModal.classList.contains('open') && soapDrawer.classList.contains('is-open') && vDrawer.classList.contains('is-open'), "1st Escape closes topmost .modal-overlay.open (#settings-modal) before drawers");
+      win2.dispatchEvent({ type: 'keydown', key: 'Escape' });
+      assert(!soapDrawer.classList.contains('is-open') && vDrawer.classList.contains('is-open'), "2nd Escape closes SOAP drawer before Vitals drawer");
+      win2.dispatchEvent({ type: 'keydown', key: 'Escape' });
+      assert(!vDrawer.classList.contains('is-open') && stickyBar.getAttribute('aria-expanded') === 'false', "3rd Escape closes Vitals drawer and resets aria-expanded");
+
+      // Switching away from tab-leaflets exits osrawy-patient-mode; Escape alone on form tab does not force-navigate
+      win2.switchMainTab('tab-leaflets');
+      enterHandoff.click();
+      win2.switchMainTab('tab-htn');
+      assert(!body2.classList.contains('osrawy-patient-mode'), "Switching tab away from tab-leaflets automatically exits osrawy-patient-mode");
+      win2.dispatchEvent({ type: 'keydown', key: 'Escape' });
+      assert(domMap.get('tab-htn').hidden === false, "Escape with no overlays open does not unexpectedly kick clinician off tab-htn");
+      const backTab = win2.handleAndroidBack();
+      assert(backTab === true && domMap.get('tab-diabetes').hidden === false, "handleAndroidBack() navigates from tab-htn back to tab-diabetes cleanly");
+
+      // 23e: Post-review fixes verification (QR close contrast & backdrop, tab-tools state persistence, partial K+ decimal guard, real DOM cloneNode SOAP extraction)
+      win2.switchMainTab('tab-leaflets');
+      const leafHtml = domMap.get('patient-leaflet-container').innerHTML || '';
+      assert(
+        leafHtml.includes('id="close-qr-modal-btn"') && leafHtml.includes('color:var(--ink)'),
+        "QR modal close button (#close-qr-modal-btn) includes explicit color:var(--ink) contrast styling"
+      );
+      const qrModal2 = domMap.get('leaflet-qr-modal');
+      qrModal2.classList.add('open');
+      qrModal2.dispatchEvent({ type: 'click' });
+      assert(!qrModal2.classList.contains('open'), "Clicking #leaflet-qr-modal backdrop closes the QR modal");
+
+      // tab-tools preserves Primary Care subtab & transient inputs + Clinical Tools transient inputs (incl. FIB-4) across tab switches and I18n toggle, and clears cleanly on applyPatient/resetPatient
+      win2.switchMainTab('tab-tools');
+      domMap.get('pc-panel-asthma').style.display = 'none';
+      domMap.get('pc-panel-copd').style.display = 'block';
+      domMap.get('pc-asthma-saba').value = '5';
+      domMap.get('pc-asthma-step').value = '4';
+      domMap.get('pc-asthma-track').value = '2';
+      domMap.get('pc-asthma-day').checked = true;
+      domMap.get('pc-asthma-night').checked = true;
+      domMap.get('pc-asthma-limit').checked = true;
+      domMap.get('pc-copd-exac').value = '4';
+      domMap.get('pc-copd-hosp').value = '2';
+      domMap.get('pc-copd-mmrc').value = '3';
+      domMap.get('pc-copd-cat').value = '22';
+      domMap.get('pc-copd-eos').value = '360';
+      domMap.get('pc-thy-tsh').value = '14.5';
+      domMap.get('pc-thy-ft4').value = '0.6';
+      domMap.get('pc-copd-exac').dispatchEvent('input');
+      domMap.get('tab-scr').value = '2.4';
+      domMap.get('tab-scr-unit').value = 'mg';
+      domMap.get('tab-kdigo-uacr').value = '450';
+      domMap.get('tab-fib4-ast').value = '120';
+      domMap.get('tab-fib4-alt').value = '80';
+      domMap.get('tab-fib4-plt').value = '95';
+      domMap.get('tab-scr').dispatchEvent('input');
+      domMap.get('tab-kdigo-uacr').dispatchEvent('input');
+      domMap.get('tab-fib4-ast').dispatchEvent('input');
+      const expectedFib4BeforeReset = (Math.round((((parseFloat(domMap.get('tab-age').value) || 0) * 120) / (95 * Math.sqrt(80))) * 100) / 100).toFixed(2);
+
+      win2.switchMainTab('tab-diabetes');
+      win2.switchMainTab('tab-tools');
+      assert(
+        domMap.get('pc-asthma-saba').value === '5' &&
+        domMap.get('pc-asthma-step').value === '4' &&
+        domMap.get('pc-asthma-track').value === '2' &&
+        domMap.get('pc-asthma-day').checked === true &&
+        domMap.get('pc-copd-exac').value === '4' &&
+        domMap.get('pc-copd-hosp').value === '2' &&
+        domMap.get('pc-copd-mmrc').value === '3' &&
+        domMap.get('pc-copd-cat').value === '22' &&
+        domMap.get('pc-copd-eos').value === '360' &&
+        domMap.get('pc-thy-tsh').value === '14.5' &&
+        domMap.get('pc-thy-ft4').value === '0.6' &&
+        domMap.get('pc-panel-copd').style.display === 'block' &&
+        domMap.get('tab-scr').value === '2.4' &&
+        domMap.get('tab-kdigo-uacr').value === '450' &&
+        domMap.get('tab-fib4-ast').value === '120' &&
+        domMap.get('tab-fib4-alt').value === '80' &&
+        domMap.get('tab-fib4-plt').value === '95' &&
+        domMap.get('tab-fib4-results').innerHTML.includes(expectedFib4BeforeReset),
+        "Switching away from tab-tools and back preserves Primary Care subtab/inputs and Clinical Tools inputs (including FIB-4)"
+      );
+      win2.I18n.setLang('en');
+      assert(
+        domMap.get('tab-scr').value === '2.4' &&
+        domMap.get('tab-kdigo-uacr').value === '450' &&
+        domMap.get('tab-fib4-ast').value === '120' &&
+        domMap.get('tab-fib4-alt').value === '80' &&
+        domMap.get('tab-fib4-plt').value === '95' &&
+        domMap.get('tab-fib4-results').innerHTML.includes(expectedFib4BeforeReset) &&
+        domMap.get('tab-fib4-results').innerHTML.includes('High Risk') &&
+        domMap.get('tab-fib4-results').innerHTML.includes('Recommendation:'),
+        "Switching language to English preserves Clinical Tools transient inputs (including FIB-4) and renders English FIB-4 guidance"
+      );
+      win2.I18n.setLang('ar');
+      assert(
+        domMap.get('pc-copd-exac').value === '4' &&
+        domMap.get('pc-thy-tsh').value === '14.5' &&
+        domMap.get('pc-panel-copd').style.display === 'block' &&
+        domMap.get('tab-scr').value === '2.4' &&
+        domMap.get('tab-kdigo-uacr').value === '450' &&
+        domMap.get('tab-fib4-ast').value === '120' &&
+        domMap.get('tab-fib4-alt').value === '80' &&
+        domMap.get('tab-fib4-plt').value === '95' &&
+        domMap.get('tab-fib4-results').innerHTML.includes(expectedFib4BeforeReset) &&
+        domMap.get('tab-fib4-results').innerHTML.includes('خطورة عالية') &&
+        domMap.get('tab-fib4-results').innerHTML.includes('التوصية السريرية:'),
+        "Toggling language preserves Primary Care active subtab/inputs and Clinical Tools transient inputs (including FIB-4) in Arabic"
+      );
+
+      // Switching patient blurs active tool input and resets both Primary Care and Clinical Tools FIB-4/SCr inputs cleanly
+      doc2.activeElement = domMap.get('tab-fib4-ast');
+      win2.PatientSync.applyPatient({ name: 'Patient C', age: 42, sex: 'f', sbp: 120, dbp: 76, egfr: 95, k: 4.1 });
+      soapSyncBtn.click();
+      assert(
+        doc2.activeElement !== domMap.get('tab-fib4-ast') &&
+        domMap.get('pc-panel-asthma').style.display === 'block' &&
+        domMap.get('pc-panel-copd').style.display === 'none' &&
+        domMap.get('pc-panel-thyroid').style.display === 'none' &&
+        domMap.get('pc-asthma-saba').value === '2' &&
+        domMap.get('pc-asthma-step').value === '2' &&
+        domMap.get('pc-asthma-track').value === '1' &&
+        domMap.get('pc-asthma-day').checked === false &&
+        domMap.get('pc-asthma-night').checked === false &&
+        domMap.get('pc-asthma-limit').checked === false &&
+        domMap.get('pc-copd-exac').value === '1' &&
+        domMap.get('pc-copd-hosp').value === '0' &&
+        domMap.get('pc-copd-mmrc').value === '2' &&
+        domMap.get('pc-copd-cat').value === '14' &&
+        domMap.get('pc-copd-eos').value === '180' &&
+        domMap.get('pc-thy-tsh').value === '6.8' &&
+        domMap.get('pc-thy-ft4').value === '1.1' &&
+        domMap.get('tab-scr').value === '1.1' &&
+        domMap.get('tab-scr-unit').value === 'mg' &&
+        domMap.get('tab-fib4-ast').value === '38' &&
+        domMap.get('tab-fib4-alt').value === '42' &&
+        domMap.get('tab-fib4-plt').value === '210' &&
+        domMap.get('tab-fib4-results').innerHTML.includes('1.17') &&
+        !domMap.get('tab-fib4-results').innerHTML.includes(expectedFib4BeforeReset) &&
+        !soapTxt.value.includes('[COPD (GOLD)]'),
+        "PatientSync.applyPatient clears prior patient Primary Care inputs and FIB-4/SCr transient inputs cleanly without leaking into Patient C"
+      );
+
+      // Mutate Patient C's Primary Care (Thyroid subtab) & FIB-4 inputs, then verify PatientSync.resetPatient() clears them cleanly
+      domMap.get('pc-panel-asthma').style.display = 'none';
+      domMap.get('pc-panel-thyroid').style.display = 'block';
+      domMap.get('pc-asthma-saba').value = '6';
+      domMap.get('pc-copd-exac').value = '3';
+      domMap.get('pc-thy-tsh').value = '19.2';
+      domMap.get('pc-thy-ft4').value = '0.5';
+      domMap.get('tab-scr').value = '3.1';
+      domMap.get('tab-fib4-ast').value = '140';
+      domMap.get('tab-fib4-alt').value = '70';
+      domMap.get('tab-fib4-plt').value = '88';
+      domMap.get('tab-fib4-ast').dispatchEvent('input');
+      doc2.activeElement = domMap.get('pc-thy-tsh');
+      win2.PatientSync.resetPatient();
+      assert(
+        doc2.activeElement !== domMap.get('pc-thy-tsh') &&
+        domMap.get('pc-panel-asthma').style.display === 'block' &&
+        domMap.get('pc-panel-copd').style.display === 'none' &&
+        domMap.get('pc-panel-thyroid').style.display === 'none' &&
+        domMap.get('pc-asthma-saba').value === '2' &&
+        domMap.get('pc-copd-exac').value === '1' &&
+        domMap.get('pc-thy-tsh').value === '6.8' &&
+        domMap.get('pc-thy-ft4').value === '1.1' &&
+        domMap.get('tab-scr').value === '1.1' &&
+        domMap.get('tab-fib4-ast').value === '38' &&
+        domMap.get('tab-fib4-alt').value === '42' &&
+        domMap.get('tab-fib4-plt').value === '210' &&
+        !domMap.get('tab-fib4-results').innerHTML.includes('8.'),
+        "PatientSync.resetPatient blurs active tool input and clears Primary Care + FIB-4/SCr transient inputs back to clean defaults"
+      );
+      // Focused non-tools field (#pname) and Clinical Tools field (#tab-kdigo-uacr) must still update on applyPatient/resetPatient, applyPatient must return state, and scr: 0 must normalize to 1.1
+      domMap.get('pname').value = 'Stale Patient Name';
+      doc2.activeElement = domMap.get('pname');
+      const appliedWithFocus = win2.PatientSync.applyPatient({ name: 'Focused Switch Patient', age: 51, sex: 'm', scr: 0, uacr: 280, sbp: 132, dbp: 82, egfr: 84, k: 4.3 });
+      assert(
+        appliedWithFocus &&
+        appliedWithFocus.name === 'Focused Switch Patient' &&
+        domMap.get('pname').value === 'Focused Switch Patient' &&
+        domMap.get('tab-scr').value === '1.1' &&
+        domMap.get('tab-kdigo-uacr').value === '280',
+        "PatientSync.applyPatient returns updated patient state, overwrites focused #pname, and falls back scr:0 to 1.1"
+      );
+      domMap.get('tab-kdigo-uacr').value = '999';
+      domMap.get('tab-fib4-ast').value = '160';
+      doc2.activeElement = domMap.get('tab-kdigo-uacr');
+      win2.PatientSync.resetPatient();
+      assert(
+        doc2.activeElement !== domMap.get('tab-kdigo-uacr') &&
+        domMap.get('tab-kdigo-uacr').value === '45' &&
+        domMap.get('tab-fib4-ast').value === '38' &&
+        domMap.get('pname').value === 'Ahmed Mahmoud',
+        "PatientSync.resetPatient blurs focused #tab-kdigo-uacr, resets KDIGO UACR/FIB-4 defaults, and restores #pname"
+      );
+      // Restore Patient C state expected by subsequent drawer/vital checks
+      win2.PatientSync.applyPatient({ name: 'Patient C', age: 42, sex: 'f', sbp: 120, dbp: 76, egfr: 95, k: 4.1 });
+      setSoapDrawerOpenForTest();
+      function setSoapDrawerOpenForTest() {
+        if (soapDrawer.classList.contains('is-open')) win2.handleAndroidBack();
+      }
+
+      // Partial K+ decimal "4." guard + Escape closing Vitals drawer restores invalid partial typing and clears focus
+      stickyBar.click();
+      const qK = domMap.get('quick-vital-k');
+      doc2.activeElement = qK;
+      qK.value = '4.';
+      qK.dispatchEvent('input');
+      assert(win2.PatientSync.get().k === 4.1, `Partial decimal K+='4.' does not prematurely overwrite PatientSync.k (got=${win2.PatientSync.get().k})`);
+      doc2.activeElement = qEgfr;
+      qEgfr.value = '2';
+      qEgfr.dispatchEvent('input');
+      win2.dispatchEvent({ type: 'keydown', key: 'Escape' });
+      assert(
+        !vDrawer.classList.contains('is-open') &&
+        doc2.activeElement !== qEgfr &&
+        qEgfr.value === '95',
+        "Escape closing Vitals drawer clears focus from input and restores valid state instead of keeping partial invalid text"
+      );
+
+      // Real HTML DOM-tree cloneNode(true) test exercising live extractCleanContainerText() branch
+      class SimText {
+        constructor(d) { this.nodeType = 3; this.data = String(d); this.parentNode = null; }
+        get textContent() { return this.data; }
+        cloneNode() { return new SimText(this.data); }
+      }
+      class SimEl {
+        constructor(tag) {
+          this.nodeType = 1; this.tagName = tag.toUpperCase();
+          this.attrs = {}; this.style = {}; this.children = []; this.parentNode = null;
+        }
+        get id() { return this.attrs.id || ''; }
+        get classList() {
+          const c = (this.attrs.class || '').trim().split(/\s+/).filter(Boolean);
+          return { contains: (x) => c.includes(x) };
+        }
+        hasAttribute(k) { return k in this.attrs; }
+        appendChild(ch) { ch.parentNode = this; this.children.push(ch); return ch; }
+        prepend(...nodes) {
+          const wrapped = nodes.map(n => { const x = typeof n === 'string' ? new SimText(n) : n; x.parentNode = this; return x; });
+          this.children.unshift(...wrapped);
+        }
+        append(...nodes) { for (const n of nodes) this.appendChild(typeof n === 'string' ? new SimText(n) : n); }
+        remove() { if (this.parentNode) { this.parentNode.children = this.parentNode.children.filter(x => x !== this); this.parentNode = null; } }
+        replaceWith(val) {
+          if (!this.parentNode) return;
+          const idx = this.parentNode.children.indexOf(this);
+          if (idx === -1) return;
+          const rep = typeof val === 'string' ? new SimText(val) : val;
+          rep.parentNode = this.parentNode;
+          this.parentNode.children.splice(idx, 1, rep);
+          this.parentNode = null;
+        }
+        get textContent() { return this.children.map(c => c.textContent).join(''); }
+        cloneNode(deep) {
+          const cl = new SimEl(this.tagName);
+          cl.attrs = { ...this.attrs }; cl.style = { ...this.style };
+          if (deep) for (const c of this.children) cl.appendChild(c.cloneNode(true));
+          return cl;
+        }
+        matches(sel) {
+          return sel.split(',').some(p => {
+            p = p.trim();
+            if (!p) return false;
+            if (p === '[hidden]') return this.hasAttribute('hidden');
+            if (p === '[style]') return 'style' in this.attrs;
+            if (p.startsWith('#')) return this.id === p.slice(1);
+            if (p.startsWith('.')) return this.classList.contains(p.slice(1));
+            return this.tagName.toLowerCase() === p.toLowerCase();
+          });
+        }
+        querySelectorAll(sel) {
+          const out = [];
+          const walk = (n) => {
+            for (const c of n.children) {
+              if (c.nodeType === 1) { if (c.matches(sel)) out.push(c); walk(c); }
+            }
+          };
+          walk(this);
+          return out;
+        }
+      }
+      function buildSimDom(htmlStr) {
+        const root = new SimEl('div');
+        const stack = [root];
+        const voids = new Set(['BR', 'HR', 'IMG', 'INPUT', 'META', 'LINK']);
+        const re = /(<!--[\s\S]*?-->)|(<\/?[a-zA-Z0-9-]+(?:\s+[^>]*)?>)|([^<]+)/g;
+        let mm;
+        while ((mm = re.exec(htmlStr)) !== null) {
+          if (mm[1]) continue;
+          if (mm[3]) {
+            const txt = mm[3].replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+            stack[stack.length - 1].appendChild(new SimText(txt));
+          } else if (mm[2]) {
+            const t = mm[2];
+            if (t.startsWith('</')) {
+              const nm = t.slice(2, -1).trim().toUpperCase();
+              while (stack.length > 1 && stack[stack.length - 1].tagName !== nm) stack.pop();
+              if (stack.length > 1) stack.pop();
+            } else {
+              const sc = t.endsWith('/>');
+              const inner = t.slice(1, sc ? -2 : -1).trim();
+              const sp = inner.search(/\s/);
+              const nm = (sp === -1 ? inner : inner.slice(0, sp)).toUpperCase();
+              const as = sp === -1 ? '' : inner.slice(sp + 1);
+              const el = new SimEl(nm);
+              const ar = /([a-zA-Z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+              let am;
+              while ((am = ar.exec(as)) !== null) {
+                const v = am[2] ?? am[3] ?? am[4] ?? '';
+                el.attrs[am[1]] = v;
+                if (am[1] === 'style') {
+                  v.split(';').forEach(pair => {
+                    const ix = pair.indexOf(':');
+                    if (ix !== -1) {
+                      const k = pair.slice(0, ix).trim().replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+                      el.style[k] = pair.slice(ix + 1).trim();
+                    }
+                  });
+                }
+              }
+              stack[stack.length - 1].appendChild(el);
+              if (!sc && !voids.has(nm)) stack.push(el);
+            }
+          }
+        }
+        return root;
+      }
+
+      const resMock = domMap.get('result');
+      const outMock = domMap.get('out');
+      const lipMock = domMap.get('lipids-container');
+      const origLipHtml = lipMock.innerHTML;
+      const attachClone = (el, htmlOverride) => {
+        const tree = buildSimDom(htmlOverride !== undefined ? htmlOverride : el.innerHTML);
+        el.cloneNode = (d) => tree.cloneNode(d);
+        el.querySelectorAll = (s) => tree.querySelectorAll(s);
+      };
+      try {
+        attachClone(resMock);
+        attachClone(outMock);
+        const hiddenOnlyHtml = '<div hidden>Hidden secret diagnosis text</div><div class="rx-sec">Secret Rx section</div><button>Hidden Button</button>';
+        lipMock.innerHTML = hiddenOnlyHtml;
+        attachClone(lipMock, hiddenOnlyHtml);
+        soapSyncBtn.click();
+        const clonedSoap = soapTxt.value;
+        assert(
+          clonedSoap.includes('[Diabetes]') &&
+          clonedSoap.includes('Treatment plan') &&
+          !clonedSoap.includes('2Treatment plan') &&
+          !clonedSoap.includes('5%7%9%11%13%') &&
+          !clonedSoap.includes('Prescribe') &&
+          !clonedSoap.includes('Screening for this patient'),
+          "Real DOM cloneNode(true) extracts cleanly spaced [Diabetes] note without gauge/UI/screening clutter"
+        );
+        assert(
+          clonedSoap.includes('[Hypertension]') &&
+          clonedSoap.includes('120/76 Elevated BP') &&
+          !clonedSoap.includes('120/76Elevated BP') &&
+          !clonedSoap.includes('100120140160180200'),
+          "Real DOM cloneNode(true) extracts cleanly spaced [Hypertension] note without BP ruler clutter"
+        );
+        assert(
+          !clonedSoap.includes('Hidden secret diagnosis text') &&
+          !clonedSoap.includes('Secret Rx section') &&
+          !clonedSoap.includes('[Dyslipidemia / ASCVD]'),
+          "Real DOM cloneNode(true) does not resurrect stripped hidden/rx-sec content via regex fallback"
+        );
+      } finally {
+        delete resMock.cloneNode;
+        delete resMock.querySelectorAll;
+        delete outMock.cloneNode;
+        delete outMock.querySelectorAll;
+        delete lipMock.cloneNode;
+        delete lipMock.querySelectorAll;
+        lipMock.innerHTML = origLipHtml;
+      }
+    });
   }
 
   console.log("===============================================================");

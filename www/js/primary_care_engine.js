@@ -520,7 +520,38 @@ const OsrawyPrimaryCareEngine = (function() {
       window.I18n.onChange(() => {
         const el = document.getElementById(cid);
         if (el && el.innerHTML.trim()) {
+          const activeBtn = el.querySelector ? el.querySelector('[data-pc-tab].active') : null;
+          let activeSubtab = activeBtn ? activeBtn.getAttribute('data-pc-tab') : null;
+          if (!activeSubtab) {
+            activeSubtab = ['copd', 'thyroid', 'asthma'].find((p) => {
+              const panel = document.getElementById('pc-panel-' + p);
+              return panel && panel.style && panel.style.display && panel.style.display !== 'none';
+            }) || 'asthma';
+          }
+          const valIds = ['pc-asthma-saba', 'pc-asthma-step', 'pc-asthma-track', 'pc-copd-exac', 'pc-copd-hosp', 'pc-copd-mmrc', 'pc-copd-cat', 'pc-copd-eos', 'pc-thy-tsh', 'pc-thy-ft4', 'pc-thy-wt'];
+          const chkIds = ['pc-asthma-day', 'pc-asthma-night', 'pc-asthma-limit', 'pc-thy-ascvd', 'pc-thy-preg', 'pc-thy-asthma'];
+          const savedVals = {};
+          const savedChks = {};
+          valIds.forEach((id) => { const inp = document.getElementById(id); if (inp) savedVals[id] = inp.value; });
+          chkIds.forEach((id) => { const inp = document.getElementById(id); if (inp) savedChks[id] = Boolean(inp.checked); });
+
           renderPrimaryCareTab(cid);
+
+          Object.keys(savedVals).forEach((id) => { const inp = document.getElementById(id); if (inp) inp.value = savedVals[id]; });
+          Object.keys(savedChks).forEach((id) => { const inp = document.getElementById(id); if (inp) inp.checked = savedChks[id]; });
+          if (activeSubtab) {
+            const newEl = document.getElementById(cid);
+            if (newEl && typeof newEl.querySelectorAll === 'function') {
+              newEl.querySelectorAll('[data-pc-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-pc-tab') === activeSubtab));
+              ['asthma', 'copd', 'thyroid'].forEach((p) => {
+                const panel = document.getElementById('pc-panel-' + p);
+                if (panel && panel.style) panel.style.display = (p === activeSubtab) ? 'block' : 'none';
+              });
+            }
+          }
+          if (typeof window.updatePrimaryCareUi === 'function') {
+            window.updatePrimaryCareUi();
+          }
         }
       });
     }
@@ -622,7 +653,7 @@ const OsrawyPrimaryCareEngine = (function() {
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
-              <input type="number" id="pc-thy-wt" value="${pt.wt || 75}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-thy-wt" value="${(pt.wt !== undefined && pt.wt !== null && pt.wt !== '') ? pt.wt : 75}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
             </div>
           </div>
           <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
@@ -634,6 +665,17 @@ const OsrawyPrimaryCareEngine = (function() {
         </div>
       </div>
     `;
+
+    const stepSel = document.getElementById('pc-asthma-step');
+    if (stepSel && !stepSel.value) stepSel.value = '2';
+    const trackSel = document.getElementById('pc-asthma-track');
+    if (trackSel && !trackSel.value) trackSel.value = '1';
+    ['asthma', 'copd', 'thyroid'].forEach((p) => {
+      const panelEl = document.getElementById('pc-panel-' + p);
+      if (panelEl && panelEl.style && !panelEl.style.display) {
+        panelEl.style.display = (p === 'asthma') ? 'block' : 'none';
+      }
+    });
 
     function readPcNum(id, fallback, isInt) {
       const el = document.getElementById(id);

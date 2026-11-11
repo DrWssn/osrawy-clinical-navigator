@@ -1299,6 +1299,36 @@ const ClinicalTools = (function() {
     renderLdlMatrix();
   }
 
+  let _toolsI18nBound = false;
+
+  function ensureToolsI18nBound() {
+    if (_toolsI18nBound) return;
+    if (typeof window !== 'undefined' && typeof window.I18n !== 'undefined' && typeof window.I18n.onChange === 'function') {
+      _toolsI18nBound = true;
+      window.I18n.onChange(() => {
+        const egfrModal = document.getElementById('egfr-modal');
+        const ldlModal = document.getElementById('ldl-modal');
+        if (egfrModal && egfrModal.classList.contains('open')) {
+          renderEgfrCalculation();
+        }
+        if (ldlModal && ldlModal.classList.contains('open')) {
+          renderLdlMatrix();
+        }
+        const toolsContainer = document.getElementById('clinical-tools-container');
+        if (toolsContainer && toolsContainer.innerHTML.trim()) {
+          const toolIds = ['tab-scr', 'tab-scr-unit', 'tab-age', 'tab-sex', 'tab-wt', 'tab-kdigo-egfr', 'tab-kdigo-uacr', 'tab-fib4-ast', 'tab-fib4-alt', 'tab-fib4-plt'];
+          const savedTools = {};
+          toolIds.forEach((id) => { const inp = document.getElementById(id); if (inp) savedTools[id] = inp.value; });
+          renderToolsTab('clinical-tools-container');
+          Object.keys(savedTools).forEach((id) => { const inp = document.getElementById(id); if (inp) inp.value = savedTools[id]; });
+          if (typeof window.recalculateToolsTab === 'function') {
+            window.recalculateToolsTab();
+          }
+        }
+      });
+    }
+  }
+
   function init() {
     // 1. Wire up CKD-EPI modal live inputs
     const scrInput = document.getElementById('calc-scr');
@@ -1387,20 +1417,7 @@ const ClinicalTools = (function() {
     }
 
     // 6. Listen to I18n language change to refresh modal and tab content
-    if (typeof window.I18n !== 'undefined' && typeof window.I18n.onChange === 'function') {
-      window.I18n.onChange(() => {
-        if (egfrModal && egfrModal.classList.contains('open')) {
-          renderEgfrCalculation();
-        }
-        if (ldlModal && ldlModal.classList.contains('open')) {
-          renderLdlMatrix();
-        }
-        const toolsContainer = document.getElementById('clinical-tools-container');
-        if (toolsContainer && toolsContainer.innerHTML.trim()) {
-          renderToolsTab('clinical-tools-container');
-        }
-      });
-    }
+    ensureToolsI18nBound();
   }
 
   // --- 7. Interactive Clinical Tools Tab Renderer ---
@@ -1410,6 +1427,8 @@ const ClinicalTools = (function() {
     const cid = containerId || 'clinical-tools-container';
     const container = document.getElementById(cid);
     if (!container) return;
+
+    ensureToolsI18nBound();
 
     const pt = (typeof window.PatientSync !== 'undefined' && typeof window.PatientSync.get === 'function') ? window.PatientSync.get() : {};
     const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function')
@@ -1556,6 +1575,11 @@ const ClinicalTools = (function() {
         </div>
       </div>
     `;
+
+    const tabUnitSel = document.getElementById('tab-scr-unit');
+    if (tabUnitSel && !tabUnitSel.value) tabUnitSel.value = initialScrUnit;
+    const tabSexSel = document.getElementById('tab-sex');
+    if (tabSexSel && !tabSexSel.value) tabSexSel.value = initialSex;
 
     // Calculation helper
     function readTabNum(id, fallback) {
