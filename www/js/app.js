@@ -13,12 +13,15 @@
 
   function switchMainTab(tabId) {
     triggerHaptic();
-    document.querySelectorAll('.main-nav-btn').forEach(btn => {
+    document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
     });
 
-    document.querySelectorAll('.main-view-section').forEach(sec => {
-      sec.style.display = (sec.id === tabId) ? 'block' : 'none';
+    document.querySelectorAll('.main-view-section, .tab-panel').forEach(sec => {
+      const match = (sec.id === tabId);
+      sec.style.display = match ? 'block' : 'none';
+      if (match) sec.removeAttribute('hidden');
+      else sec.setAttribute('hidden', '');
     });
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -32,11 +35,73 @@
       }
     }
 
-    if (tabId === 'tab-drugs') {
+    if (tabId === 'tab-leaflets') {
+      if (window.PatientLeaflets && typeof window.PatientLeaflets.render === 'function') {
+        window.PatientLeaflets.render();
+      }
+    } else if (tabId === 'tab-dlp') {
+      if (window.LipidsEngine && typeof window.LipidsEngine.renderLipidsSummary === 'function') {
+        window.LipidsEngine.renderLipidsSummary('lipids-container');
+      }
+    } else if (tabId === 'tab-drugs') {
       DrugDirectory.render();
     } else if (tabId === 'tab-recent') {
       renderRecentPatients();
     }
+  }
+
+  function updateStickyVitals(detail) {
+    const pt = (detail && detail.state) ? detail.state : (window.OsrawyPatientSync ? window.OsrawyPatientSync.get() : (window.PatientSync ? window.PatientSync.get() : null));
+    if (!pt) return;
+
+    // 1. eGFR (#bar-egfr)
+    const egfrEl = document.getElementById('bar-egfr');
+    if (egfrEl) {
+      const egfrVal = (pt.egfr !== undefined && pt.egfr !== null && pt.egfr !== '') ? pt.egfr : '--';
+      const numEgfr = parseFloat(egfrVal);
+      egfrEl.innerHTML = `<span class="vital-label">eGFR:</span> <b class="vital-val">${egfrVal}</b> <small>mL/min</small>`;
+      egfrEl.classList.remove('vital-warn', 'vital-danger');
+      if (!isNaN(numEgfr)) {
+        if (numEgfr < 30) egfrEl.classList.add('vital-danger');
+        else if (numEgfr < 60) egfrEl.classList.add('vital-warn');
+      }
+    }
+
+    // 2. K+ (#bar-k)
+    const kEl = document.getElementById('bar-k');
+    if (kEl) {
+      const kVal = (pt.k !== undefined && pt.k !== null && pt.k !== '') ? pt.k : '--';
+      const numK = parseFloat(kVal);
+      kEl.innerHTML = `<span class="vital-label">K+:</span> <b class="vital-val">${kVal}</b> <small>mmol/L</small>`;
+      kEl.classList.remove('vital-warn', 'vital-danger');
+      if (!isNaN(numK)) {
+        if (numK >= 5.5 || numK < 3.5) kEl.classList.add('vital-danger');
+        else if (numK >= 5.0) kEl.classList.add('vital-warn');
+      }
+    }
+
+    // 3. BP (#bar-bp)
+    const bpEl = document.getElementById('bar-bp');
+    if (bpEl) {
+      const sbp = (pt.sbp !== undefined && pt.sbp !== null && pt.sbp !== '') ? pt.sbp : '--';
+      const dbp = (pt.dbp !== undefined && pt.dbp !== null && pt.dbp !== '') ? pt.dbp : '--';
+      bpEl.innerHTML = `<span class="vital-label">BP:</span> <b class="vital-val">${sbp}/${dbp}</b> <small>mmHg</small>`;
+      bpEl.classList.remove('vital-warn', 'vital-danger');
+      const numSbp = parseFloat(sbp);
+      const numDbp = parseFloat(dbp);
+      if (!isNaN(numSbp) && !isNaN(numDbp)) {
+        if (numSbp >= 180 || numDbp >= 120) bpEl.classList.add('vital-danger');
+        else if (numSbp >= 140 || numDbp >= 90) bpEl.classList.add('vital-warn');
+      }
+    }
+  }
+
+  // Subscribe to patient updates for sticky vitals bar
+  const eventTarget = (typeof window !== 'undefined') ? window : globalThis;
+  if (eventTarget && eventTarget.addEventListener) {
+    eventTarget.addEventListener('osrawy:patient-updated', (ev) => {
+      updateStickyVitals(ev.detail);
+    });
   }
 
   function renderRecentPatients() {
@@ -157,9 +222,13 @@
     RxShare.loadSettings();
     PatientSync.loadActive();
     PatientSync.updatePatientBar();
+    updateStickyVitals();
     DrugDirectory.init();
     if (typeof ClinicalTools !== 'undefined') {
       ClinicalTools.init();
+    }
+    if (typeof PatientLeaflets !== 'undefined') {
+      PatientLeaflets.init();
     }
     if (typeof AppUpdater !== 'undefined') {
       AppUpdater.init();
@@ -177,7 +246,7 @@
     }
 
     // Bottom Navigation Buttons
-    document.querySelectorAll('.main-nav-btn').forEach(btn => {
+    document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.getAttribute('data-tab');
         switchMainTab(tab);

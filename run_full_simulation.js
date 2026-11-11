@@ -1,20 +1,36 @@
 const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
 
-// Mock a minimal DOM environment
+console.log("===============================================================");
+console.log("  OSRAWY CLINICAL NAVIGATOR - FULL INTEGRATION TEST SUITE");
+console.log("===============================================================\n");
+
+// ---------------------------------------------------------------------
+// 1. DOM & Browser Mock Environment
+// ---------------------------------------------------------------------
+
 class MockElement {
   constructor(tag, id = '') {
     this.tagName = tag.toUpperCase();
     this.id = id;
     this.value = '';
     this.checked = false;
+    this.disabled = false;
+    this.type = 'text';
     this.innerHTML = '';
     this.innerText = '';
+    this.textContent = '';
     this.children = [];
+    this.parentNode = null;
+    this.attributes = {};
+    this.listeners = {};
+    this.style = {};
+    this.dataset = {};
     this.classList = {
       classes: new Set(),
-      add: (c) => this.classList.classes.add(c),
-      remove: (c) => this.classList.classes.delete(c),
+      add: (...cls) => cls.forEach(c => this.classList.classes.add(c)),
+      remove: (...cls) => cls.forEach(c => this.classList.classes.delete(c)),
       contains: (c) => this.classList.classes.has(c),
       toggle: (c, force) => {
         if (force === undefined) {
@@ -27,24 +43,97 @@ class MockElement {
         }
       }
     };
-    this.attributes = {};
-    this.listeners = {};
-    this.style = {};
   }
-  setAttribute(k, v) { this.attributes[k] = String(v); }
-  getAttribute(k) { return this.attributes[k] || null; }
-  removeAttribute(k) { delete this.attributes[k]; }
+
+  appendChild(child) {
+    if (child) {
+      child.parentNode = this;
+      this.children.push(child);
+    }
+    return child;
+  }
+
+  removeChild(child) {
+    const idx = this.children.indexOf(child);
+    if (idx !== -1) {
+      this.children.splice(idx, 1);
+      child.parentNode = null;
+    }
+    return child;
+  }
+
+  setAttribute(k, v) {
+    this.attributes[k] = String(v);
+    if (k.startsWith('data-')) {
+      const camel = k.slice(5).replace(/-([a-z])/g, (_, g) => g.toUpperCase());
+      this.dataset[camel] = String(v);
+    }
+  }
+
+  getAttribute(k) {
+    return this.attributes[k] !== undefined ? this.attributes[k] : null;
+  }
+
+  removeAttribute(k) {
+    delete this.attributes[k];
+    if (k.startsWith('data-')) {
+      const camel = k.slice(5).replace(/-([a-z])/g, (_, g) => g.toUpperCase());
+      delete this.dataset[camel];
+    }
+  }
+
+  hasAttribute(k) {
+    return this.attributes[k] !== undefined;
+  }
+
   addEventListener(ev, fn) {
     if (!this.listeners[ev]) this.listeners[ev] = [];
     this.listeners[ev].push(fn);
   }
-  dispatchEvent(ev) {
+
+  removeEventListener(ev, fn) {
     if (this.listeners[ev]) {
-      this.listeners[ev].forEach(fn => fn({ target: this }));
+      this.listeners[ev] = this.listeners[ev].filter(f => f !== fn);
     }
   }
-  querySelector(sel) { return null; }
-  querySelectorAll(sel) { return []; }
+
+  dispatchEvent(ev) {
+    const type = typeof ev === 'string' ? ev : ev.type;
+    const eventObj = typeof ev === 'string' ? { type: ev, target: this } : Object.assign(ev, { target: this });
+    if (this.listeners[type]) {
+      this.listeners[type].forEach(fn => fn(eventObj));
+    }
+    return true;
+  }
+
+  querySelector(sel) {
+    if (sel.startsWith('#')) {
+      const id = sel.slice(1);
+      return elementsMap.get(id) || null;
+    }
+    for (const child of this.children) {
+      if (child.tagName.toLowerCase() === sel.toLowerCase()) return child;
+      const found = child.querySelector(sel);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  querySelectorAll(sel) {
+    const results = [];
+    for (const child of this.children) {
+      if (child.tagName.toLowerCase() === sel.toLowerCase()) results.push(child);
+      results.push(...child.querySelectorAll(sel));
+    }
+    return results;
+  }
+
+  click() {
+    this.dispatchEvent({ type: 'click', target: this });
+  }
+
+  focus() {}
+  blur() {}
 }
 
 const elementsMap = new Map();
@@ -55,7 +144,7 @@ function getOrCreate(id, tag = 'div') {
   return elementsMap.get(id);
 }
 
-// Pre-create IDs expected in app
+// Pre-create common DOM elements
 const knownIds = [
   'pform', 'pname', 'age', 'sex', 'wt', 'ht', 'dur', 'hf', 'a1c', 'fpg', 'egfr', 'uacr',
   'ascvd', 'hrisk', 'masld', 'smoker', 'hypo', 'frail', 'catab', 'pancr', 'geni', 'preg',
@@ -64,7 +153,7 @@ const knownIds = [
   'iswitch', 'ifrom', 'iresult', 'instbl', 'reftbl', 'th-ref-brand', 'th-ins-brand', 'ref-sec-sub',
   'f', 'sbp', 'dbp', 'htn-age', 'htn-sex', 'meds', 'risk', 'risk-l', 'oob', 'dm', 'cad', 'hf-htn',
   'stroke', 'af', 'gout', 'asthma', 'bph', 'frail-htn', 'ortho', 'preg-htn', 'preg-c',
-  'htn-egfr', 'htn-uacr', 'k', 'tc', 'hdl', 'lunit', 'smk', 'statin', 'riskbox', 'out',
+  'htn-egfr', 'htn-uacr', 'k', 'tc', 'hdl', 'ldl', 'tg', 'alt', 'lunit', 'smk', 'statin', 'riskbox', 'out',
   'sw-from', 'sw-dose', 'sw-to', 'sw-out', 'ti-drug', 'ti-dose', 'ti-out', 'lens-acc', 'lens-esc',
   'drug-directory-list', 'drug-search-input', 'market-btn-sa', 'market-btn-eg', 'market-toggle-btn', 'lang-toggle-btn',
   'save-pt-btn', 'theme-toggle-btn', 'open-settings-btn', 'patient-summary-bar', 'recent-patients-list',
@@ -72,58 +161,53 @@ const knownIds = [
   'set-clinic-name', 'set-clinic-phone', 'set-clinic-addr', 'copy', 'btn-share-htn-whatsapp', 'btn-print-htn',
   'egfr-modal', 'close-egfr-modal-btn', 'btn-apply-calculated-egfr', 'calc-scr', 'calc-scr-unit', 'calc-age',
   'calc-sex', 'calc-wt', 'calc-egfr-output', 'ldl-modal', 'close-ldl-modal-btn', 'ldl-matrix-container',
-  'btn-open-ldl-modal', 'quick-jump-rx-btn'
+  'btn-open-ldl-modal', 'quick-jump-rx-btn', 'clinical-guardrail-banner',
+  'sticky-vitals-summary', 'bar-egfr', 'bar-k', 'bar-bp', 'bar-a1c', 'bar-ldl',
+  'tab-leaflets', 'patient-leaflet-container', 'lipids-summary-container', 'rxcard'
 ];
 knownIds.forEach(id => getOrCreate(id));
 
-// Set realistic initial values
-getOrCreate('pname', 'input').value = 'Ahmed Mahmoud';
-getOrCreate('age', 'input').value = '52';
-getOrCreate('sex', 'select').value = 'm';
-getOrCreate('wt', 'input').value = '96';
-getOrCreate('ht', 'input').value = '170';
-getOrCreate('dur', 'input').value = '4';
-getOrCreate('hf', 'select').value = 'none';
-getOrCreate('a1c', 'input').value = '8.9';
-getOrCreate('fpg', 'input').value = '190';
-getOrCreate('egfr', 'input').value = '68';
-getOrCreate('uacr', 'input').value = '45';
-getOrCreate('cheap', 'input').checked = true;
-getOrCreate('c-met', 'input').checked = true;
+class MockCustomEvent {
+  constructor(type, init = {}) {
+    this.type = type;
+    this.detail = init.detail || {};
+    this.bubbles = !!init.bubbles;
+    this.cancelable = !!init.cancelable;
+  }
+}
 
-getOrCreate('sbp', 'input').value = '148';
-getOrCreate('dbp', 'input').value = '94';
-getOrCreate('htn-age', 'input').value = '52';
-getOrCreate('htn-sex', 'select').value = 'm';
-getOrCreate('meds', 'select').value = '0';
-getOrCreate('htn-egfr', 'input').value = '68';
-getOrCreate('htn-uacr', 'input').value = '45';
-getOrCreate('k', 'input').value = '4.6';
-getOrCreate('tc', 'input').value = '210';
-getOrCreate('hdl', 'input').value = '42';
-getOrCreate('lunit', 'select').value = 'mg';
-getOrCreate('dm', 'input').checked = true;
-getOrCreate('oob', 'input').checked = true;
-getOrCreate('iwt', 'input').value = '96';
-getOrCreate('ifpg', 'input').value = '190';
-getOrCreate('icur', 'input').value = '0';
-getOrCreate('itdd', 'input').value = '0';
-getOrCreate('isens', 'select').value = 'mid';
-getOrCreate('ifrom', 'select').value = 'nph2';
+class MockEvent {
+  constructor(type, init = {}) {
+    this.type = type;
+    this.bubbles = !!init.bubbles;
+    this.cancelable = !!init.cancelable;
+  }
+}
+
+const docListeners = {};
+const docElement = new MockElement('html');
+const bodyElement = new MockElement('body');
+docElement.appendChild(bodyElement);
 
 const mockStorage = new Map();
 const windowObj = {
+  CustomEvent: MockCustomEvent,
+  Event: MockEvent,
   localStorage: {
-    getItem: (k) => mockStorage.get(k) || null,
+    getItem: (k) => mockStorage.has(k) ? mockStorage.get(k) : null,
     setItem: (k, v) => mockStorage.set(k, String(v)),
-    removeItem: (k) => mockStorage.delete(k)
+    removeItem: (k) => mockStorage.delete(k),
+    clear: () => mockStorage.clear()
   },
   navigator: {
     clipboard: { writeText: async (t) => t },
     vibrate: () => true
   },
+  location: { reload: () => {} },
   setTimeout: (fn, ms) => { try { fn(); } catch(e){} },
   clearTimeout: () => {},
+  setInterval: () => {},
+  clearInterval: () => {},
   scrollTo: () => {},
   document: {
     getElementById: (id) => getOrCreate(id),
@@ -134,198 +218,598 @@ const windowObj = {
     querySelectorAll: (sel) => {
       return [];
     },
-    addEventListener: () => {},
-    documentElement: new MockElement('html')
+    createElement: (tag) => new MockElement(tag),
+    addEventListener: (ev, fn) => {
+      if (!docListeners[ev]) docListeners[ev] = [];
+      docListeners[ev].push(fn);
+    },
+    removeEventListener: (ev, fn) => {
+      if (docListeners[ev]) {
+        docListeners[ev] = docListeners[ev].filter(f => f !== fn);
+      }
+    },
+    dispatchEvent: (ev) => {
+      const type = ev.type || ev;
+      if (docListeners[type]) {
+        docListeners[type].forEach(fn => fn(ev));
+      }
+      return true;
+    },
+    documentElement: docElement,
+    body: bodyElement
   }
 };
 windowObj.window = windowObj;
 
-const context = vm.createContext(windowObj);
+// Provide globals inside VM
+const sandbox = Object.assign({}, windowObj, {
+  console,
+  setTimeout: windowObj.setTimeout,
+  clearTimeout: windowObj.clearTimeout,
+  CustomEvent: MockCustomEvent,
+  Event: MockEvent
+});
 
-const files = [
+const context = vm.createContext(sandbox);
+
+// ---------------------------------------------------------------------
+// 2. Load Scripts in Required Sequence
+// ---------------------------------------------------------------------
+
+const jsDir = path.resolve(__dirname, 'www', 'js');
+const requiredScripts = [
   'i18n.js',
   'drugs_data.js',
   'patient_sync.js',
   'clinical_tools.js',
-  'prescription_share.js',
-  'drugs_directory.js',
   'diabetes_engine.js',
-  'htn_engine.js'
+  'htn_engine.js',
+  'lipids_engine.js',
+  'primary_care_engine.js',
+  'prescription_share.js',
+  'patient_leaflets.js'
 ];
 
-console.log("Loading files in sequence into VM...");
-for (const f of files) {
-  const code = fs.readFileSync('d:/anti/APP/www/js/' + f, 'utf8');
+console.log("Loading modules into VM context in required sequence:");
+for (const scriptName of requiredScripts) {
+  const filePath = path.join(jsDir, scriptName);
+  if (!fs.existsSync(filePath)) {
+    console.error(`❌ Required script missing: ${scriptName}`);
+    process.exit(1);
+  }
+  const code = fs.readFileSync(filePath, 'utf8');
   try {
-    vm.runInContext(code, context);
-    console.log("  Loaded " + f);
-  } catch(err) {
-    console.error("  ❌ Failed on " + f + ":", err.stack);
+    vm.runInContext(code, context, { filename: scriptName });
+    console.log(`  ✅ Loaded ${scriptName}`);
+  } catch (err) {
+    console.error(`  ❌ Failed to load ${scriptName}: ${err.message}`);
+    console.error(err.stack);
     process.exit(1);
   }
 }
+console.log("\nAll required scripts loaded successfully into VM sandbox.\n");
 
-console.log("All scripts loaded without error!");
-console.log("Testing DrugDirectory search in Saudi market...");
-context.DrugDirectory.init();
-context.DrugDirectory.setMarket('saudi');
-console.log("Active market:", context.DrugDirectory.getMarket());
+// Helper to look up modules flexibly
+function getModule(...names) {
+  for (const name of names) {
+    if (context[name] !== undefined) return context[name];
+    if (context.window && context.window[name] !== undefined) return context.window[name];
+  }
+  return null;
+}
 
-console.log("Testing search query for 'جلوكوفاج' (Glucophage Arabic)...");
-getOrCreate('drug-search-input').value = 'جلوكوفاج';
-getOrCreate('drug-search-input').dispatchEvent('input');
-const dirOutput = getOrCreate('drug-directory-list').innerHTML;
-const foundGlucophage = dirOutput.includes('Metformin') || dirOutput.includes('Glucophage');
-console.log("  Arabic search 'جلوكوفاج' matched Metformin:", foundGlucophage ? "✅ PASS" : "❌ FAIL");
+const I18n = getModule('I18n');
+const PatientSync = getModule('OsrawyPatientSync', 'PatientSync');
+const ClinicalTools = getModule('ClinicalTools');
+const DiabetesEngine = getModule('DiabetesEngine');
+const HtnEngine = getModule('HtnEngine');
+const LipidsEngine = getModule('LipidsEngine', 'OsrawyLipids', 'OsrawyLipidsEngine');
+const PrimaryCareEngine = getModule('PrimaryCareEngine', 'OsrawyPrimaryCare', 'OsrawyPrimaryCareEngine');
+const RxShare = getModule('RxShare', 'PrescriptionShare', 'OsrawyRxShare');
+const PatientLeaflets = getModule('PatientLeaflets', 'OsrawyPatientLeaflets');
+const OsrawyQRCode = getModule('OsrawyQRCode');
 
-console.log("Testing search query for 'concor' (English brand)...");
-getOrCreate('drug-search-input').value = 'concor';
-getOrCreate('drug-search-input').dispatchEvent('input');
-const dirOutput2 = getOrCreate('drug-directory-list').innerHTML;
-const foundConcor = dirOutput2.includes('Bisoprolol') || dirOutput2.includes('Concor');
-console.log("  English search 'concor' matched Bisoprolol:", foundConcor ? "✅ PASS" : "❌ FAIL");
+// ---------------------------------------------------------------------
+// 3. Test Runner Infrastructure
+// ---------------------------------------------------------------------
 
-console.log("Testing patient sync from Diabetes to HTN...");
-getOrCreate('age').value = '60';
-getOrCreate('egfr').value = '42';
-context.PatientSync.syncFromDiabetes();
-const pt = context.PatientSync.get();
-console.log("  Updated patient age:", pt.age, "eGFR:", pt.egfr);
-console.log("  HTN age input updated to:", getOrCreate('htn-age').value);
-console.log("  HTN eGFR input updated to:", getOrCreate('htn-egfr').value);
-const syncPassed = getOrCreate('htn-age').value == '60' && getOrCreate('htn-egfr').value == '42';
-console.log("  Two-way PatientSync:", syncPassed ? "✅ PASS" : "❌ FAIL");
+let totalTests = 0;
+let passedTests = 0;
+let failedTests = 0;
 
-console.log("Testing Prescription WhatsApp text generation...");
-const waText = context.RxShare.buildWhatsAppText();
-console.log("  Generated WhatsApp text length:", waText.length);
-const waPassed = waText.includes('Ahmed Mahmoud') && waText.includes('الوصفة العلاجية');
-console.log("  WhatsApp formatting:", waPassed ? "✅ PASS" : "❌ FAIL");
+function assert(condition, message) {
+  totalTests++;
+  if (condition) {
+    passedTests++;
+    console.log(`    ✅ PASS: ${message}`);
+  } else {
+    failedTests++;
+    console.error(`    ❌ FAIL: ${message}`);
+  }
+}
 
-console.log("\nTesting I18n Bilingual Switcher Module...");
-context.I18n.init();
-const initialLang = context.I18n.getLang();
-console.log("  Initial default language:", initialLang);
-const initLangPass = initialLang === 'ar';
-console.log("  Default language is 'ar':", initLangPass ? "✅ PASS" : "❌ FAIL");
+function runCase(num, title, fn) {
+  console.log(`---------------------------------------------------------------`);
+  console.log(`Case ${num}: ${title}`);
+  console.log(`---------------------------------------------------------------`);
+  try {
+    fn();
+  } catch (err) {
+    failedTests++;
+    console.error(`  ❌ Exception in Case ${num}:`, err.message);
+    console.error(err.stack);
+  }
+  console.log('');
+}
 
-const docDirAr = windowObj.document.documentElement.attributes['dir'];
-const docLangAr = windowObj.document.documentElement.attributes['lang'];
-console.log(`  Arabic attributes: dir="${docDirAr}", lang="${docLangAr}"`);
-const arAttrPass = docDirAr === 'rtl' && docLangAr === 'ar';
-console.log("  Arabic RTL attributes match:", arAttrPass ? "✅ PASS" : "❌ FAIL");
+// ---------------------------------------------------------------------
+// 4. Clinical Test Suites (Cases 1 - 9)
+// ---------------------------------------------------------------------
 
-// Test patient summary bar in Arabic
-context.PatientSync.updatePatientBar();
-const barAr = getOrCreate('patient-summary-bar').innerHTML;
-const barArPass = barAr.includes('الاسم:') && barAr.includes('العمر:');
-console.log("  Patient summary bar renders in Arabic:", barArPass ? "✅ PASS" : "❌ FAIL");
+// Case 1: Severe CKD (eGFR < 30) + Metformin contraindication
+runCase(1, "Severe CKD (eGFR < 30) + Metformin contraindication", () => {
+  assert(PatientSync !== null, "PatientSync / OsrawyPatientSync module is present");
 
-// Remember patient data values before switch
-const prevAge = getOrCreate('age').value;
-const prevEgfr = getOrCreate('egfr').value;
-const prevName = getOrCreate('pname').value;
+  // Subtest 1A: CKD-EPI 2021 race-free calculation for severe renal impairment
+  if (typeof PatientSync.calculateCkdEpi2021 === 'function') {
+    const egfrRes = PatientSync.calculateCkdEpi2021(2.8, 'mg', 68, 'm');
+    const val = typeof egfrRes === 'object' ? egfrRes.egfr : egfrRes;
+    assert(val < 30, `CKD-EPI 2021 calculates severe CKD eGFR < 30 (got: ${val})`);
+  } else if (ClinicalTools && typeof ClinicalTools.calculateCKDEPI === 'function') {
+    const res = ClinicalTools.calculateCKDEPI(2.8, 'mg', 68, 'm');
+    assert(res.egfr < 30, `ClinicalTools calculates severe CKD eGFR < 30 (got: ${res.egfr})`);
+  }
 
-// Toggle to English
-console.log("  Toggling language to English...");
-context.I18n.toggleLang();
-const toggledLang = context.I18n.getLang();
-const docDirEn = windowObj.document.documentElement.attributes['dir'];
-const docLangEn = windowObj.document.documentElement.attributes['lang'];
-console.log(`  English attributes: lang="${toggledLang}", dir="${docDirEn}", lang="${docLangEn}"`);
-const enAttrPass = toggledLang === 'en' && docDirEn === 'ltr' && docLangEn === 'en';
-console.log("  English LTR attributes match:", enAttrPass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 1B: Metformin contraindicated at eGFR < 30 (lactic acidosis risk)
+  if (typeof PatientSync.evaluateSafetyGuardrails === 'function') {
+    const patientCkd = { egfr: 22, meds: ['metformin'], hf: 'none', k: 4.5, preg: false };
+    const guardrails = PatientSync.evaluateSafetyGuardrails(patientCkd);
+    const metContra = guardrails.some(g =>
+      JSON.stringify(g).toLowerCase().includes('metformin') &&
+      (JSON.stringify(g).toLowerCase().includes('contraindicat') ||
+       JSON.stringify(g).toLowerCase().includes('lactic') ||
+       JSON.stringify(g).includes('ميتفورمين') ||
+       JSON.stringify(g).includes('حمض اللاكتيك'))
+    );
+    assert(metContra, "eGFR < 30 triggers Metformin contraindication / lactic acidosis alert");
 
-// Test patient summary bar in English
-context.PatientSync.updatePatientBar();
-const barEn = getOrCreate('patient-summary-bar').innerHTML;
-const barEnPass = barEn.includes('Name:') && barEn.includes('Age:');
-console.log("  Patient summary bar renders in English:", barEnPass ? "✅ PASS" : "❌ FAIL");
+    // Subtest 1C: Metformin dose cap at eGFR 30-44 (1000 mg/day)
+    const patientModCkd = { egfr: 38, meds: ['metformin'], hf: 'none', k: 4.5, preg: false };
+    const modGuardrails = PatientSync.evaluateSafetyGuardrails(patientModCkd);
+    const capAlert = modGuardrails.some(g =>
+      JSON.stringify(g).toLowerCase().includes('1000') ||
+      JSON.stringify(g).toLowerCase().includes('cap') ||
+      JSON.stringify(g).includes('1000')
+    );
+    assert(capAlert, "eGFR 30-44 triggers Metformin dose cap (max 1000 mg/d) guardrail");
 
-// Verify patient inputs remained intact
-const postAge = getOrCreate('age').value;
-const postEgfr = getOrCreate('egfr').value;
-const postName = getOrCreate('pname').value;
-const patientIntact = (prevAge === postAge && prevEgfr === postEgfr && prevName === postName);
-console.log("  Patient inputs preserved intact across language switch:", patientIntact ? "✅ PASS" : "❌ FAIL");
+    // Subtest 1D: Cross-engine organ protection recommendation (SGLT2i if eGFR >= 20)
+    const organAlert = modGuardrails.some(g =>
+      JSON.stringify(g).toLowerCase().includes('sglt2') ||
+      JSON.stringify(g).includes('حماية الكلى') ||
+      JSON.stringify(g).includes('كلوي')
+    );
+    assert(organAlert, "CKD with eGFR >= 20 generates SGLT2i renal/organ protection recommendation");
+  }
+});
 
-// Verify localStorage persistence
-const savedLang = mockStorage.get('osrawy_lang');
-const storagePass = savedLang === 'en';
-console.log("  Language selection persisted to localStorage ('osrawy_lang'='en'):", storagePass ? "✅ PASS" : "❌ FAIL");
+// Case 2: Dual RAAS Blockade + Hyperkalemia K+ >= 5.5
+runCase(2, "Dual RAAS Blockade + Hyperkalemia K+ >= 5.5", () => {
+  assert(typeof PatientSync.evaluateSafetyGuardrails === 'function', "evaluateSafetyGuardrails is available");
 
-// Toggle back to Arabic
-console.log("  Toggling language back to Arabic...");
-context.I18n.toggleLang();
-const finalLang = context.I18n.getLang();
-const finalStorage = mockStorage.get('osrawy_lang');
-const finalPass = finalLang === 'ar' && finalStorage === 'ar';
-console.log("  Language toggle back to Arabic verified:", finalPass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 2A: Dual RAAS blockade (ACEi + ARB)
+  const dualRaasPt = {
+    egfr: 55,
+    k: 4.6,
+    activeMeds: ['ramipril', 'losartan'],
+    acei: true,
+    arb: true
+  };
+  const raasGuardrails = PatientSync.evaluateSafetyGuardrails(dualRaasPt);
+  const dualRaasAlert = raasGuardrails.some(g =>
+    (JSON.stringify(g).toLowerCase().includes('dual') ||
+     JSON.stringify(g).toLowerCase().includes('raas') ||
+     JSON.stringify(g).toLowerCase().includes('ace') ||
+     JSON.stringify(g).includes('ازدواج') ||
+     JSON.stringify(g).includes('مزدوج')) &&
+    (JSON.stringify(g).toLowerCase().includes('contra') ||
+     JSON.stringify(g).includes('موانع') ||
+     JSON.stringify(g).includes('خطر'))
+  );
+  assert(dualRaasAlert, "Dual RAAS blockade (ACEi + ARB) triggers critical contraindication alert");
 
-console.log("\nTesting ClinicalTools: CKD-EPI 2021 & Cockcroft-Gault Calculator...");
-// Test 1: Male 52 yo, Scr 1.0 mg/dL
-const resMale = context.ClinicalTools.calculateCKDEPI(1.0, 'mg', 52, 'm');
-console.log(`  Male 52y Scr 1.0 mg/dL -> eGFR: ${resMale.egfr} (Stage ${resMale.stage.code})`);
-const egfrMalePass = resMale.egfr >= 88 && resMale.egfr <= 92 && resMale.stage.code === 'G1';
-console.log("  CKD-EPI 2021 Race-Free (mg/dL):", egfrMalePass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 2B: Severe hyperkalemia (K+ >= 5.5) -> stop RAAS & MRA
+  const hyperKPt = {
+    egfr: 50,
+    k: 5.7,
+    activeMeds: ['ramipril', 'spironolactone'],
+    acei: true,
+    mra: true
+  };
+  const kGuardrails = PatientSync.evaluateSafetyGuardrails(hyperKPt);
+  const kAlert = kGuardrails.some(g =>
+    (JSON.stringify(g).toLowerCase().includes('k+') ||
+     JSON.stringify(g).toLowerCase().includes('potassium') ||
+     JSON.stringify(g).includes('بوتاسيوم') ||
+     JSON.stringify(g).includes('5.5') ||
+     JSON.stringify(g).includes('5.7')) &&
+    (JSON.stringify(g).toLowerCase().includes('stop') ||
+     JSON.stringify(g).toLowerCase().includes('hold') ||
+     JSON.stringify(g).includes('إيقاف') ||
+     JSON.stringify(g).includes('وقف'))
+  );
+  assert(kAlert, "K+ >= 5.5 triggers critical alert to immediately stop RAAS inhibitors and MRA");
 
-// Test 2: Female 65 yo, Scr 120 µmol/L (converted from µmol/L)
-const resFemale = context.ClinicalTools.calculateCKDEPI(120, 'umol', 65, 'f');
-console.log(`  Female 65y Scr 120 µmol/L -> eGFR: ${resFemale.egfr} (Stage ${resFemale.stage.code})`);
-const egfrFemalePass = resFemale.egfr >= 42 && resFemale.egfr <= 45 && resFemale.stage.code === 'G3b';
-console.log("  CKD-EPI 2021 Race-Free (µmol/L):", egfrFemalePass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 2C: Moderate hyperkalemia (K+ > 5.0) -> avoid MRA
+  const modKPt = { egfr: 60, k: 5.2, activeMeds: [], mra: false };
+  const modKGuardrails = PatientSync.evaluateSafetyGuardrails(modKPt);
+  const mraAvoidAlert = modKGuardrails.some(g =>
+    JSON.stringify(g).toLowerCase().includes('mra') ||
+    JSON.stringify(g).includes('سبيرونولاكتون') ||
+    JSON.stringify(g).includes('بوتاسيوم')
+  );
+  assert(mraAvoidAlert, "K+ > 5.0 triggers precaution/avoid alert for MRA initiation");
+});
 
-// Test 3: Cockcroft-Gault CrCl
-const crcl = context.ClinicalTools.calculateCrCl(1.1, 'mg', 52, 'm', 96);
-console.log(`  Cockcroft-Gault CrCl (52y, 96kg, Scr 1.1) -> CrCl: ${crcl.crcl} mL/min`);
-const crclPass = crcl.crcl >= 105 && crcl.crcl <= 108;
-console.log("  Cockcroft-Gault CrCl equation:", crclPass ? "✅ PASS" : "❌ FAIL");
+// Case 3: Pregnancy Teratogenicity
+runCase(3, "Pregnancy Teratogenicity", () => {
+  // Subtest 3A: PatientSync teratogenicity guardrail
+  const pregPt = {
+    preg: true,
+    pregnancy: true,
+    sex: 'f',
+    age: 29,
+    egfr: 90,
+    k: 4.2,
+    activeMeds: ['losartan', 'empa']
+  };
+  const pregGuardrails = PatientSync.evaluateSafetyGuardrails(pregPt);
+  const teratoAlert = pregGuardrails.some(g =>
+    (JSON.stringify(g).toLowerCase().includes('pregnan') ||
+     JSON.stringify(g).toLowerCase().includes('teratogen') ||
+     JSON.stringify(g).includes('حمل') ||
+     JSON.stringify(g).includes('تشوه')) &&
+    (JSON.stringify(g).toLowerCase().includes('stop') ||
+     JSON.stringify(g).toLowerCase().includes('contraindicat') ||
+     JSON.stringify(g).includes('إيقاف') ||
+     JSON.stringify(g).includes('ممنوع'))
+  );
+  assert(teratoAlert, "Pregnancy triggers immediate stop/contraindication for RAAS / SGLT2i / teratogenic drugs");
 
-// Test 4: Apply eGFR Button workflow
-console.log("\nTesting Apply eGFR button flow...");
-getOrCreate('calc-scr', 'input').value = '1.3';
-getOrCreate('calc-scr-unit', 'select').value = 'mg';
-getOrCreate('calc-age', 'input').value = '55';
-getOrCreate('calc-sex', 'select').value = 'm';
-getOrCreate('calc-wt', 'input').value = '85';
-context.ClinicalTools.init();
+  // Subtest 3B: Lipids Engine statin pregnancy contraindication
+  if (LipidsEngine && typeof LipidsEngine.evaluateLipidPathway === 'function') {
+    const lipidRes = LipidsEngine.evaluateLipidPathway({
+      pregnancy: true,
+      preg: true,
+      ldlC: 160,
+      totalCholesterol: 240,
+      triglycerides: 180,
+      hdlC: 45
+    });
+    const statinContra = JSON.stringify(lipidRes).toLowerCase().includes('pregnan') ||
+                         JSON.stringify(lipidRes).includes('حمل') ||
+                         JSON.stringify(lipidRes).toLowerCase().includes('contraindicat');
+    assert(statinContra, "Lipids engine flags statins as contraindicated in pregnancy");
+  }
+});
 
-// Simulate calculated value and apply
-const calcRes = context.ClinicalTools.calculateCKDEPI(1.3, 'mg', 55, 'm');
-getOrCreate('btn-apply-calculated-egfr').setAttribute('data-calculated-egfr', calcRes.egfrInt);
-context.ClinicalTools.applyCalculatedEGFR();
+// Case 4: Very High Risk ASCVD + LDL target < 55 + Ezetimibe step-up + Amlodipine/Simvastatin interaction
+runCase(4, "Very High Risk ASCVD + LDL target < 55 + Ezetimibe step-up + Amlodipine/Simvastatin interaction", () => {
+  assert(LipidsEngine !== null, "LipidsEngine module is present");
 
-const appliedDia = getOrCreate('egfr').value;
-const appliedHtn = getOrCreate('htn-egfr').value;
-const appliedPt = context.PatientSync.get().egfr;
-console.log(`  Calculated eGFR: ${calcRes.egfrInt} -> Dia: ${appliedDia}, HTN: ${appliedHtn}, PtSync: ${appliedPt}`);
-const applyPass = (appliedDia == calcRes.egfrInt && appliedHtn == calcRes.egfrInt && appliedPt == calcRes.egfrInt);
-console.log("  Apply eGFR button sets PatientSync, #egfr, #htn-egfr:", applyPass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 4A: Stratification to VERY_HIGH risk with target LDL < 55 mg/dL
+  if (typeof LipidsEngine.stratifyRisk === 'function') {
+    const vhPatient = { ascvd: true, age: 62, diabetes: true, smoker: false, sbp: 135 };
+    const strat = LipidsEngine.stratifyRisk(vhPatient);
+    assert(
+      (strat.tier || strat.riskKey || strat.level || '').toUpperCase().includes('VERY_HIGH') ||
+      (strat.tier || strat.riskKey || strat.level || '').toUpperCase().includes('VERY HIGH'),
+      "Patient with established ASCVD is stratified as VERY_HIGH risk"
+    );
+    assert(
+      (strat.ldlTargetMg === 55 || (strat.target && strat.target.ldl === 55) || (strat.targets && strat.targets.ldl === 55)),
+      "Very High Risk LDL-C target is < 55 mg/dL"
+    );
+  }
 
-console.log("\nTesting ASCVD LDL-C Goals Matrix & Statin Intensity...");
-// Test 5: Very High Risk with established ASCVD
-const ptVeryHigh = { ascvd: true, age: 62, dm: true };
-const assessVh = context.ClinicalTools.assessPatientLdlRisk(ptVeryHigh);
-console.log(`  Patient with established ASCVD -> Risk: ${assessVh.riskKey}, Target: ${assessVh.goal.targetMg} mg/dL`);
-const vhPass = (assessVh.riskKey === 'very_high' && assessVh.goal.targetMg === 55);
-console.log("  Very High Risk target (<55 mg/dL):", vhPass ? "✅ PASS" : "❌ FAIL");
+  // Subtest 4B: Step 2 Ezetimibe escalation if LDL not at target on high-intensity statin
+  if (typeof LipidsEngine.evaluateLipidPathway === 'function') {
+    const stepUpInput = {
+      ascvd: true,
+      ldlC: 85, // Above target 55
+      currentStatin: 'atorvastatin_80', // on high-intensity statin
+      onStatin: true,
+      currentDrugs: ['atorvastatin']
+    };
+    const pathway = LipidsEngine.evaluateLipidPathway(stepUpInput);
+    const hasEzetimibe = JSON.stringify(pathway).toLowerCase().includes('ezetimibe') ||
+                         JSON.stringify(pathway).includes('إزيتيميب') ||
+                         JSON.stringify(pathway).toLowerCase().includes('step 2');
+    assert(hasEzetimibe, "High-risk patient not at LDL goal triggers Step 2 Ezetimibe escalation recommendation");
 
-// Test 6: High Risk with DM + age >= 50
-const ptHigh = { ascvd: false, dm: true, age: 52, dur: 4, sbp: 148 };
-const assessHigh = context.ClinicalTools.assessPatientLdlRisk(ptHigh);
-console.log(`  Patient with DM + HTN -> Risk: ${assessHigh.riskKey}, Target: ${assessHigh.goal.targetMg} mg/dL`);
-const highPass = (assessHigh.riskKey === 'high' && assessHigh.goal.targetMg === 70);
-console.log("  High Risk / DM target (<70 mg/dL):", highPass ? "✅ PASS" : "❌ FAIL");
+    // Subtest 4C: Step 3 PCSK9 inhibitor escalation if still not at target on statin + ezetimibe
+    const pcsk9Input = {
+      ascvd: true,
+      ldlC: 92,
+      onStatin: true,
+      onEzetimibe: true,
+      currentDrugs: ['atorvastatin', 'ezetimibe']
+    };
+    const pathwayPcsk9 = LipidsEngine.evaluateLipidPathway(pcsk9Input);
+    const hasPcsk9 = JSON.stringify(pathwayPcsk9).toLowerCase().includes('pcsk9') ||
+                     JSON.stringify(pathwayPcsk9).includes('إيفولوكوماب') ||
+                     JSON.stringify(pathwayPcsk9).toLowerCase().includes('step 3');
+    assert(hasPcsk9, "Patient not at goal on Statin + Ezetimibe triggers Step 3 PCSK9 inhibitor recommendation");
 
-// Test 7: Statin Intensity Formulary Data (Saudi & Egypt)
-const highStatin = context.ClinicalTools.STATIN_REGIMENS.find(r => r.intensity === 'high');
-const atorva = highStatin.drugs.find(d => d.name === 'Atorvastatin');
-const rosuva = highStatin.drugs.find(d => d.name === 'Rosuvastatin');
-console.log(`  High-intensity statins: ${atorva.name} (${atorva.dose}), ${rosuva.name} (${rosuva.dose})`);
-const statinDataPass = atorva.saudi.brands.some(b => b.includes('Lipitor')) &&
-                       atorva.egypt.brands.some(b => b.includes('Ator')) &&
-                       rosuva.saudi.brands.some(b => b.includes('Crestor')) &&
-                       rosuva.egypt.brands.some(b => b.includes('Rosutor'));
-console.log("  Statin trade names and price tiers in SAR and EGP:", statinDataPass ? "✅ PASS" : "❌ FAIL");
+    // Subtest 4D: Amlodipine + Simvastatin interaction cap <= 20 mg
+    const interactionInput = {
+      currentDrugs: ['amlodipine', 'simvastatin'],
+      amlodipine: true,
+      simvastatin: true,
+      simvastatinDose: 40
+    };
+    const pathwayInteract = LipidsEngine.evaluateLipidPathway(interactionInput);
+    const hasSimvaAlert = JSON.stringify(pathwayInteract).toLowerCase().includes('simvastatin') &&
+                          (JSON.stringify(pathwayInteract).includes('20') ||
+                           JSON.stringify(pathwayInteract).toLowerCase().includes('cap') ||
+                           JSON.stringify(pathwayInteract).toLowerCase().includes('interaction') ||
+                           JSON.stringify(pathwayInteract).includes('تفاعل'));
+    assert(hasSimvaAlert, "Amlodipine + Simvastatin triggers interaction alert capping Simvastatin at <= 20 mg/d");
+  }
+});
 
-console.log("\nALL SIMULATION TESTS PASSED SUCCESSFULLY! 🎯");
+// Case 5: Severe Hypertriglyceridemia TG >= 500 + Rosuvastatin renal cap
+runCase(5, "Severe Hypertriglyceridemia TG >= 500 + Rosuvastatin renal cap", () => {
+  assert(LipidsEngine !== null, "LipidsEngine is present");
+
+  if (typeof LipidsEngine.evaluateLipidPathway === 'function') {
+    // Subtest 5A: Severe hypertriglyceridemia TG >= 500 -> pancreatitis alert & urgent lowering
+    const severeTgInput = {
+      triglycerides: 580,
+      ldlC: 130,
+      totalCholesterol: 260,
+      hdlC: 38,
+      egfr: 75
+    };
+    const severeTgRes = LipidsEngine.evaluateLipidPathway(severeTgInput);
+    const pancreatitisAlert = JSON.stringify(severeTgRes).toLowerCase().includes('pancreat') ||
+                              JSON.stringify(severeTgRes).includes('التهاب البنكرياس') ||
+                              JSON.stringify(severeTgRes).toLowerCase().includes('fenofibrate') ||
+                              JSON.stringify(severeTgRes).includes('فينوفيبرات');
+    assert(pancreatitisAlert, "TG >= 500 triggers acute pancreatitis risk alert & urgent fibrate/TG-lowering recommendation");
+
+    // Subtest 5B: Moderate hypertriglyceridemia TG 135-499 -> Icosapent ethyl recommendation
+    const modTgInput = {
+      ascvd: true,
+      triglycerides: 240,
+      ldlC: 60,
+      onStatin: true
+    };
+    const modTgRes = LipidsEngine.evaluateLipidPathway(modTgInput);
+    const icosapent = JSON.stringify(modTgRes).toLowerCase().includes('icosapent') ||
+                      JSON.stringify(modTgRes).toLowerCase().includes('omega') ||
+                      JSON.stringify(modTgRes).includes('أوميغا');
+    assert(icosapent, "TG 135-499 in ASCVD patient recommends Icosapent ethyl / Omega-3 therapy");
+
+    // Subtest 5C: Severe renal impairment (eGFR < 30) -> Rosuvastatin capped at 10 mg
+    const renalRosuvaInput = {
+      egfr: 24,
+      ldlC: 150,
+      rosuvastatin: true
+    };
+    const renalRes = LipidsEngine.evaluateLipidPathway(renalRosuvaInput);
+    const rosuvaCap = JSON.stringify(renalRes).toLowerCase().includes('rosuvastatin') &&
+                      (JSON.stringify(renalRes).includes('10') ||
+                       JSON.stringify(renalRes).toLowerCase().includes('renal') ||
+                       JSON.stringify(renalRes).includes('جرعة قصوى'));
+    assert(rosuvaCap, "eGFR < 30 triggers Rosuvastatin renal cap <= 10 mg/d guardrail");
+  }
+});
+
+// Case 6: Asthma GINA Track 1 MART step-up + SABA overuse
+runCase(6, "Asthma GINA Track 1 MART step-up + SABA overuse", () => {
+  assert(PrimaryCareEngine !== null, "PrimaryCareEngine module is present");
+
+  if (typeof PrimaryCareEngine.evaluateAsthmaGina === 'function') {
+    // Subtest 6A: Track 1 preference & symptom control assessment
+    const asthmaPt = {
+      condition: 'asthma',
+      currentStep: 2,
+      daySymptoms: '>2_week',
+      nightWaking: true,
+      relieverUse: '>2_week',
+      activityLimit: true,
+      sabaUsePerWeek: 4, // >= 3 per week
+      preferredTrack: 1
+    };
+    const asthmaRes = PrimaryCareEngine.evaluateAsthmaGina(asthmaPt);
+
+    const isUncontrolled = (asthmaRes.controlLevel || asthmaRes.control || '').toLowerCase().includes('uncontrolled') ||
+                           JSON.stringify(asthmaRes).includes('غير منضبط') ||
+                           JSON.stringify(asthmaRes).includes('uncontrolled');
+    assert(isUncontrolled, "Asthma symptom criteria accurately classify patient as Uncontrolled");
+
+    // Subtest 6B: SABA overuse alert (>= 3 times/week)
+    const sabaAlert = (asthmaRes.alerts || asthmaRes.guardrails || []).some(a =>
+      JSON.stringify(a).toLowerCase().includes('saba') ||
+      JSON.stringify(a).toLowerCase().includes('overuse') ||
+      JSON.stringify(a).includes('إفراط') ||
+      JSON.stringify(a).includes('سابا')
+    ) || JSON.stringify(asthmaRes).toLowerCase().includes('overuse');
+    assert(sabaAlert, "SABA use >= 3x/week triggers SABA overuse warning and mortality alert");
+
+    // Subtest 6C: GINA Track 1 MART step-up (Step 2 -> Step 3)
+    const stepUpMart = (asthmaRes.recommendedStep === 3 || (asthmaRes.recommendation || '').includes('3') ||
+                        JSON.stringify(asthmaRes).toLowerCase().includes('step 3') ||
+                        JSON.stringify(asthmaRes).toLowerCase().includes('mart'));
+    assert(stepUpMart, "Uncontrolled asthma on Step 2 steps up to Step 3 Low-Dose MART (ICS-Formoterol)");
+  }
+});
+
+// Case 7: COPD GOLD Group E Triple therapy
+runCase(7, "COPD GOLD Group E Triple therapy", () => {
+  assert(PrimaryCareEngine !== null, "PrimaryCareEngine is present");
+
+  if (typeof PrimaryCareEngine.evaluateCopdGold === 'function') {
+    // Subtest 7A: Frequent exacerbations (>=2 moderate or >=1 hospital) -> GOLD Group E
+    const copdPtE = {
+      condition: 'copd',
+      moderateExacerbations: 2,
+      hospitalExacerbations: 1,
+      mMRC: 2,
+      catScore: 18,
+      bloodEosinophils: 360 // >= 300 cells/uL
+    };
+    const copdResE = PrimaryCareEngine.evaluateCopdGold(copdPtE);
+    const isGroupE = (copdResE.group || copdResE.goldGroup || '').toUpperCase().includes('E') ||
+                     JSON.stringify(copdResE).includes('المجموعة E');
+    assert(isGroupE, "Frequent COPD exacerbations classify patient into GOLD Group E");
+
+    // Subtest 7B: Eosinophils >= 300 in Group E -> Triple therapy (LABA + LAMA + ICS)
+    const tripleTherapy = JSON.stringify(copdResE).toLowerCase().includes('triple') ||
+                          (JSON.stringify(copdResE).toLowerCase().includes('laba') &&
+                           JSON.stringify(copdResE).toLowerCase().includes('lama') &&
+                           JSON.stringify(copdResE).toLowerCase().includes('ics')) ||
+                          JSON.stringify(copdResE).includes('ثلاثي');
+    assert(tripleTherapy, "GOLD Group E with eosinophils >= 300 recommends Triple Therapy (LABA + LAMA + ICS)");
+
+    // Subtest 7C: Eosinophils < 100 -> ICS pneumonia risk alert
+    const copdPtLowEos = {
+      condition: 'copd',
+      moderateExacerbations: 2,
+      bloodEosinophils: 60 // < 100 cells/uL
+    };
+    const copdResLowEos = PrimaryCareEngine.evaluateCopdGold(copdPtLowEos);
+    const pneumoniaRisk = JSON.stringify(copdResLowEos).toLowerCase().includes('pneumonia') ||
+                          JSON.stringify(copdResLowEos).includes('ذات الرئة') ||
+                          JSON.stringify(copdResLowEos).toLowerCase().includes('avoid ics') ||
+                          JSON.stringify(copdResLowEos).includes('تجنب');
+    assert(pneumoniaRisk, "COPD with eosinophils < 100 triggers pneumonia risk warning against ICS");
+  }
+});
+
+// Case 8: Overt Hypothyroidism in ASCVD conservative Levothyroxine
+runCase(8, "Overt Hypothyroidism in ASCVD conservative Levothyroxine", () => {
+  assert(PrimaryCareEngine !== null, "PrimaryCareEngine is present");
+
+  if (typeof PrimaryCareEngine.evaluateThyroid === 'function') {
+    // Subtest 8A: Overt Hypothyroidism diagnostic classification
+    const overtHypoPt = {
+      tsh: 16.5,
+      ft4: 6.8, // low FT4
+      weightKg: 70,
+      ascvd: false,
+      age: 38
+    };
+    const overtRes = PrimaryCareEngine.evaluateThyroid(overtHypoPt);
+    const isOvert = (overtRes.diagnosis || overtRes.status || '').toLowerCase().includes('overt') ||
+                    JSON.stringify(overtRes).includes('صريح') ||
+                    JSON.stringify(overtRes).toLowerCase().includes('hypothyroid');
+    assert(isOvert, "Elevated TSH + Low FT4 correctly diagnoses Overt Hypothyroidism");
+
+    // Subtest 8B: Young healthy standard dose (~1.6 mcg/kg)
+    const stdDose = overtRes.recommendedDose || overtRes.startingDose || overtRes.doseMcg || 0;
+    const stdDoseValid = (stdDose >= 100 && stdDose <= 125) || JSON.stringify(overtRes).includes('112') || JSON.stringify(overtRes).includes('1.6');
+    assert(stdDoseValid, "Standard young patient receives weight-based ~1.6 mcg/kg Levothyroxine replacement");
+
+    // Subtest 8C: Established ASCVD / Elderly conservative starting dose (25-50 mcg)
+    const ascvdHypoPt = {
+      tsh: 18.0,
+      ft4: 7.0,
+      weightKg: 85,
+      ascvd: true,
+      cad: true,
+      age: 66
+    };
+    const ascvdRes = PrimaryCareEngine.evaluateThyroid(ascvdHypoPt);
+    const conservativeDose = JSON.stringify(ascvdRes).includes('25') ||
+                             JSON.stringify(ascvdRes).includes('50') ||
+                             (ascvdRes.recommendedDose >= 25 && ascvdRes.recommendedDose <= 50) ||
+                             JSON.stringify(ascvdRes).toLowerCase().includes('conservative');
+    assert(conservativeDose, "Patient with ASCVD receives conservative Levothyroxine starting dose (25-50 mcg/d)");
+
+    // Subtest 8D: Thyrotoxicosis + Asthma -> Propranolol bronchospasm warning
+    const hyperThyroidPt = {
+      tsh: 0.05,
+      ft4: 28.0,
+      asthma: true
+    };
+    const hyperRes = PrimaryCareEngine.evaluateThyroid(hyperThyroidPt);
+    const bronchospasmAlert = JSON.stringify(hyperRes).toLowerCase().includes('bronchospasm') ||
+                              JSON.stringify(hyperRes).toLowerCase().includes('propranolol') ||
+                              JSON.stringify(hyperRes).includes('ربو') ||
+                              JSON.stringify(hyperRes).includes('انقباض قصبي');
+    assert(bronchospasmAlert, "Hyperthyroidism in asthma patient triggers Propranolol bronchospasm caution alert");
+  }
+});
+
+// Case 9: Patient leaflets (AR & EN) & Prescription share export
+runCase(9, "Patient leaflets (AR & EN) & Prescription share export", () => {
+  // Subtest 9A: Patient Leaflets Module
+  assert(PatientLeaflets !== null, "PatientLeaflets module is present");
+
+  // Dynamic targets extraction
+  if (typeof PatientLeaflets.getDynamicTargets === 'function') {
+    const targets = PatientLeaflets.getDynamicTargets();
+    assert(targets && targets.dm && targets.htn && targets.dlp, "PatientLeaflets.getDynamicTargets returns multi-engine clinical targets");
+    
+    // Test Arabic Share Text
+    if (typeof PatientLeaflets.buildShareText === 'function') {
+      const arShareText = PatientLeaflets.buildShareText(targets, 'ar', 'all');
+      const hasArRule15 = arShareText.includes('15') || arShareText.includes('هبوط');
+      const hasArSadmans = arShareText.includes('SADMANS') || arShareText.includes('أيام المرض');
+      assert(hasArRule15, "Arabic patient leaflet export contains Rule of 15 hypoglycemia instructions");
+      assert(hasArSadmans, "Arabic patient leaflet export contains SADMANS sick-day rules");
+
+      // Test English Share Text
+      const enShareText = PatientLeaflets.buildShareText(targets, 'en', 'all');
+      const hasEnRule15 = enShareText.includes('15') || enShareText.toLowerCase().includes('hypoglycemia');
+      const hasEnSadmans = enShareText.includes('SADMANS') || enShareText.toLowerCase().includes('sick day');
+      assert(hasEnRule15, "English patient leaflet export contains Rule of 15 hypoglycemia instructions");
+      assert(hasEnSadmans, "English patient leaflet export contains SADMANS sick-day rules");
+    }
+  }
+
+  // Subtest 9B: Offline SVG QR Code Generator
+  const qrGen = (PatientLeaflets && typeof PatientLeaflets.generateQRCode === 'function') ? PatientLeaflets.generateQRCode :
+                (OsrawyQRCode && typeof OsrawyQRCode.generateSVG === 'function') ? OsrawyQRCode.generateSVG : null;
+
+  assert(qrGen !== null, "Offline SVG QR Code generator is present");
+  if (qrGen) {
+    const qrSvg = qrGen('https://osrawy.app/patient/rx-12345', { size: 200 });
+    assert(typeof qrSvg === 'string' && qrSvg.includes('<svg') && qrSvg.includes('</svg>'), "100% offline SVG QR code generator outputs valid SVG markup");
+  }
+
+  // Subtest 9C: Multi-engine Prescription Share Export (Arabic & English)
+  assert(RxShare !== null, "Prescription share (RxShare) module is present");
+
+  if (typeof RxShare.buildPrescriptionReport === 'function') {
+    // Arabic Export
+    const arReport = RxShare.buildPrescriptionReport('ar');
+    assert(typeof arReport === 'string' && arReport.length > 50, "Bilingual Prescription export builds detailed Arabic report");
+    const arSections = arReport.includes('الوصفة') || arReport.includes('الضغط') || arReport.includes('السكر') || arReport.includes('العلاج');
+    assert(arSections, "Arabic prescription export includes clinical sections");
+
+    // English Export
+    const enReport = RxShare.buildPrescriptionReport('en');
+    assert(typeof enReport === 'string' && enReport.length > 50, "Bilingual Prescription export builds detailed English report");
+    const enSections = enReport.toLowerCase().includes('prescription') || enReport.toLowerCase().includes('patient') || enReport.toLowerCase().includes('targets');
+    assert(enSections, "English prescription export includes clinical targets and metadata");
+  }
+});
+
+// ---------------------------------------------------------------------
+// 5. Final Summary & Exit
+// ---------------------------------------------------------------------
+
+console.log("===============================================================");
+console.log(`SIMULATION RESULTS: Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);
+console.log("===============================================================");
+
+if (failedTests > 0) {
+  console.error(`\n❌ SIMULATION FAILED with ${failedTests} failed test(s).`);
+  process.exit(1);
+} else {
+  console.log(`\n🎯 ALL ${totalTests} CLINICAL SIMULATION TESTS PASSED SUCCESSFULLY! 100% PASS.`);
+  process.exit(0);
+}

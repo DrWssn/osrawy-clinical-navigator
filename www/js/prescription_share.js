@@ -1,5 +1,6 @@
 // ==============================================================
-// Prescription Formatter, WhatsApp Sharer & Native PDF/Print
+// Prescription Formatter, Multi-Engine Sharer & Native PDF/Print
+// Osrawy Clinical Navigator - Comprehensive Cross-Engine Report
 // ==============================================================
 
 const RxShare = (function() {
@@ -30,8 +31,8 @@ const RxShare = (function() {
   }
 
   function getPrescriptionData() {
-    const pt = PatientSync.get();
-    const rxCard = document.getElementById('rxcard');
+    const pt = (typeof PatientSync !== 'undefined') ? PatientSync.get() : {};
+    const rxCard = (typeof document !== 'undefined') ? document.getElementById('rxcard') : null;
     const items = [];
     if (rxCard) {
       const listItems = rxCard.querySelectorAll('.rx-list li');
@@ -47,10 +48,10 @@ const RxShare = (function() {
       });
     }
 
-    const invEl = document.querySelector('.rx-inv');
+    const invEl = (typeof document !== 'undefined') ? document.querySelector('.rx-inv') : null;
     const investigations = invEl ? invEl.innerText.replace('Investigations requested:', '').trim() : '';
 
-    const fuEl = document.querySelector('.rx-fu');
+    const fuEl = (typeof document !== 'undefined') ? document.querySelector('.rx-fu') : null;
     const followUp = fuEl ? fuEl.innerText.replace('Follow-up', '').trim() : '';
 
     return {
@@ -70,7 +71,7 @@ const RxShare = (function() {
     if (rx.doctor.clinicName) text += `${rx.doctor.clinicName}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `👤 *المريض:* ${rx.patient.name || 'مريض'} | *العمر:* ${rx.patient.age} سنة | *التاريخ:* ${rx.date}\n`;
-    if (rx.patient.sbp) text += `📊 *الضغط:* ${rx.patient.sbp}/${rx.patient.dbp} mmHg | *BMI:* ${PatientSync.getBMI(rx.patient.wt, rx.patient.ht) || '—'}\n`;
+    if (rx.patient.sbp) text += `📊 *الضغط:* ${rx.patient.sbp}/${rx.patient.dbp} mmHg | *BMI:* ${(typeof PatientSync !== 'undefined' ? PatientSync.getBMI(rx.patient.wt, rx.patient.ht) : '—') || '—'}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `📋 *الوصفة العلاجية (Rx):*\n\n`;
 
@@ -105,7 +106,7 @@ const RxShare = (function() {
   }
 
   function buildHtnWhatsAppText() {
-    const pt = PatientSync.get();
+    const pt = (typeof PatientSync !== 'undefined') ? PatientSync.get() : {};
     const cfg = loadSettings();
     let text = `*${cfg.doctorName}*\n`;
     text += `_${cfg.doctorTitle}_\n`;
@@ -116,7 +117,7 @@ const RxShare = (function() {
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `💓 *توصيات وخطة علاج ارتفاع ضغط الدم:*\n\n`;
 
-    const outEl = document.getElementById('out');
+    const outEl = (typeof document !== 'undefined') ? document.getElementById('out') : null;
     if (outEl) {
       const stageEl = outEl.querySelector('.big');
       if (stageEl) text += `• *المرحلة:* ${stageEl.innerText.trim()}\n`;
@@ -145,18 +146,303 @@ const RxShare = (function() {
     return text;
   }
 
+  /**
+   * Multi-Engine Comprehensive Bilingual Prescription & Clinical Report
+   * Integrates Vitals, Targets, Lipids, Primary Care, Safety Guardrails & Monitoring Schedule
+   */
+  function buildPrescriptionReport(lang) {
+    const activeLang = lang || ((typeof window !== 'undefined' && typeof window.I18n !== 'undefined') ? window.I18n.getLang() : 'ar');
+    const isAr = (activeLang === 'ar');
+    const cfg = loadSettings();
+    const pt = (typeof PatientSync !== 'undefined') ? PatientSync.get() : {};
+    const bmi = (typeof PatientSync !== 'undefined') ? PatientSync.getBMI(pt.wt, pt.ht) : '—';
+    const dateStr = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // Multi-Engine Assessments
+    const syncGuardrails = (typeof PatientSync !== 'undefined' && typeof PatientSync.evaluateSafetyGuardrails === 'function')
+      ? PatientSync.evaluateSafetyGuardrails(pt)
+      : [];
+
+    let lipidReport = null;
+    if (typeof OsrawyLipidsEngine !== 'undefined') {
+      try {
+        lipidReport = OsrawyLipidsEngine.evaluateLipidPathway(pt);
+      } catch(e) {}
+    }
+
+    let pcReport = null;
+    if (typeof OsrawyPrimaryCareEngine !== 'undefined') {
+      try {
+        pcReport = OsrawyPrimaryCareEngine.evaluatePrimaryCare(pt);
+      } catch(e) {}
+    }
+
+    // Aggregate Alerts
+    const allAlerts = [
+      ...syncGuardrails,
+      ...(lipidReport ? lipidReport.alerts : []),
+      ...(pcReport ? pcReport.allAlerts : [])
+    ];
+
+    let text = '';
+
+    if (isAr) {
+      // --- ARABIC REPORT ---
+      text += `🏥 *${cfg.clinicName || 'عيادة طب الأسرة والتخصصات الباطنية'}*\n`;
+      text += `👨‍⚕️ *${cfg.doctorName}*\n`;
+      text += `_${cfg.doctorTitle}_\n`;
+      if (cfg.clinicPhone) text += `📞 هاتف العيادة: ${cfg.clinicPhone}\n`;
+      text += `📅 التاريخ: ${dateStr}\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 1. Patient Profile & Vitals
+      text += `👤 *بيانات المريض والعلامات الحيوية:*\n`;
+      text += `• الاسم: ${pt.name || 'مريض جديد'} | الجنس: ${pt.sex === 'f' ? 'أنثى' : 'ذكر'} | العمر: ${pt.age} سنة\n`;
+      text += `• الوزن: ${pt.wt} كجم | الطول: ${pt.ht} سم | كتلة الجسم (BMI): ${bmi || '—'}\n`;
+      text += `• ضغط الدم: ${pt.sbp || 148}/${pt.dbp || 94} mmHg | البوتاسيوم: ${pt.k || 4.6} mEq/L\n`;
+      text += `• وظائف الكلى (eGFR): ${pt.egfr} مل/د | زلال البول (UACR): ${pt.uacr} مجم/جم\n`;
+      if (pt.a1c) text += `• السكر التراكمي (HbA1c): ${pt.a1c}% | سكر الصائم: ${pt.fpg || '—'} مجم/dL\n`;
+      if (lipidReport) {
+        text += `• الدهون: الكلي ${lipidReport.labs.tcMg} | LDL: ${lipidReport.labs.ldlMg} | HDL: ${lipidReport.labs.hdlMg} | TG: ${lipidReport.labs.tgMg} مجم/dL\n`;
+      }
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 2. Clinical Targets (الأهداف العلاجية)
+      text += `🎯 *الأهداف العلاجية المستهدفة (Targets):*\n`;
+      text += `• ضغط الدم المستهدف: أقل من 130/80 mmHg\n`;
+      text += `• السكر التراكمي المستهدف: أقل من 7.0% (أو حسب الحالة)\n`;
+      if (lipidReport) {
+        text += `• الكوليسترول الضار المستهدف: < ${lipidReport.target.ldlTargetMg} مجم/dL (${lipidReport.target.nameAr})\n`;
+        text += `• الكوليسترول غير المفيد (Non-HDL): < ${lipidReport.target.nonHdlTargetMg} مجم/dL\n`;
+      }
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 3. Combined Medications List
+      text += `💊 *الخطة الدوائية المعتمدة (Rx):*\n\n`;
+      const rxData = getPrescriptionData();
+      if (rxData.items && rxData.items.length > 0) {
+        text += `🔹 *أدوية السكري:*\n`;
+        rxData.items.forEach((it, idx) => {
+          text += `  ${idx + 1}. ${it.drug}\n`;
+          if (it.arabic) text += `     • ${it.arabic}\n`;
+          else if (it.directions) text += `     • ${it.directions}\n`;
+        });
+        text += `\n`;
+      }
+
+      // HTN Drugs from panel
+      if (typeof document !== 'undefined') {
+        const outEl = document.getElementById('out');
+        const htnDrugs = outEl ? outEl.querySelectorAll('.drug') : [];
+        if (htnDrugs.length > 0) {
+          text += `🔹 *أدوية علاج ضغط الدم:*\n`;
+          htnDrugs.forEach((d, idx) => {
+            const cls = d.querySelector('.cls');
+            const ex = d.querySelector('.ex');
+            text += `  ${idx + 1}. ${cls ? cls.innerText.trim() : 'دواء ضغط'}: ${ex ? ex.innerText.trim() : ''}\n`;
+          });
+          text += `\n`;
+        }
+      }
+
+      // Lipid Lowering Therapy Recommendation
+      if (lipidReport && lipidReport.steps && lipidReport.steps.length > 0) {
+        text += `🔹 *علاج الدهون والكوليسترول الموصى به:*\n`;
+        lipidReport.steps.forEach(s => {
+          text += `  • ${s.titleAr}: ${s.drugAr}\n`;
+        });
+        text += `\n`;
+      }
+
+      // Primary Care Recommendations (Asthma / COPD / Thyroid)
+      if (pcReport) {
+        if (pt.asthma && pcReport.asthma) {
+          text += `🔹 *علاج الربو الشعبي (GINA 2024):*\n`;
+          text += `  • ${pcReport.asthma.trackNameAr} - ${pcReport.asthma.recommendation.nameAr}\n\n`;
+        }
+        if (pt.copd && pcReport.copd) {
+          text += `🔹 *علاج السدة الرئوية (GOLD 2024):*\n`;
+          text += `  • ${pcReport.copd.groupNameAr}: ${pcReport.copd.rxAr}\n\n`;
+        }
+        if (pcReport.thyroid && pcReport.thyroid.status !== 'euthyroid') {
+          text += `🔹 *علاج الغدة الدرقية:*\n`;
+          text += `  • ${pcReport.thyroid.statusNameAr}: ${pcReport.thyroid.rxAr}\n\n`;
+        }
+      }
+
+      // 4. Combined Safety & Guardrail Alerts
+      if (allAlerts.length > 0) {
+        text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        text += `⚠️ *تنبيهات السلامة والاحتياطات الدوائية:*\n`;
+        allAlerts.forEach(a => {
+          const icon = a.level === 'critical' ? '🚨' : (a.level === 'warning' ? '⚠️' : '💡');
+          text += `${icon} *${a.titleAr}*\n`;
+          text += `   ${a.messageAr}\n`;
+        });
+        text += `\n`;
+      }
+
+      // 5. Laboratory Monitoring Schedule
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `🔬 *جدول الفحوصات والتحاليل والمتابعة:*\n`;
+      text += `• فحص وظائف الكلى والأملاح (eGFR & K+) بعد 2-4 أسابيع من بدء أو تعديل أدوية الضغط.\n`;
+      text += `• فحص الدهون الكامل (Lipid Profile) بعد 4-12 أسبوعاً لتقييم استجابة الستاتين.\n`;
+      text += `• تحليل السكر التراكمي (HbA1c) كل 3 أشهر.\n`;
+      text += `• فحص زلال البول UACR وقاع العين والقدمين سنوياً.\n\n`;
+
+      // 6. Educational Instructions & Sick-Day Rules
+      text += `💡 *إرشادات هامة للمريض:*\n`;
+      text += `• قاعدة 15 لعلاج هبوط السكر: في حال الشعور برعشة أو دوخة، تناول 15 جم سكر سريع (نصف كوب عصير)، واعد القياس بعد 15 دقيقة.\n`;
+      text += `• قواعد أيام المرض (SADMANS): يجب إيقاف أدوية (SGLT2i، مدرات البول، ميتفورمين، أدوية الضغط ACEi/ARB) مؤقتاً عند حدوث جفاف أو قيء أو إسهال شديد ومراجعة الطبيب فوراً.\n`;
+      text += `• قياس الضغط بالمنزل: الجلوس باسترخاء 5 دقائق قبل القياس، وتدوين القراءات.\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `_تم إصدار هذه الوصفة الطبية التفاعلية عبر تطبيق Osrawy Clinical Navigator_\n`;
+
+    } else {
+      // --- ENGLISH REPORT ---
+      text += `🏥 *${cfg.clinicName || 'Family Medicine & Internal Medicine Clinic'}*\n`;
+      text += `👨‍⚕️ *${cfg.doctorName}*\n`;
+      text += `_${cfg.doctorTitle}_\n`;
+      if (cfg.clinicPhone) text += `📞 Clinic Phone: ${cfg.clinicPhone}\n`;
+      text += `📅 Date: ${dateStr}\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 1. Patient Profile & Vitals
+      text += `👤 *Patient Profile & Clinical Vitals:*\n`;
+      text += `• Name: ${pt.name || 'New Patient'} | Sex: ${pt.sex === 'f' ? 'Female' : 'Male'} | Age: ${pt.age} years\n`;
+      text += `• Weight: ${pt.wt} kg | Height: ${pt.ht} cm | BMI: ${bmi || '—'}\n`;
+      text += `• Blood Pressure: ${pt.sbp || 148}/${pt.dbp || 94} mmHg | Serum K+: ${pt.k || 4.6} mEq/L\n`;
+      text += `• Renal Function (eGFR): ${pt.egfr} mL/min/1.73m² | UACR: ${pt.uacr} mg/g\n`;
+      if (pt.a1c) text += `• HbA1c: ${pt.a1c}% | Fasting Glucose: ${pt.fpg || '—'} mg/dL\n`;
+      if (lipidReport) {
+        text += `• Lipids: TC ${lipidReport.labs.tcMg} | LDL ${lipidReport.labs.ldlMg} | HDL ${lipidReport.labs.hdlMg} | TG ${lipidReport.labs.tgMg} mg/dL\n`;
+      }
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 2. Clinical Targets
+      text += `🎯 *Clinical Targets:*\n`;
+      text += `• BP Goal: < 130/80 mmHg\n`;
+      text += `• Glycemic Goal: HbA1c < 7.0% (individualized)\n`;
+      if (lipidReport) {
+        text += `• LDL-C Goal: < ${lipidReport.target.ldlTargetMg} mg/dL (${lipidReport.target.nameEn})\n`;
+        text += `• Non-HDL Goal: < ${lipidReport.target.nonHdlTargetMg} mg/dL\n`;
+      }
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // 3. Regimens
+      text += `💊 *Prescribed & Recommended Regimens (Rx):*\n\n`;
+      const rxData = getPrescriptionData();
+      if (rxData.items && rxData.items.length > 0) {
+        text += `🔹 *Diabetes Medications:*\n`;
+        rxData.items.forEach((it, idx) => {
+          text += `  ${idx + 1}. ${it.drug}\n`;
+          if (it.directions) text += `     • Directions: ${it.directions}\n`;
+        });
+        text += `\n`;
+      }
+
+      // HTN Drugs
+      if (typeof document !== 'undefined') {
+        const outEl = document.getElementById('out');
+        const htnDrugs = outEl ? outEl.querySelectorAll('.drug') : [];
+        if (htnDrugs.length > 0) {
+          text += `🔹 *Hypertension Regimen:*\n`;
+          htnDrugs.forEach((d, idx) => {
+            const cls = d.querySelector('.cls');
+            const ex = d.querySelector('.ex');
+            text += `  ${idx + 1}. ${cls ? cls.innerText.trim() : 'HTN Med'}: ${ex ? ex.innerText.trim() : ''}\n`;
+          });
+          text += `\n`;
+        }
+      }
+
+      // Lipid Lowering Therapy
+      if (lipidReport && lipidReport.steps && lipidReport.steps.length > 0) {
+        text += `🔹 *Lipid-Lowering Pathway Strategy:*\n`;
+        lipidReport.steps.forEach(s => {
+          text += `  • ${s.titleEn}: ${s.drugEn}\n`;
+        });
+        text += `\n`;
+      }
+
+      // Primary Care
+      if (pcReport) {
+        if (pt.asthma && pcReport.asthma) {
+          text += `🔹 *Asthma Care (GINA 2024):*\n`;
+          text += `  • ${pcReport.asthma.trackNameEn} - ${pcReport.asthma.recommendation.nameEn}\n\n`;
+        }
+        if (pt.copd && pcReport.copd) {
+          text += `🔹 *COPD Care (GOLD 2024):*\n`;
+          text += `  • ${pcReport.copd.groupNameEn}: ${pcReport.copd.rxEn}\n\n`;
+        }
+        if (pcReport.thyroid && pcReport.thyroid.status !== 'euthyroid') {
+          text += `🔹 *Thyroid Care:*\n`;
+          text += `  • ${pcReport.thyroid.statusNameEn}: ${pcReport.thyroid.rxEn}\n\n`;
+        }
+      }
+
+      // 4. Safety Guardrails
+      if (allAlerts.length > 0) {
+        text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        text += `⚠️ *Clinical Safety Guardrails & Drug Precautions:*\n`;
+        allAlerts.forEach(a => {
+          const icon = a.level === 'critical' ? '🚨' : (a.level === 'warning' ? '⚠️' : '💡');
+          text += `${icon} *${a.titleEn}*\n`;
+          text += `   ${a.messageEn}\n`;
+        });
+        text += `\n`;
+      }
+
+      // 5. Monitoring Schedule
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `🔬 *Laboratory Surveillance & Follow-up Schedule:*\n`;
+      text += `• Serum K+ and eGFR within 2–4 weeks of RAASi / diuretic titration.\n`;
+      text += `• Fasting lipid profile recheck in 4–12 weeks to assess statin response.\n`;
+      text += `• HbA1c retest every 3 months until target achieved.\n`;
+      text += `• Annual surveillance: urine albumin-to-creatinine ratio (UACR), dilated retinal exam, comprehensive foot exam.\n\n`;
+
+      // 6. Patient Guidance
+      text += `💡 *Patient Instructions & Safety Rules:*\n`;
+      text += `• Rule of 15 for Hypoglycemia: If feeling shaky, dizzy, or diaphoretic, take 15g fast-acting carbohydrate (1/2 cup juice), and recheck blood glucose in 15 minutes.\n`;
+      text += `• Sick-Day Rules (SADMANS): Temporarily hold SGLT2i, ACEi/ARB, diuretics, and metformin during acute dehydrating illnesses (fever, vomiting, severe diarrhea) and contact clinic.\n`;
+      text += `• Home BP monitoring: Rest 5 minutes before measurement; record morning and evening readings.\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `_Issued via Osrawy Clinical Navigator Interactive Multi-Engine Platform_\n`;
+    }
+
+    return text;
+  }
+
+  function sharePrescription(lang) {
+    const text = buildPrescriptionReport(lang);
+    const title = (lang === 'en') ? 'Osrawy Clinical Prescription & Care Plan' : 'الوصفة الطبية التفاعلية والخطة العلاجية';
+    const encoded = encodeURIComponent(text);
+    const url = `https://wa.me/?text=${encoded}`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({
+        title,
+        text
+      }).catch(() => {
+        if (typeof window !== 'undefined') window.open(url, '_blank');
+      });
+    } else if (typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    }
+  }
+
   function shareHtnWhatsApp() {
     const text = buildHtnWhatsAppText();
     const encoded = encodeURIComponent(text);
     const url = `https://wa.me/?text=${encoded}`;
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
       navigator.share({
         title: 'Hypertension Plan / خطة علاج الضغط',
         text: text
       }).catch(() => {
-        window.open(url, '_blank');
+        if (typeof window !== 'undefined') window.open(url, '_blank');
       });
-    } else {
+    } else if (typeof window !== 'undefined') {
       window.open(url, '_blank');
     }
   }
@@ -165,38 +451,53 @@ const RxShare = (function() {
     const text = buildWhatsAppText();
     const encoded = encodeURIComponent(text);
     const url = `https://wa.me/?text=${encoded}`;
-    
-    // If native share is supported and available, try it
-    if (navigator.share) {
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
       navigator.share({
         title: 'Prescription / وصفة علاجية',
         text: text
       }).catch(() => {
-        window.open(url, '_blank');
+        if (typeof window !== 'undefined') window.open(url, '_blank');
       });
-    } else {
+    } else if (typeof window !== 'undefined') {
       window.open(url, '_blank');
     }
   }
 
   function copySummaryToClipboard() {
     const text = buildWhatsAppText();
-    navigator.clipboard.writeText(text).then(() => {
-      showToast('✅ تم نسخ الوصفة العلاجية بنجاح!');
-    }).catch(() => {
-      showToast('❌ تعذر النسخ للحافظة');
-    });
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✅ تم نسخ الوصفة العلاجية بنجاح!');
+      }).catch(() => {
+        showToast('❌ تعذر النسخ للحافظة');
+      });
+    }
+  }
+
+  function copyHtnToClipboard() {
+    const text = buildHtnWhatsAppText();
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✅ تم نسخ خطة علاج الضغط بنجاح!');
+      }).catch(() => {
+        showToast('❌ تعذر النسخ للحافظة');
+      });
+    }
   }
 
   function printPrescription() {
-    if (window.AndroidPrint && typeof window.AndroidPrint.print === 'function') {
-      window.AndroidPrint.print();
-    } else {
-      window.print();
+    if (typeof window !== 'undefined') {
+      if (window.AndroidPrint && typeof window.AndroidPrint.print === 'function') {
+        window.AndroidPrint.print();
+      } else if (typeof window.print === 'function') {
+        window.print();
+      }
     }
   }
 
   function showToast(msg) {
+    if (typeof document === 'undefined') return;
     let t = document.getElementById('app-toast');
     if (!t) {
       t = document.createElement('div');
@@ -209,21 +510,14 @@ const RxShare = (function() {
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  function copyHtnToClipboard() {
-    const text = buildHtnWhatsAppText();
-    navigator.clipboard.writeText(text).then(() => {
-      showToast('✅ تم نسخ خطة علاج الضغط بنجاح!');
-    }).catch(() => {
-      showToast('❌ تعذر النسخ للحافظة');
-    });
-  }
-
   return {
     loadSettings,
     saveSettings,
     getPrescriptionData,
     buildWhatsAppText,
     buildHtnWhatsAppText,
+    buildPrescriptionReport,
+    sharePrescription,
     shareToWhatsApp,
     shareHtnWhatsApp,
     copySummaryToClipboard,
@@ -237,3 +531,6 @@ if (typeof window !== 'undefined') {
   window.RxShare = RxShare;
 }
 
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = RxShare;
+}

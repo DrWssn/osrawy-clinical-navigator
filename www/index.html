@@ -11,9 +11,22 @@
 
   <link rel="stylesheet" href="css/diabetes.css">
   <link rel="stylesheet" href="css/htn.css">
+  <link rel="stylesheet" href="css/lipids.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+
+  <!-- Sticky Vitals Summary Bar -->
+  <header id="sticky-vitals-summary" class="sticky-vitals-bar">
+    <div class="vitals-group">
+      <span class="vital-chip" id="bar-egfr"><span class="vital-label">eGFR:</span> <b class="vital-val">68</b> <small>mL/min</small></span>
+      <span class="vital-chip" id="bar-k"><span class="vital-label">K+:</span> <b class="vital-val">4.6</b> <small>mmol/L</small></span>
+      <span class="vital-chip" id="bar-bp"><span class="vital-label">BP:</span> <b class="vital-val">148/94</b> <small>mmHg</small></span>
+    </div>
+  </header>
+
+  <!-- Clinical Safety Guardrails Banner -->
+  <div id="clinical-guardrail-banner" class="clinical-guardrail-banner" hidden></div>
 
   <!-- Top App Bar -->
   <header class="top-nav-bar">
@@ -407,29 +420,50 @@
     </div>
   </section>
 
+  <!-- MAIN TAB: LIPIDS & DYSLIPIDEMIA (DLP) -->
+  <section id="tab-dlp" class="tab-panel main-view-section wrap" hidden style="display: none; padding-top: 14px;">
+    <div id="lipids-container"></div>
+    <div id="dlp-container"></div>
+  </section>
+
+  <!-- MAIN TAB: CLINICAL TOOLS & PRIMARY CARE -->
+  <section id="tab-tools" class="tab-panel main-view-section wrap" hidden style="display: none; padding-top: 14px;">
+    <div id="primary-care-container"></div>
+    <div id="clinical-tools-container"></div>
+  </section>
+
+  <!-- MAIN TAB: PATIENT LEAFLETS -->
+  <section id="tab-leaflets" class="tab-panel main-view-section" hidden style="display: none;">
+    <div id="patient-leaflet-container"></div>
+  </section>
+
   <!-- Mobile Quick-Jump Button (for phones) -->
   <button id="quick-jump-rx-btn" class="quick-jump-pill" type="button" title="انتقال سريع للروشتة والتوصيات" data-i18n-title="quick_jump_title">
     <span class="jump-icon">⚡</span>
     <span class="jump-text" data-i18n="quick_jump_rx">الروشتة والتوصيات ⬇</span>
   </button>
 
-  <!-- Bottom Navigation Bar -->
-  <nav class="bottom-nav-bar">
-    <button class="main-nav-btn active" data-tab="tab-diabetes">
+  <!-- Osrawy Bottom Navigation Bar -->
+  <nav class="osrawy-bottom-nav bottom-nav-bar">
+    <button class="osrawy-nav-btn main-nav-btn active" data-tab="tab-diabetes">
       <span class="nav-icon">🩺</span>
       <span class="nav-text" data-i18n="nav_diabetes">السكر</span>
     </button>
-    <button class="main-nav-btn" data-tab="tab-htn">
+    <button class="osrawy-nav-btn main-nav-btn" data-tab="tab-htn">
       <span class="nav-icon">💓</span>
       <span class="nav-text" data-i18n="nav_htn">الضغط</span>
     </button>
-    <button class="main-nav-btn" data-tab="tab-drugs">
-      <span class="nav-icon">💊</span>
-      <span class="nav-text" data-i18n="nav_drugs">الأدوية والأسعار</span>
+    <button class="osrawy-nav-btn main-nav-btn" data-tab="tab-dlp">
+      <span class="nav-icon">🩸</span>
+      <span class="nav-text" data-i18n="nav_dlp">الدهون</span>
     </button>
-    <button class="main-nav-btn" data-tab="tab-recent">
-      <span class="nav-icon">📋</span>
-      <span class="nav-text" data-i18n="nav_drafts">المسودات</span>
+    <button class="osrawy-nav-btn main-nav-btn" data-tab="tab-tools">
+      <span class="nav-icon">🧮</span>
+      <span class="nav-text" data-i18n="nav_tools">الأدوات</span>
+    </button>
+    <button class="osrawy-nav-btn main-nav-btn" data-tab="tab-leaflets">
+      <span class="nav-icon">📑</span>
+      <span class="nav-text" data-i18n="nav_leaflets">النشرات</span>
     </button>
   </nav>
 
@@ -469,7 +503,7 @@
               <b data-i18n="update_sec_title">🔄 تحديثات التطبيق (GitHub)</b>
               <div style="font-size:11.5px;color:var(--muted);" data-i18n="update_sec_sub">فحص وتحميل أحدث الإصدارات من GitHub</div>
             </div>
-            <span class="update-version-tag" id="current-app-version">v1.2.4</span>
+            <span class="update-version-tag" id="current-app-version">v1.2.5</span>
           </div>
           <button type="button" class="btn btn-sm btn-primary" id="btn-check-updates" style="margin-top:6px;width:100%;" data-i18n="btn_check_updates">
             🔍 التحقق من وجود تحديثات الآن
@@ -567,10 +601,13 @@
   <script src="js/drugs_data.js"></script>
   <script src="js/patient_sync.js"></script>
   <script src="js/clinical_tools.js"></script>
+  <script src="js/lipids_engine.js"></script>
+  <script src="js/primary_care_engine.js"></script>
   <script src="js/prescription_share.js"></script>
   <script src="js/drugs_directory.js"></script>
   <script src="js/diabetes_engine.js"></script>
   <script src="js/htn_engine.js"></script>
+  <script src="js/patient_leaflets.js"></script>
   <script src="js/updater.js"></script>
   <script src="js/app.js"></script>
 </body>

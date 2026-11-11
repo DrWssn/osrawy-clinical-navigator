@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.osrawy.clinicalnavigator;
 
 import static org.junit.Assert.*;
 

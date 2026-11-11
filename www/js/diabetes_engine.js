@@ -566,3 +566,35 @@ if (window.DRUG_DATABASE) {
 }
 buildIns();
 buildCK();
+
+// Cross-engine clinical safety alerts listener
+(function() {
+  const target = (typeof window !== 'undefined') ? window : globalThis;
+  if (target && target.addEventListener) {
+    target.addEventListener('osrawy:patient-updated', function(ev) {
+      const banner = document.getElementById('clinical-guardrail-banner');
+      if (!banner) return;
+      const guardrails = (ev && ev.detail && ev.detail.guardrails) || [];
+      let list = [];
+      if (Array.isArray(guardrails)) list = guardrails;
+      else if (guardrails && Array.isArray(guardrails.alerts)) list = guardrails.alerts;
+      else if (guardrails && typeof guardrails === 'object') list = Object.values(guardrails).filter(Boolean);
+
+      if (list.length === 0) {
+        banner.hidden = true;
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+        return;
+      }
+
+      banner.hidden = false;
+      banner.style.display = 'block';
+      banner.innerHTML = list.map(function(item) {
+        var text = typeof item === 'string' ? item : (item.text || item.message || item.title || '');
+        var type = (typeof item === 'object' && (item.type || item.level)) || 'danger';
+        var icon = (typeof item === 'object' && item.icon) || (type === 'danger' ? '🚨' : (type === 'warn' || type === 'warning' ? '⚠️' : 'ℹ️'));
+        return '<div class="guardrail-item ' + type + '"><span class="guardrail-icon">' + icon + '</span><div class="guardrail-msg">' + text + '</div></div>';
+      }).join('');
+    });
+  }
+})();

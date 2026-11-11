@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build & Release APK
+    name: Build, Validate & Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +34,12 @@ jobs:
       - name: Install Node Dependencies
         run: npm install
 
+      - name: Validate JavaScript Syntax
+        run: node check_js_syntax.js
+
+      - name: Run Clinical Engine Simulations
+        run: node run_full_simulation.js
+
       - name: Sync Capacitor Web Assets
         run: npx cap copy android
 
@@ -43,31 +49,88 @@ jobs:
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
-      - name: Build Debug APK
+      - name: Run Android Unit Tests
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build.log
+          ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build Android Release APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../build.log
 
       - name: Capture Gradle Build Output
         if: always()
         run: |
-          echo "### Gradle Build Log" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 80 build.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ -f build.log ]; then
+            echo "### Gradle Build Log" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 80 build.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Prepare APK For Release
+      - name: Sign APK with Keystore (With Fallback Auto-Generation)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.SIGNING_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'osrawy_release_pass' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'osrawy' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || 'osrawy_release_pass' }}
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           VERSION=$(node -p "require('./package.json').version")
           APK_NAME="Osrawy_Clinical_Navigator_v${VERSION}.apk"
-          echo "Target APK name: $APK_NAME"
-          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-            cp -f "android/app/build/outputs/apk/debug/app-debug.apk" "$APK_NAME"
+          echo "Target Release APK: $APK_NAME"
+
+          mkdir -p keystore
+          KEYSTORE_FILE="keystore/release.keystore"
+
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding provided release keystore secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+          else
+            echo "No keystore secret detected. Auto-generating fallback release keystore..."
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_FILE" \
+              -alias "$KEY_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              -dname "CN=Osrawy Clinical Navigator, OU=Clinical IT, O=Osrawy, L=Riyadh, C=SA"
           fi
-          ls -lh *.apk
+
+          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/* | sort -V | tail -n 1)
+          echo "Using Android build-tools from: $BUILD_TOOLS_DIR"
+
+          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          if [ ! -f "$UNSIGNED_APK" ]; then
+            UNSIGNED_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
+          echo "Source unsigned APK: $UNSIGNED_APK"
+
+          ALIGNED_APK="aligned-release.apk"
+          $BUILD_TOOLS_DIR/zipalign -f -p 4 "$UNSIGNED_APK" "$ALIGNED_APK" || cp -f "$UNSIGNED_APK" "$ALIGNED_APK"
+
+          $BUILD_TOOLS_DIR/apksigner sign \
+            --ks "$KEYSTORE_FILE" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out "$APK_NAME" \
+            "$ALIGNED_APK"
+
+          echo "Verifying signed APK signature:"
+          $BUILD_TOOLS_DIR/apksigner verify --verbose "$APK_NAME"
+
+          ls -lh "$APK_NAME"
+          sha256sum "$APK_NAME"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

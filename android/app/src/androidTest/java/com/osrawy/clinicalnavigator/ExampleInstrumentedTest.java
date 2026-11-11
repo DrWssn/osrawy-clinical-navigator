@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.osrawy.clinicalnavigator;
 
 import static org.junit.Assert.*;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.getcapacitor.app", appContext.getPackageName());
+        assertEquals("com.osrawy.clinicalnavigator", appContext.getPackageName());
     }
 }

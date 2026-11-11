@@ -15,6 +15,17 @@ android/*.iml
 android/local.properties
 android_sdk/
 
+# Compiled Android binaries and keystores
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Legacy browser snapshots
+*.mhtml
+Osrawy_Diabetes_Navigator.html
+Osrawya_HTN_Navigator.html
+
 # IDE & OS
 .idea/
 .vscode/

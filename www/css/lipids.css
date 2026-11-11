@@ -1,0 +1,316 @@
+/* ==============================================================
+   Osrawy Lipids Engine Stylesheet - Logical RTL/LTR CSS
+   Adaptive Clinical Presentation for Mobile & WebView
+   ============================================================== */
+
+.lipids-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: inherit;
+  color: var(--text-color, #1e293b);
+  box-sizing: border-box;
+  text-align: start;
+}
+
+/* Logical spacing for RTL / LTR */
+[dir="rtl"] .lipids-wrapper,
+.lipids-wrapper.rtl {
+  direction: rtl;
+}
+
+[dir="ltr"] .lipids-wrapper,
+.lipids-wrapper.ltr {
+  direction: ltr;
+}
+
+/* --- Hero Risk Card --- */
+.lipid-hero-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.lipid-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lipid-tier-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lipid-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.lipid-badge-very-high {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
+.lipid-badge-high {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fb923c;
+}
+
+.lipid-badge-moderate {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #60a5fa;
+}
+
+.lipid-badge-low {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #34d399;
+}
+
+.lipid-status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.lipid-status-ok {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.lipid-status-elevated {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.lipid-reason {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-muted, #475569);
+  margin-top: 2px;
+}
+
+.lipid-ascvd-est {
+  font-size: 0.9rem;
+  color: var(--text-color, #1e293b);
+  background-color: var(--highlight-bg, #f8fafc);
+  border-radius: 8px;
+  padding: 8px 12px;
+  border-inline-start: 4px solid #3b82f6;
+}
+
+/* --- Metrics Grid --- */
+.lipid-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.lipid-metric-box {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.lipid-metric-lbl {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 4px;
+}
+
+.lipid-metric-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-color, #0f172a);
+  margin: 4px 0;
+}
+
+.lipid-metric-val.text-success {
+  color: #10b981;
+}
+
+.lipid-metric-val.text-danger {
+  color: #ef4444;
+}
+
+.lipid-metric-val.text-critical {
+  color: #dc2626;
+  animation: pulse-alert 2s infinite ease-in-out;
+}
+
+.lipid-metric-target {
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  margin-top: 4px;
+}
+
+/* --- Alerts Section --- */
+.lipid-alerts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lipid-alert {
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  border-inline-start-width: 5px;
+  border-inline-start-style: solid;
+}
+
+.lipid-alert-danger {
+  background-color: #fff1f2;
+  border-color: #f43f5e;
+  border-inline-start-color: #e11d48;
+  color: #881337;
+}
+
+.lipid-alert-warning {
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+  border-inline-start-color: #d97706;
+  color: #78350f;
+}
+
+.lipid-alert-info {
+  background-color: #f0fdfa;
+  border-color: #99f6e4;
+  border-inline-start-color: #0d9488;
+  color: #134e4a;
+}
+
+.lipid-alert-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.lipid-alert-msg {
+  margin-bottom: 6px;
+}
+
+.lipid-alert-action {
+  font-size: 0.85rem;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+/* --- Pathway Steps Section --- */
+.lipid-pathway-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lipid-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 4px 0;
+  color: var(--text-color, #0f172a);
+}
+
+.lipid-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lipid-step-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.15s ease;
+}
+
+.lipid-step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lipid-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lipid-step-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-color, #1e293b);
+}
+
+.lipid-step-drug {
+  font-size: 0.88rem;
+  color: #2563eb;
+  background-color: #eff6ff;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.lipid-step-desc {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-muted, #475569);
+}
+
+/* --- Timeline Box --- */
+.lipid-timeline-box {
+  background: var(--highlight-bg, #f8fafc);
+  border: 1px dashed var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.84rem;
+  color: var(--text-color, #334155);
+}
+
+.lipid-timeline-box ul {
+  margin: 6px 0 0 0;
+  padding-inline-start: 20px;
+}
+
+.lipid-timeline-box li {
+  margin-bottom: 4px;
+}
+
+@keyframes pulse-alert {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
