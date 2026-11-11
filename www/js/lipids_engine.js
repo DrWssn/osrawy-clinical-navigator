@@ -11,6 +11,18 @@ const OsrawyLipidsEngine = (function() {
   const CHOL_FACTOR = 38.67;
   const TG_FACTOR = 88.57;
 
+  function parseNumOr(val, fallback) {
+    if (val === undefined || val === null) return fallback;
+    const s = String(val).trim();
+    if (s === '') return fallback;
+    const n = parseFloat(s);
+    return isNaN(n) ? fallback : n;
+  }
+
+  function pickDefined(a, b) {
+    return (a !== undefined && a !== null && String(a).trim() !== '') ? a : b;
+  }
+
   function toMgDl(val, type = 'cholesterol') {
     const num = parseFloat(val) || 0;
     if (num <= 0) return 0;
@@ -28,16 +40,16 @@ const OsrawyLipidsEngine = (function() {
   // --- 2. 10-Year ASCVD Risk Estimation (ACC/AHA Pooled Cohort Equations) ---
   function estimate10YrAscvdRisk(patient) {
     const p = patient || (typeof PatientSync !== 'undefined' ? PatientSync.get() : {});
-    const age = parseFloat(p.age) || 52;
+    const age = parseNumOr(p.age, 52);
     const sex = (p.sex === 'f') ? 'f' : 'm';
     const smoker = (p.smoker || p.smk) ? 1 : 0;
     const dm = (p.diabetes || p.dm) ? 1 : 0;
-    const sbp = parseFloat(p.sbp) || 130;
-    const tx = (p.medsCount && parseInt(p.medsCount) > 0) ? 1 : 0;
+    const sbp = parseNumOr(p.sbp, 130);
+    const tx = (p.medsCount && parseInt(p.medsCount, 10) > 0) ? 1 : 0;
 
     // Get TC and HDL in mg/dL
-    let tc = parseFloat(p.totalCholesterol || p.tc) || 200;
-    let hdl = parseFloat(p.hdlC || p.hdl) || 45;
+    let tc = parseNumOr(pickDefined(p.totalCholesterol, p.tc), 200);
+    let hdl = parseNumOr(pickDefined(p.hdlC, p.hdl), 45);
     const unit = p.lipidUnit || p.lunit || 'mg';
     if (unit === 'mmol' || unit === 'mmol/L') {
       tc = toMgDl(tc, 'cholesterol');
@@ -163,15 +175,15 @@ const OsrawyLipidsEngine = (function() {
 
   function stratifyRisk(patient) {
     const p = patient || (typeof PatientSync !== 'undefined' ? PatientSync.get() : {});
-    const egfr = parseFloat(p.egfr) || 90;
-    const uacr = parseFloat(p.uacr) || 10;
-    const age = parseFloat(p.age) || 50;
-    const dur = parseFloat(p.dur) || 0;
+    const egfr = parseNumOr(p.egfr, 90);
+    const uacr = parseNumOr(p.uacr, 10);
+    const age = parseNumOr(p.age, 50);
+    const dur = parseNumOr(p.dur, 0);
     const dm = !!(p.diabetes || p.dm);
     const ascvd = !!(p.ascvd || p.cad || p.stroke || p.pad);
 
-    let tc = parseFloat(p.totalCholesterol || p.tc) || 200;
-    let ldl = parseFloat(p.ldlC || p.ldl) || 0;
+    let tc = parseNumOr(pickDefined(p.totalCholesterol, p.tc), 200);
+    let ldl = parseNumOr(pickDefined(p.ldlC, p.ldl), 0);
     const unit = p.lipidUnit || p.lunit || 'mg';
     if (unit === 'mmol' || unit === 'mmol/L') {
       tc = toMgDl(tc, 'cholesterol');
@@ -236,10 +248,10 @@ const OsrawyLipidsEngine = (function() {
     const isMmol = (unit === 'mmol' || unit === 'mmol/L');
 
     // Parse laboratory values into standard mg/dL for internal clinical logic
-    let tcMg = parseFloat(p.totalCholesterol || p.tc) || 200;
-    let hdlMg = parseFloat(p.hdlC || p.hdl) || 45;
-    let tgMg = parseFloat(p.triglycerides || p.tg) || 160;
-    let ldlMg = parseFloat(p.ldlC || p.ldl) || 0;
+    let tcMg = parseNumOr(pickDefined(p.totalCholesterol, p.tc), 200);
+    let hdlMg = parseNumOr(pickDefined(p.hdlC, p.hdl), 45);
+    let tgMg = parseNumOr(pickDefined(p.triglycerides, p.tg), 160);
+    let ldlMg = parseNumOr(pickDefined(p.ldlC, p.ldl), 0);
 
     if (isMmol) {
       tcMg = toMgDl(tcMg, 'cholesterol');
@@ -258,14 +270,19 @@ const OsrawyLipidsEngine = (function() {
     }
 
     const nonHdlMg = Math.round((tcMg - hdlMg) * 10) / 10;
-    const egfr = parseFloat(p.egfr) || 90;
-    const altUl = parseFloat(p.altUl || p.alt) || 25;
+    const egfr = parseNumOr(p.egfr, 90);
+    const altUl = parseNumOr(pickDefined(p.altUl, p.alt), 25);
     const isPregnant = !!(p.pregnancy || p.preg || p.pregHtn);
     const isStatinIntolerant = !!(p.statinIntolerant);
     const strat = stratifyRisk(p);
     const target = strat.tierDetails;
 
-    const rawDrugs = p.currentDrugs || p.meds || p.activeMeds || [];
+    const rawDrugs =
+      (Array.isArray(p.currentDrugs) && p.currentDrugs.length ? p.currentDrugs : null) ||
+      (Array.isArray(p.meds) && p.meds.length ? p.meds : null) ||
+      (Array.isArray(p.medications) && p.medications.length ? p.medications : null) ||
+      (Array.isArray(p.activeMeds) && p.activeMeds.length ? p.activeMeds : null) ||
+      [];
     const activeDrugs = Array.isArray(rawDrugs) ? rawDrugs.map(d => String(d).toLowerCase()) : [];
 
     const alerts = [];
@@ -326,8 +343,8 @@ const OsrawyLipidsEngine = (function() {
     }
 
     // 4. Renal Guardrail: Rosuvastatin Cap 10mg if eGFR < 30
-    const onRosuvastatin = p.rosuvastatin || (p.statinDrug === 'rosuvastatin') || activeDrugs.some(d => d.includes('rosuvastatin') || d.includes('crestor'));
-    if (egfr > 0 && egfr < 30 && (onRosuvastatin || target.key === 'VERY_HIGH' || target.key === 'HIGH')) {
+    const onRosuvastatin = p.rosuvastatin || (p.statinDrug === 'rosuvastatin') || activeDrugs.some(d => d.includes('rosuvastatin') || d === 'rosuva' || d.includes('crestor'));
+    if (egfr >= 0 && egfr < 30 && (onRosuvastatin || target.key === 'VERY_HIGH' || target.key === 'HIGH')) {
       addAlert({
         id: 'lipid-guardrail-rosuva-renal',
         level: 'warning',
@@ -381,7 +398,7 @@ const OsrawyLipidsEngine = (function() {
         detailAr: 'في حالات عدم تحمل الستاتين المثبتة: ابدأ بإيزيتيميب 10 مجم يومياً مع بيمبيدويك أسيد 180 مجم (يخفض الكوليسترول دون التسبب بآلام عضلية لأنه ينشط فقط بالكبد). للحالات عالية الخطورة جداً يتم اللجوء لحقن PCSK9 مباشرة.'
       });
     } else if (target.key === 'VERY_HIGH') {
-      const rosuvaDose = (egfr > 0 && egfr < 30) ? '10 mg once daily (capped for eGFR <30)' : '20 – 40 mg once daily';
+      const rosuvaDose = (egfr >= 0 && egfr < 30) ? '10 mg once daily (capped for eGFR <30)' : '20 – 40 mg once daily';
       steps.push({
         stepNumber: 1,
         titleEn: 'Step 1: High-Intensity Statin Therapy (Max Tolerated Dose)',
@@ -424,7 +441,7 @@ const OsrawyLipidsEngine = (function() {
     }
 
     // Step 2: Ezetimibe Escalation
-    const onStatin = !!(p.onStatin || p.currentStatin || p.statin || activeDrugs.some(d => d.includes('statin')));
+    const onStatin = !!(p.onStatin || p.currentStatin || p.statin || activeDrugs.some(d => d.includes('statin') || d === 'atorva' || d === 'rosuva'));
     const onEzetimibe = !!(p.onEzetimibe || activeDrugs.some(d => d.includes('ezetimibe')));
     const ldlAboveTarget = ldlMg > target.ldlTargetMg;
 
@@ -633,7 +650,7 @@ const OsrawyLipidsEngine = (function() {
   // Reactive subscription to cross-engine updates
   if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
     window.addEventListener('osrawy:patient-updated', function(e) {
-      const el = (typeof document !== 'undefined') ? (document.getElementById('lipid-engine-summary') || document.getElementById('lipids-container') || document.getElementById('ldl-matrix-container')) : null;
+      const el = (typeof document !== 'undefined') ? (document.getElementById('lipids-container') || document.getElementById('lipid-engine-summary') || document.getElementById('ldl-matrix-container')) : null;
       if (el) {
         renderLipidsSummary(el.id);
       }

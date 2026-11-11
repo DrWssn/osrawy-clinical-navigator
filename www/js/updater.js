@@ -12,6 +12,22 @@ const AppUpdater = (function() {
     releasesUrl: 'https://github.com/DrWssn/osrawy-clinical-navigator/releases'
   };
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function sanitizeUrl(url) {
+    const raw = String(url || '').trim();
+    if (/^https:\/\//i.test(raw)) return raw;
+    return CONFIG.releasesUrl;
+  }
+
   function compareSemver(v1, v2) {
     const clean1 = (v1 || '').replace(/^v/i, '').trim();
     const clean2 = (v2 || '').replace(/^v/i, '').trim();
@@ -155,16 +171,18 @@ const AppUpdater = (function() {
       document.body.appendChild(modal);
     }
 
-    const tag = release.tag_name || 'New Version';
-    const releaseNotes = release.body || 'New clinical updates and improvements.';
-    let apkUrl = release.downloadUrl || CONFIG.releasesUrl;
+    const tag = escapeHtml(release.tag_name || 'New Version');
+    const releaseNotes = escapeHtml(release.body || 'New clinical updates and improvements.');
+    let rawApkUrl = release.downloadUrl || CONFIG.releasesUrl;
     if (release.assets && release.assets.length > 0) {
-      const apkAsset = release.assets.find(a => a.name.endsWith('.apk') && a.name.includes(tag))
-                    || release.assets.find(a => a.name.endsWith('.apk'));
+      const tagRaw = release.tag_name || '';
+      const apkAsset = release.assets.find(a => a.name && a.name.endsWith('.apk') && a.name.includes(tagRaw))
+                    || release.assets.find(a => a.name && a.name.endsWith('.apk'));
       if (apkAsset && apkAsset.browser_download_url) {
-        apkUrl = apkAsset.browser_download_url;
+        rawApkUrl = apkAsset.browser_download_url;
       }
     }
+    const apkUrl = escapeHtml(sanitizeUrl(rawApkUrl));
 
     const isAr = window.I18n && window.I18n.getLang() === 'ar';
     modal.innerHTML = `

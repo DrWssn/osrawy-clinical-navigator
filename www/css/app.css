@@ -11,6 +11,10 @@
 }
 
 /* Eliminate all web browser artifacts */
+html {
+  scroll-padding-top: 52px;
+}
+
 html, body {
   overscroll-behavior: none;
   -webkit-touch-callout: none;
@@ -68,9 +72,9 @@ input, select, textarea, [contenteditable="true"] {
 
 /* Top App Bar */
 .top-nav-bar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 100;
+  scroll-margin-top: 52px;
   background: linear-gradient(135deg, var(--hero1), var(--hero2));
   color: #FFFFFF;
   box-shadow: 0 2px 10px rgba(0,0,0,0.15);
@@ -1414,9 +1418,9 @@ html[dir="rtl"] .ldl-clinical-notes ul {
 @media (max-width: 680px) {
   /* 1. Top App Bar: Compact single-row native header */
   .top-nav-bar {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 100;
+    scroll-margin-top: 52px;
   }
 
   .top-nav-content {

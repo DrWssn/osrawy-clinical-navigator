@@ -3,6 +3,24 @@
 // ==============================================================
 
 (function() {
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function parseNumOr(val, fallback) {
+    if (val === undefined || val === null) return fallback;
+    const s = String(val).trim();
+    if (s === '') return fallback;
+    const n = parseFloat(s);
+    return isNaN(n) ? fallback : n;
+  }
+
   function triggerHaptic() {
     try {
       if (window.navigator && window.navigator.vibrate) {
@@ -11,8 +29,16 @@
     } catch(e) {}
   }
 
+  let currentActiveTab = 'tab-diabetes';
+  let previousActiveTab = 'tab-diabetes';
+
   function switchMainTab(tabId) {
+    if (!tabId) return;
     triggerHaptic();
+    if (tabId !== currentActiveTab && currentActiveTab !== 'tab-drugs' && currentActiveTab !== 'tab-recent') {
+      previousActiveTab = currentActiveTab;
+    }
+    currentActiveTab = tabId;
     document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(btn => {
       const bTab = btn.getAttribute('data-tab') || btn.getAttribute('data-tab-target');
       btn.classList.toggle('active', bTab === tabId);
@@ -132,23 +158,30 @@
       <div class="recent-card">
         <div class="recent-header">
           <div>
-            <b>${item.label}</b>
-            <div class="recent-time">${item.timestamp}</div>
+            <b>${escapeHtml(item.label)}</b>
+            <div class="recent-time">${escapeHtml(item.timestamp)}</div>
           </div>
-          <button class="btn btn-sm btn-outline-danger" onclick="deleteRecentPatient('${item.id}')">${t('btn_delete', 'حذف')}</button>
+          <button type="button" class="btn btn-sm btn-outline-danger" data-pt-delete="${escapeHtml(item.id)}">${t('btn_delete', 'حذف')}</button>
         </div>
         <div class="recent-details">
-          <span>${t('bar_age', 'العمر:')} ${item.data.age}</span>
-          <span>A1c: ${item.data.a1c}%</span>
-          <span>eGFR: ${item.data.egfr}</span>
-          <span>UACR: ${item.data.uacr}</span>
-          <span>${t('bar_bp', 'الضغط:')} ${item.data.sbp}/${item.data.dbp}</span>
+          <span>${t('bar_age', 'العمر:')} ${escapeHtml(item.data.age)}</span>
+          <span>A1c: ${escapeHtml(item.data.a1c)}%</span>
+          <span>eGFR: ${escapeHtml(item.data.egfr)}</span>
+          <span>UACR: ${escapeHtml(item.data.uacr)}</span>
+          <span>${t('bar_bp', 'الضغط:')} ${escapeHtml(item.data.sbp)}/${escapeHtml(item.data.dbp)}</span>
         </div>
-        <button class="btn btn-block btn-primary mt-2" onclick="loadRecentPatient('${item.id}')">
+        <button type="button" class="btn btn-block btn-primary mt-2" data-pt-load="${escapeHtml(item.id)}">
           ${t('btn_load_patient', 'تحميل بيانات المريض ➔')}
         </button>
       </div>
     `).join('');
+
+    container.querySelectorAll('[data-pt-delete]').forEach(btn => {
+      btn.addEventListener('click', () => window.deleteRecentPatient(btn.getAttribute('data-pt-delete')));
+    });
+    container.querySelectorAll('[data-pt-load]').forEach(btn => {
+      btn.addEventListener('click', () => window.loadRecentPatient(btn.getAttribute('data-pt-load')));
+    });
   }
 
   window.loadRecentPatient = function(id) {
@@ -157,14 +190,16 @@
     if (item) {
       PatientSync.applyPatient(item.data);
       switchMainTab('tab-diabetes');
-      RxShare.showToast(`تم تحميل بيانات: ${item.label}`);
+      const isAr = (typeof I18n !== 'undefined' && I18n.getLang() === 'ar');
+      RxShare.showToast(isAr ? `تم تحميل بيانات: ${item.label}` : `Loaded patient: ${item.label}`);
     }
   };
 
   window.deleteRecentPatient = function(id) {
     PatientSync.removeRecent(id);
     renderRecentPatients();
-    RxShare.showToast('تم حذف المسودة');
+    const isAr = (typeof I18n !== 'undefined' && I18n.getLang() === 'ar');
+    RxShare.showToast(isAr ? 'تم حذف المسودة' : 'Draft deleted');
   };
 
   window.handleAndroidBack = function() {
@@ -173,8 +208,18 @@
       openModal.classList.remove('open');
       return true;
     }
+    const visibleSec = Array.from(document.querySelectorAll('.main-view-section')).find(
+      sec => sec && !sec.hasAttribute('hidden') && sec.style.display !== 'none'
+    );
     const activeBtn = document.querySelector('.main-nav-btn.active');
-    const activeTab = activeBtn ? activeBtn.getAttribute('data-tab') : 'tab-diabetes';
+    const activeTab = (visibleSec && visibleSec.id) || currentActiveTab || (activeBtn ? activeBtn.getAttribute('data-tab') : 'tab-diabetes');
+    if (activeTab === 'tab-drugs' || activeTab === 'tab-recent') {
+      const targetTab = (previousActiveTab && previousActiveTab !== 'tab-drugs' && previousActiveTab !== 'tab-recent')
+        ? previousActiveTab
+        : 'tab-diabetes';
+      switchMainTab(targetTab);
+      return true;
+    }
     if (activeTab !== 'tab-diabetes') {
       switchMainTab('tab-diabetes');
       return true;
@@ -210,24 +255,98 @@
     }
   }
 
-  // Expose renderRecentPatients globally
+  function renderPregnancyCards(ptInput) {
+    const pt = ptInput || (window.PatientSync ? window.PatientSync.get() : null);
+    if (!pt) return;
+    const isPreg = !!(pt.pregnancy || pt.preg || pt.pregHtn);
+    const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function') ? window.I18n.getLang() === 'ar' : true;
+
+    // Render DM Obstetric Protocol box if #result exists
+    const resBox = document.getElementById('result');
+    if (resBox) {
+      let obsDm = document.getElementById('dm-pregnancy-card');
+      if (isPreg && window.OsrawyDmPregnancy && typeof window.OsrawyDmPregnancy.evaluatePregnancyDmProtocol === 'function') {
+        if (!obsDm) {
+          obsDm = document.createElement('div');
+          obsDm.id = 'dm-pregnancy-card';
+          resBox.prepend(obsDm);
+        }
+        const dmRes = window.OsrawyDmPregnancy.evaluatePregnancyDmProtocol(pt);
+        const dosing = dmRes.insulinDosing || {};
+        obsDm.innerHTML = `
+          <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
+            <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول سكري الحمل (ADA Obstetric Protocol)' : 'Diabetes in Pregnancy Protocol (ADA)'}</div>
+            <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'أهداف السكر للحامل:' : 'Targets:'}</b> ${isAr ? 'صائم <95 | بعد الأكل بساعة <140 | بعد ساعتين <120 mg/dL' : 'Fasting <95 | 1h PP <140 | 2h PP <120 mg/dL'}</div>
+            <div style="font-size:12.5px;"><b>${isAr ? 'حساب الأنسولين المقترح:' : 'Suggested Insulin:'}</b> TDD = ${dosing.tddUnits || 0} U/day (Basal: ${dosing.basalUnits || 0} U, Meal: ${dosing.mealBolusUnits || 0} U × 3)</div>
+          </div>
+        `;
+      } else if (obsDm) {
+        obsDm.remove();
+      }
+    }
+
+    // Render HTN Obstetric Protocol box if #out exists
+    const outBox = document.getElementById('out');
+    if (outBox) {
+      let obsHtn = document.getElementById('htn-pregnancy-card');
+      if (isPreg && window.OsrawyHtnPregnancy && typeof window.OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol === 'function') {
+        if (!obsHtn) {
+          obsHtn = document.createElement('div');
+          obsHtn.id = 'htn-pregnancy-card';
+          outBox.prepend(obsHtn);
+        }
+        const htnRes = window.OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol(pt);
+        const fl = htnRes.firstLine;
+        const stepOne = (htnRes.steps || []).find(s => s.step >= 1);
+        const firstLine = fl
+          ? (isAr ? `${fl.drugNameAr || fl.drugName} — ${fl.doseAr || fl.doseEn || ''}` : `${fl.drugName} — ${fl.doseEn || ''}`)
+          : (stepOne ? (isAr ? stepOne.drugAr : stepOne.drugEn) : 'Labetalol / Nifedipine ER');
+        const aspIndicated = htnRes.aspirinProphylaxis && htnRes.aspirinProphylaxis.indicated;
+        obsHtn.innerHTML = `
+          <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
+            <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول ضغط الحمل والوقاية من تسمم الحمل' : 'Hypertension in Pregnancy & Preeclampsia Protocol'}</div>
+            <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'الخط الأول الآمن:' : 'Safe First-Line:'}</b> ${escapeHtml(firstLine)}</div>
+            ${aspIndicated ? `<div style="font-size:12.5px;"><b>🛡️ Aspirin:</b> ${isAr ? 'يوصى بـ Aspirin 81-150 ملغ مساءً للوقاية من تسمم الحمل (من الأسبوع 12 حتى الولادة).' : 'Low-dose Aspirin 81-150 mg nightly from week 12 for preeclampsia prophylaxis.'}</div>` : ''}
+          </div>
+        `;
+      } else if (obsHtn) {
+        obsHtn.remove();
+      }
+    }
+  }
+
+  // Expose navigation & helpers globally
+  window.switchMainTab = switchMainTab;
   window.renderRecentPatients = renderRecentPatients;
+  window.renderPregnancyCards = renderPregnancyCards;
 
   // Initialization
   document.addEventListener('DOMContentLoaded', () => {
     setupTheme();
     if (typeof I18n !== 'undefined') {
       I18n.init();
-      I18n.onChange(() => {
+      I18n.onChange((lang) => {
         PatientSync.updatePatientBar();
         DrugDirectory.render();
         renderRecentPatients();
+        if (typeof window.PatientLeaflets !== 'undefined' && typeof window.PatientLeaflets.setLang === 'function') {
+          window.PatientLeaflets.setLang(lang);
+        }
+        const dlpContainer = document.getElementById('lipids-container');
+        if (dlpContainer && dlpContainer.innerHTML.trim() && window.LipidsEngine && typeof window.LipidsEngine.renderLipidsSummary === 'function') {
+          window.LipidsEngine.renderLipidsSummary('lipids-container');
+        }
         if (typeof window.plan === 'function') window.plan();
         if (typeof window.htnRender === 'function') window.htnRender();
         if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+        renderPregnancyCards(PatientSync.get());
       });
     }
     RxShare.loadSettings();
+    let hasSavedPatient = false;
+    try {
+      hasSavedPatient = !!(typeof localStorage !== 'undefined' && localStorage.getItem('osrawy_active_patient'));
+    } catch (e) {}
     PatientSync.loadActive();
     PatientSync.updatePatientBar();
     updateStickyVitals();
@@ -240,6 +359,9 @@
     }
     if (typeof AppUpdater !== 'undefined') {
       AppUpdater.init();
+    }
+    if (hasSavedPatient) {
+      PatientSync.applyPatient(PatientSync.get());
     }
 
     // Language Switcher Button in Header
@@ -325,23 +447,11 @@
           clinicAddress: document.getElementById('set-clinic-addr').value
         });
         settingsModal.classList.remove('open');
-        RxShare.showToast('✅ تم حفظ إعدادات الطبيب والعيادة');
+        const isAr = (typeof I18n !== 'undefined' && I18n.getLang() === 'ar');
+        RxShare.showToast(isAr ? '✅ تم حفظ إعدادات الطبيب والعيادة' : '✅ Doctor & clinic settings saved');
         if (window.plan) window.plan();
       });
     }
-
-    // WhatsApp and Print buttons
-    const waBtn = document.getElementById('btn-share-whatsapp');
-    if (waBtn) waBtn.addEventListener('click', RxShare.shareToWhatsApp);
-
-    const printBtn = document.getElementById('btn-print-rx');
-    if (printBtn) printBtn.addEventListener('click', RxShare.printPrescription);
-
-    const copyBtn = document.getElementById('rxcopy');
-    if (copyBtn) copyBtn.addEventListener('click', RxShare.copySummaryToClipboard);
-
-    const copyHtnBtn = document.getElementById('copy');
-    if (copyHtnBtn) copyHtnBtn.addEventListener('click', RxShare.copyHtnToClipboard);
 
     // Market Switcher Buttons (Saudi vs Egypt)
     const btnSa = document.getElementById('market-btn-sa');
@@ -354,7 +464,12 @@
       headerMktBtn.addEventListener('click', () => {
         const next = (DrugDirectory.getMarket() === 'saudi') ? 'egypt' : 'saudi';
         DrugDirectory.setMarket(next);
-        RxShare.showToast(next === 'saudi' ? '🇸🇦 تم تفعيل السوق السعودي (SAR)' : '🇪🇬 تم تفعيل السوق المصري (EGP)');
+        const isAr = (typeof I18n !== 'undefined' && I18n.getLang() === 'ar');
+        RxShare.showToast(
+          next === 'saudi'
+            ? (isAr ? '🇸🇦 تم تفعيل السوق السعودي (SAR)' : '🇸🇦 Switched to Saudi Market (SAR)')
+            : (isAr ? '🇪🇬 تم تفعيل السوق المصري (EGP)' : '🇪🇬 Switched to Egypt Market (EGP)')
+        );
       });
     }
 
@@ -375,23 +490,24 @@
     const dlpPanel = document.getElementById('dlp-inputs-panel');
     if (dlpPanel) {
       const syncDlpInputs = () => {
-        const ldl = parseFloat(document.getElementById('dlp-ldl')?.value) || 130;
-        const tc = parseFloat(document.getElementById('dlp-tc')?.value) || 210;
-        const hdl = parseFloat(document.getElementById('dlp-hdl')?.value) || 42;
-        const tg = parseFloat(document.getElementById('dlp-tg')?.value) || 180;
-        const alt = parseFloat(document.getElementById('dlp-alt')?.value) || 28;
+        const ldl = parseNumOr(document.getElementById('dlp-ldl')?.value, 130);
+        const tc = parseNumOr(document.getElementById('dlp-tc')?.value, 210);
+        const hdl = parseNumOr(document.getElementById('dlp-hdl')?.value, 42);
+        const tg = parseNumOr(document.getElementById('dlp-tg')?.value, 180);
+        const alt = parseNumOr(document.getElementById('dlp-alt')?.value, 28);
         const unit = document.getElementById('dlp-unit')?.value || 'mg';
         const intol = !!document.getElementById('dlp-statin-intol')?.checked;
         const ezet = !!document.getElementById('dlp-ezetimibe')?.checked;
 
         if (window.PatientSync && typeof window.PatientSync.updatePatient === 'function') {
           const pt = window.PatientSync.get();
-          const meds = Array.isArray(pt.medications) ? pt.medications.slice() : [];
+          const curMeds = (Array.isArray(pt.medications) && pt.medications.length ? pt.medications : null) ||
+            pt.activeMeds || pt.currentMeds || [];
+          let meds = curMeds.slice();
           const hasEzet = meds.some(m => String(m).toLowerCase().includes('ezetimibe'));
           if (ezet && !hasEzet) meds.push('ezetimibe');
           else if (!ezet && hasEzet) {
-            const idx = meds.findIndex(m => String(m).toLowerCase().includes('ezetimibe'));
-            if (idx >= 0) meds.splice(idx, 1);
+            meds = meds.filter(m => !String(m).toLowerCase().includes('ezetimibe'));
           }
           window.PatientSync.updatePatient({
             ldlC: ldl,
@@ -404,10 +520,12 @@
             lunit: unit,
             lipidUnit: unit,
             statinIntolerant: intol,
-            medications: meds
+            onEzetimibe: ezet,
+            medications: meds,
+            activeMeds: meds,
+            currentMeds: meds
           });
-        }
-        if (window.LipidsEngine && typeof window.LipidsEngine.renderLipidsSummary === 'function') {
+        } else if (window.LipidsEngine && typeof window.LipidsEngine.renderLipidsSummary === 'function') {
           window.LipidsEngine.renderLipidsSummary('lipids-container');
         }
       };
@@ -419,59 +537,7 @@
     // Wire Obstetric Pregnancy Protocols Banner on Patient Sync updates
     window.addEventListener('osrawy:patient-updated', (ev) => {
       const pt = (ev && ev.detail && ev.detail.state) ? ev.detail.state : (window.PatientSync ? window.PatientSync.get() : null);
-      if (!pt) return;
-      const isPreg = !!(pt.pregnancy || pt.preg || pt.pregHtn);
-      const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function') ? window.I18n.getLang() === 'ar' : true;
-
-      // Render DM Obstetric Protocol box if #result exists
-      const resBox = document.getElementById('result');
-      if (resBox) {
-        let obsDm = document.getElementById('dm-pregnancy-card');
-        if (isPreg && window.OsrawyDmPregnancy && typeof window.OsrawyDmPregnancy.evaluatePregnancyDmProtocol === 'function') {
-          if (!obsDm) {
-            obsDm = document.createElement('div');
-            obsDm.id = 'dm-pregnancy-card';
-            resBox.prepend(obsDm);
-          }
-          const dmRes = window.OsrawyDmPregnancy.evaluatePregnancyDmProtocol(pt);
-          const dosing = dmRes.insulinDosing || {};
-          obsDm.innerHTML = `
-            <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
-              <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول سكري الحمل (ADA Obstetric Protocol)' : 'Diabetes in Pregnancy Protocol (ADA)'}</div>
-              <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'أهداف السكر للحامل:' : 'Targets:'}</b> ${isAr ? 'صائم <95 | بعد الأكل بساعة <140 | بعد ساعتين <120 mg/dL' : 'Fasting <95 | 1h PP <140 | 2h PP <120 mg/dL'}</div>
-              <div style="font-size:12.5px;"><b>${isAr ? 'حساب الأنسولين المقترح:' : 'Suggested Insulin:'}</b> TDD = ${dosing.tddUnits || 0} U/day (Basal: ${dosing.basalUnits || 0} U, Meal: ${dosing.mealBolusUnits || 0} U × 3)</div>
-            </div>
-          `;
-        } else if (obsDm) {
-          obsDm.remove();
-        }
-      }
-
-      // Render HTN Obstetric Protocol box if #out exists
-      const outBox = document.getElementById('out');
-      if (outBox) {
-        let obsHtn = document.getElementById('htn-pregnancy-card');
-        if (isPreg && window.OsrawyHtnPregnancy && typeof window.OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol === 'function') {
-          if (!obsHtn) {
-            obsHtn = document.createElement('div');
-            obsHtn.id = 'htn-pregnancy-card';
-            outBox.prepend(obsHtn);
-          }
-          const htnRes = window.OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol(pt);
-          const firstStep = (htnRes.steps && htnRes.steps.length > 0) ? htnRes.steps[0] : null;
-          const firstLine = firstStep ? (isAr ? firstStep.drugAr : firstStep.drugEn) : (htnRes.firstLine || 'Labetalol / Nifedipine ER');
-          const aspIndicated = htnRes.aspirinProphylaxis && htnRes.aspirinProphylaxis.indicated;
-          obsHtn.innerHTML = `
-            <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
-              <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول ضغط الحمل والوقاية من تسمم الحمل' : 'Hypertension in Pregnancy & Preeclampsia Protocol'}</div>
-              <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'الخط الأول الآمن:' : 'Safe First-Line:'}</b> ${firstLine}</div>
-              ${aspIndicated ? `<div style="font-size:12.5px;"><b>🛡️ Aspirin:</b> ${isAr ? 'يوصى بـ Aspirin 81-150 ملغ مساءً للوقاية من تسمم الحمل (من الأسبوع 12 حتى الولادة).' : 'Low-dose Aspirin 81-150 mg nightly from week 12 for preeclampsia prophylaxis.'}</div>` : ''}
-            </div>
-          `;
-        } else if (obsHtn) {
-          obsHtn.remove();
-        }
-      }
+      renderPregnancyCards(pt);
     });
   });
 })();

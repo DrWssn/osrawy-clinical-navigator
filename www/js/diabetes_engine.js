@@ -76,6 +76,7 @@ const clsChip=k=>`<span class="chip" style="${cv(CC[D[k].cls])}">${D[k].cls}</sp
 const grp=k=>D[k].cls.includes("GLP")?"GLP":D[k].cls;
 
 /* ================= Helpers ================= */
+const escHtml=s=>s===null||s===undefined?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const $=id=>document.getElementById(id);
 const num=id=>parseFloat($(id).value);
 const on=id=>$(id).checked;
@@ -202,7 +203,11 @@ function plan(){
 
   if(preg){
     h+=`<div class="callout" style="${cv("coral")}"><b>Pregnancy / planning pregnancy:</b> insulin is the treatment of choice (NPH and regular insulin are low cost). Stop SGLT2i, GLP-1 RA, DPP-4i, SU, pioglitazone and statin; metformin only with specialist advice. Start folic acid and refer to a diabetes-in-pregnancy clinic. Targets: fasting &lt;95, 1-h &lt;140, 2-h &lt;120 mg/dL.</div>`;
-    $("result").innerHTML=h; renderScreening(P); return;
+    $("result").innerHTML=h; renderScreening(P);
+    if (typeof window !== 'undefined' && typeof window.renderPregnancyCards === 'function') {
+      window.renderPregnancyCards();
+    }
+    return;
   }
 
   const S=[],used=new Set(),avoid=[];
@@ -313,6 +318,9 @@ function plan(){
   renderScreening(P);
   renderRx();
   $("iwt").value=$("wt").value; $("ifpg").value=$("fpg").value; icalc();
+  if (typeof window !== 'undefined' && typeof window.renderPregnancyCards === 'function') {
+    window.renderPregnancyCards();
+  }
 }
 function renderScreening(P){
   const sel=[...document.querySelectorAll(".rxck")].filter(c=>c.checked).map(c=>c.dataset.k);
@@ -356,27 +364,28 @@ function renderRx(){
     clinicPhone: '',
     clinicAddress: ''
   };
+  const _tr = (k, def) => (typeof window !== 'undefined' && window.I18n && typeof window.I18n.t === 'function') ? window.I18n.t(k, def) : def;
   let h=`<div class="rx-sec"><div class="rx-bar"><div class="pri-h" style="${cv("teal")};margin:0"><span class="n">℞</span><span>Prescription <small>· tick “Prescribe” on any drug above</small></span></div>
     <span>${totalTier?costChip(totalTier):""}</span>
     <div class="rx-action-toolbar" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <button type="button" class="btn btn-whatsapp" id="btn-share-whatsapp" onclick="RxShare.shareToWhatsApp()">📲 واتساب</button>
-      <button type="button" class="btn btn-print" id="btn-print-rx" onclick="RxShare.printPrescription()">🖨️ طباعة / PDF</button>
-      <button type="button" id="rxcopy" class="btn">📋 نسخ</button>
+      <button type="button" class="btn btn-whatsapp" id="btn-share-whatsapp" onclick="RxShare.shareToWhatsApp()" data-i18n="btn_whatsapp">${_tr("btn_whatsapp", "📲 واتساب")}</button>
+      <button type="button" class="btn btn-print" id="btn-print-rx" onclick="RxShare.printPrescription()" data-i18n="btn_print">${_tr("btn_print", "🖨️ طباعة")}</button>
+      <button type="button" id="rxcopy" class="btn" data-i18n="btn_copy">${_tr("btn_copy", "📋 نسخ")}</button>
     </div>
   </div>`;
   if(warn.length) h+=`<div class="callout" style="${cv("coral")}">${warn.map(x=>`<div><b>Check:</b> ${x}</div>`).join("")}</div>`;
   h+=`<div class="rx" id="rxcard">
     <div class="rx-head">
       <div>
-        <div class="rx-dr">${drSettings.doctorName || "Dr Hossam Yousuf"}</div>
-        <div class="rx-ti">${drSettings.doctorTitle || "Consultant Family Medicine"}</div>
-        ${drSettings.clinicName ? `<div class="rx-clinic" style="font-size:12px;opacity:.9;margin-top:2px">${drSettings.clinicName}</div>` : ""}
-        ${drSettings.clinicPhone ? `<div class="rx-phone" style="font-size:11.5px;opacity:.8">${drSettings.clinicPhone}</div>` : ""}
+        <div class="rx-dr">${escHtml(drSettings.doctorName) || "Dr Hossam Yousuf"}</div>
+        <div class="rx-ti">${escHtml(drSettings.doctorTitle) || "Consultant Family Medicine"}</div>
+        ${drSettings.clinicName ? `<div class="rx-clinic" style="font-size:12px;opacity:.9;margin-top:2px">${escHtml(drSettings.clinicName)}</div>` : ""}
+        ${drSettings.clinicPhone ? `<div class="rx-phone" style="font-size:11.5px;opacity:.8">${escHtml(drSettings.clinicPhone)}</div>` : ""}
       </div>
       <div class="rx-sym">℞</div>
     </div>
     <div class="rx-body">
-    <div class="rx-pt"><span><i>Name</i>${name||"…………………"}</span><span><i>Age</i>${isNaN(p.age)?"—":p.age} y</span><span><i>Wt</i>${isNaN(p.wt)?"—":p.wt} kg</span><span><i>Date</i>${date}</span></div>
+    <div class="rx-pt"><span><i>Name</i>${escHtml(name)||"…………………"}</span><span><i>Age</i>${isNaN(p.age)?"—":p.age} y</span><span><i>Wt</i>${isNaN(p.wt)?"—":p.wt} kg</span><span><i>Date</i>${date}</span></div>
     <div class="rx-dx"><i>Dx</i>${dx.join(" · ")}</div>
     ${items.length?`<ol class="rx-list">${items.map(r=>`<li><b>${r.b}</b><div>${r.s}</div><div class="ar" dir="rtl" lang="ar">${r.a}</div></li>`).join("")}</ol>`:`<p class="sub" style="margin-top:10px">No drug selected.</p>`}
     ${inv.length?`<div class="rx-inv"><b>Investigations requested:</b> ${inv.join(" · ")}</div>`:""}
@@ -389,11 +398,15 @@ function renderRx(){
     `Name: ${name}   Age: ${p.age||""} y   Wt: ${p.wt||""} kg   Date: ${date}`,`Dx: ${dx.join(", ")}`,"",
     ...items.map((r,i)=>`${i+1}. ${r.b}\n   ${r.s}\n   ${r.a}`),"",inv.length?`Investigations: ${inv.join(", ")}`:"","تعليمات عامة:",...genAr.map(x=>"- "+x),"",`Follow-up: ${fu} — ${fuList.join("; ")}.`].filter(Boolean).join("\n");
   $("rxcopy").addEventListener("click",()=>{
-    const b=$("rxcopy");const done=()=>{b.textContent="Copied";setTimeout(()=>b.textContent="📋 نسخ",1500);};
+    const b=$("rxcopy");
+    const isAr = typeof window !== 'undefined' && window.I18n && window.I18n.getLang() === 'ar';
+    const copiedTxt = (typeof window !== 'undefined' && window.I18n && window.I18n.t) ? window.I18n.t('toast_copied', isAr ? 'تم النسخ' : 'Copied') : 'Copied';
+    const resetTxt = (typeof window !== 'undefined' && window.I18n && window.I18n.t) ? window.I18n.t('btn_copy', '📋 نسخ') : '📋 نسخ';
+    const done=()=>{b.textContent=copiedTxt;setTimeout(()=>b.textContent=resetTxt,1500);};
     try{navigator.clipboard.writeText(txt).then(done,selectCard);}catch(e){selectCard();}
   });
 }
-function selectCard(){const r=document.createRange();r.selectNodeContents($("rxcard"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("rxcopy").textContent="Selected — copy manually";}
+function selectCard(){const r=document.createRange();r.selectNodeContents($("rxcard"));const s=getSelection();s.removeAllRanges();s.addRange(r);const isAr = typeof window !== 'undefined' && window.I18n && window.I18n.getLang() === 'ar';$("rxcopy").textContent=isAr ? "محدد — انسخ يدوياً" : "Selected — copy manually";}
 document.addEventListener("change",e=>{
   if(e.target.classList&&e.target.classList.contains("rxck")){RXUSER[e.target.dataset.k]=e.target.checked;renderScreening(RXP.P);renderRx();}
 });
@@ -541,6 +554,7 @@ function applyMarketToD(market) {
 }
 window.applyMarketToD = applyMarketToD;
 window.plan = plan;
+window.dmResetRxUser = () => { RXUSER = {}; };
 
 /* ================= Wiring ================= */
 document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>{
@@ -570,7 +584,8 @@ buildCK();
 // Cross-engine clinical safety alerts listener
 (function() {
   const target = (typeof window !== 'undefined') ? window : globalThis;
-  if (target && target.addEventListener) {
+  if (target && target.addEventListener && !target.__osrawyGuardrailListenerAttached) {
+    target.__osrawyGuardrailListenerAttached = true;
     target.addEventListener('osrawy:patient-updated', function(ev) {
       const banner = document.getElementById('clinical-guardrail-banner');
       if (!banner) return;
@@ -591,9 +606,13 @@ buildCK();
       banner.style.display = 'block';
       banner.innerHTML = list.map(function(item) {
         var text = typeof item === 'string' ? item : (item.text || item.message || item.title || '');
-        var type = (typeof item === 'object' && (item.type || item.level)) || 'danger';
-        var icon = (typeof item === 'object' && item.icon) || (type === 'danger' ? '🚨' : (type === 'warn' || type === 'warning' ? '⚠️' : 'ℹ️'));
-        return '<div class="guardrail-item ' + type + '"><span class="guardrail-icon">' + icon + '</span><div class="guardrail-msg">' + text + '</div></div>';
+        var rawType = String((typeof item === 'object' && (item.type || item.level)) || 'danger').toLowerCase();
+        var cssType = (rawType === 'critical' || rawType === 'danger' || rawType === 'error')
+          ? 'danger'
+          : (rawType === 'warn' || rawType === 'warning' ? 'warn' : 'info');
+        var icon = (typeof item === 'object' && item.icon) ||
+          (cssType === 'danger' ? '🚨' : (cssType === 'warn' ? '⚠️' : 'ℹ️'));
+        return '<div class="guardrail-item ' + cssType + '"><span class="guardrail-icon">' + escHtml(icon) + '</span><div class="guardrail-msg">' + escHtml(text) + '</div></div>';
       }).join('');
     });
   }

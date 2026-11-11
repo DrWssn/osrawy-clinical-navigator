@@ -53,6 +53,29 @@ class MockElement {
     return child;
   }
 
+  prepend(child) {
+    if (child) {
+      child.parentNode = this;
+      this.children.unshift(child);
+    }
+    return child;
+  }
+
+  insertBefore(newNode, refNode) {
+    if (!newNode) return newNode;
+    newNode.parentNode = this;
+    const idx = this.children.indexOf(refNode);
+    if (idx === -1) this.children.push(newNode);
+    else this.children.splice(idx, 0, newNode);
+    return newNode;
+  }
+
+  remove() {
+    if (this.parentNode && typeof this.parentNode.removeChild === 'function') {
+      this.parentNode.removeChild(this);
+    }
+  }
+
   removeChild(child) {
     const idx = this.children.indexOf(child);
     if (idx !== -1) {
@@ -1021,18 +1044,662 @@ runCase(16, "Trimester 3 (80 kg) pregnancy insulin calculation (72 U/d TDD, 36 U
   assert(Boolean(obDm.targets && obDm.targets.fastingMgDl && obDm.targets.fastingMgDl.includes('<95')), "Obstetric glycemic targets enforce fasting <95 mg/dL");
 });
 
+// =====================================================================
+// Case 17: ClinicalTools Interactive Tools Tab, FIB-4 Labels & DOAC Sync
+// =====================================================================
+runCase(17, "ClinicalTools renderToolsTab (CKD-EPI arg order, DOAC, FIB-4 labels, Sync button)", () => {
+  assert(ClinicalTools !== null, "ClinicalTools module is available");
+  if (!ClinicalTools) return;
+
+  // Prepare mock inputs matching renderToolsTab DOM IDs
+  const tabIds = {
+    'tab-scr': '1.6',
+    'tab-scr-unit': 'mg',
+    'tab-age': '82',
+    'tab-sex': 'f',
+    'tab-wt': '56',
+    'tab-kdigo-egfr': '48',
+    'tab-kdigo-uacr': '0',
+    'tab-fib4-ast': '85',
+    'tab-fib4-alt': '35',
+    'tab-fib4-plt': '120'
+  };
+  Object.entries(tabIds).forEach(([id, val]) => {
+    const el = getOrCreate(id, 'input');
+    el.value = val;
+  });
+
+  // Trigger renderToolsTab on container
+  const toolsContainer = getOrCreate('clinical-tools-container', 'div');
+  ClinicalTools.renderToolsTab('clinical-tools-container');
+
+  // Note: calculateCKDEPI with Scr=1.6, mg, Age=82, Female -> eGFR ~ 34.4
+  const egfrHtml = getOrCreate('tab-egfr-results').innerHTML;
+  assert(egfrHtml.includes('eGFR:') && !egfrHtml.includes('undefined'), `Tools tab eGFR renders valid calculation without crashing or undefined`);
+
+  // Ensure UACR=0 is preserved (A1, not falsely defaulted to 30 / A2)
+  const kdigoHtml = getOrCreate('tab-kdigo-results').innerHTML;
+  assert(kdigoHtml.includes('A1'), `Tools tab KDIGO preserves UACR=0 as A1 instead of replacing 0 with default 30 (html: ${kdigoHtml.slice(0, 120)})`);
+
+  // Ensure DOAC receives patient inputs (Age 82 >=80, Wt 56 <=60, Scr 1.6 >=1.5 -> reduced Apixaban 2.5 mg)
+  const doacHtml = getOrCreate('tab-doac-results').innerHTML;
+  assert(doacHtml.includes('2.5 mg PO BID') || doacHtml.includes('٢.٥ ملغ'), `Tools tab DOAC reduces Apixaban to 2.5 mg BID for 3/3 ABC criteria`);
+
+  // Ensure FIB-4 badge renders real label (not undefined)
+  const fib4Res = ClinicalTools.calculateFib4(82, 85, 35, 120);
+  assert(Boolean(fib4Res && fib4Res.riskLabelEn && fib4Res.riskLabelAr), "calculateFib4 exposes bilingual riskLabelEn and riskLabelAr");
+  const fibHtml = getOrCreate('tab-fib4-results').innerHTML;
+  assert(!fibHtml.includes('undefined') && fibHtml.includes('FIB-4:'), "Tools tab FIB-4 renders badge label without 'undefined'");
+
+  // Ensure Sync button calls PatientSync.updatePatient / updates eGFR
+  const prevEgfr = PatientSync.get().egfr;
+  const syncBtn = getOrCreate('btn-sync-tools-egfr', 'button');
+  if (typeof syncBtn.onclick === 'function') syncBtn.onclick();
+  const syncedEgfr = PatientSync.get().egfr;
+  assert(syncedEgfr !== prevEgfr && syncedEgfr > 20 && syncedEgfr < 45, `Tools tab Sync button updates PatientSync eGFR (from ${prevEgfr} to ${syncedEgfr})`);
+  PatientSync.resetPatient();
+});
+
+// =====================================================================
+// Case 18: PrimaryCareEngine UI Wiring & Edge Cases (tsh=0, hf=undefined, COPD inputs)
+// =====================================================================
+runCase(18, "PrimaryCareEngine UI & Thyroid/COPD edge cases (tsh=0, eos=0, undefined hf)", () => {
+  assert(PrimaryCareEngine !== null, "PrimaryCareEngine module is available");
+  if (!PrimaryCareEngine) return;
+
+  // Thyroid edge cases
+  const hyperZeroTsh = PrimaryCareEngine.evaluateThyroid({ tsh: 0, ft4: 3.2, age: 30, wt: 60 });
+  assert(hyperZeroTsh.status === 'overt_hyper', `tsh=0 is not treated as falsy default 2.5 (status: ${hyperZeroTsh.status})`);
+
+  const youngHypo = PrimaryCareEngine.evaluateThyroid({ tsh: 14.0, ft4: 0.5, age: 35, wt: 70 });
+  assert(!youngHypo.hasAscvd && youngHypo.recommendedDose >= 100, `Undefined hf does NOT misclassify young adult as ASCVD (hasAscvd=${youngHypo.hasAscvd}, dose=${youngHypo.recommendedDose})`);
+
+  const euthy = PrimaryCareEngine.evaluateThyroid({ tsh: 2.2, ft4: 1.2 });
+  assert(Boolean(euthy.rxEn && euthy.rxAr), "Euthyroid result provides non-empty rxEn and rxAr management guidance");
+
+  // Render Primary Care Tab UI and verify Asthma & COPD inputs
+  const pcContainer = getOrCreate('primary-care-container', 'div');
+  getOrCreate('pc-asthma-saba', 'input').value = '4';
+  getOrCreate('pc-asthma-step', 'select').value = '2';
+  getOrCreate('pc-asthma-track', 'select').value = '1';
+  getOrCreate('pc-asthma-day', 'input').checked = true;
+  getOrCreate('pc-copd-exac', 'input').value = '2';
+  getOrCreate('pc-copd-hosp', 'input').value = '0';
+  getOrCreate('pc-copd-mmrc', 'input').value = '2';
+  getOrCreate('pc-copd-cat', 'input').value = '14';
+  getOrCreate('pc-copd-eos', 'input').value = '0';
+  getOrCreate('pc-thy-tsh', 'input').value = '0';
+  getOrCreate('pc-thy-ft4', 'input').value = '3.0';
+  getOrCreate('pc-thy-wt', 'input').value = '65';
+
+  PrimaryCareEngine.renderPrimaryCareTab('primary-care-container');
+
+  const asthmaOutHtml = getOrCreate('pc-asthma-output').innerHTML;
+  assert(!asthmaOutHtml.includes('undefined') && asthmaOutHtml.length > 40, "Asthma UI output renders recommendationDetails without 'undefined'");
+
+  const copdOutHtml = getOrCreate('pc-copd-output').innerHTML;
+  assert(copdOutHtml.includes('Group E') && (copdOutHtml.includes('100') || copdOutHtml.includes('رئوي')), `COPD UI passes moderateExacerbations=2 & bloodEosinophils=0 correctly into evaluateCopdGold`);
+
+  const thyOutHtml = getOrCreate('pc-thy-output').innerHTML;
+  assert(!thyOutHtml.includes('undefined') && (thyOutHtml.includes('Hyper') || thyOutHtml.includes('فرط')), `Thyroid UI preserves tsh=0 for overt hyperthyroidism`);
+});
+
+// =====================================================================
+// Case 19: RxShare Prescription Report with Primary Care & medications[]
+// =====================================================================
+runCase(19, "RxShare buildPrescriptionReport handles asthma recommendation & medications array", () => {
+  assert(RxShare !== null, "RxShare module is available");
+  if (!RxShare) return;
+
+  const samplePt = {
+    name: 'Test Asthma Patient',
+    age: 42,
+    sex: 'm',
+    wt: 78,
+    ht: 174,
+    a1c: 7.4,
+    fpg: 140,
+    egfr: 85,
+    uacr: 18,
+    sbp: 128,
+    dbp: 80,
+    k: 4.3,
+    asthma: true,
+    sabaUsePerWeek: 4,
+    asthmaDaytime: true,
+    medications: ['budesonide_formoterol']
+  };
+
+  const reportAr = RxShare.buildPrescriptionReport('ar', samplePt);
+  const reportEn = RxShare.buildPrescriptionReport('en', samplePt);
+
+  assert(typeof reportAr === 'string' && !reportAr.includes('undefined') && reportAr.includes('GINA'), "Arabic report formats asthma care cleanly without 'undefined'");
+  assert(typeof reportEn === 'string' && !reportEn.includes('undefined') && reportEn.includes('GINA'), "English report formats asthma care cleanly without 'undefined'");
+  assert(reportEn.includes('Budesonide'), "Report reads pt.medications fallback when activeMeds is absent");
+});
+
+// =====================================================================
+// Case 20: I18n Key Parity with index.html + DrugDirectory Market & Tier Fixes
+// =====================================================================
+runCase(20, "I18n covers all HTML keys in AR/EN & DrugDirectory market/tier switching works", () => {
+  const html = fs.readFileSync(path.resolve(__dirname, 'www', 'index.html'), 'utf8');
+  const keyRe = /data-i18n(?:-placeholder|-title|-aria-label)?="([^"]+)"/g;
+  const htmlKeys = new Set();
+  let match;
+  while ((match = keyRe.exec(html))) htmlKeys.add(match[1]);
+
+  I18n.setLang('ar');
+  const missingAr = [...htmlKeys].filter(k => I18n.t(k) === k);
+  I18n.setLang('en');
+  const missingEn = [...htmlKeys].filter(k => I18n.t(k) === k);
+  const enFallbackToAr = [...htmlKeys].filter(k => /[\u0600-\u06FF]/.test(I18n.t(k)) && k !== 'lang_toggle_btn');
+
+  assert(missingAr.length === 0, `All ${htmlKeys.size} data-i18n* keys exist in Arabic translations (missing: ${missingAr.join(', ')})`);
+  assert(missingEn.length === 0 && enFallbackToAr.length === 0, `All ${htmlKeys.size} data-i18n* keys exist natively in English without Arabic fallback (missing: ${[...missingEn, ...enFallbackToAr].join(', ')})`);
+
+  // Market switching (Saudi vs Egypt)
+  DrugsDirectory.setMarket('egypt');
+  assert(DrugsDirectory.getMarket() === 'egypt', "DrugDirectory.setMarket('egypt') persists active market");
+  assert(DrugsDirectory.formatDrugDisplayName('metformin', 'trade', 'en') === 'Cidophage', `Egypt market prioritizes Egyptian metformin brand 'Cidophage' (got: ${DrugsDirectory.formatDrugDisplayName('metformin', 'trade', 'en')})`);
+
+  DrugsDirectory.setMarket('saudi');
+  assert(DrugsDirectory.getMarket() === 'saudi', "DrugDirectory.setMarket('saudi') restores Saudi market");
+  assert(DrugsDirectory.formatDrugDisplayName('metformin', 'trade', 'en') === 'Glucophage', `Saudi market restores 'Glucophage'`);
+
+  // Tier filtering & Diabetes D tiers not clobbered to 1
+  const tier3Drugs = DrugsDirectory.searchDrugs('', 'all', '3');
+  assert(tier3Drugs.length >= 2 && tier3Drugs.every(d => d.tier === 3), "Tier 3 filter returns only high-cost drugs (Semaglutide, Tirzepatide)");
+  const D = vm.runInContext('D', context);
+  assert(D && D.sema && D.sema.tier === 3, `Diabetes engine preserves Semaglutide tier=3 after DRUG_DATABASE market sync (got: ${D && D.sema && D.sema.tier})`);
+
+  // togglePatientMedication preserves default activeMeds=['met'] when medications=[]
+  PatientSync.resetPatient();
+  PatientSync.updatePatient({ activeMeds: ['met'], medications: [] });
+  DrugsDirectory.togglePatientMedication('atorvastatin');
+  const afterToggle = PatientSync.get().activeMeds;
+  assert(afterToggle.includes('met') && afterToggle.includes('atorvastatin'), `togglePatientMedication preserves existing activeMeds when adding new med (got: ${JSON.stringify(afterToggle)})`);
+  PatientSync.resetPatient();
+});
+
+// =====================================================================
+// Case 21 & 22: Realistic Browser DOM End-to-End Test (All 13 Scripts incl. app.js & updater.js)
+// =====================================================================
+runCase(21, "Full 13-script realistic DOM lifecycle (app.js, guardrail critical icon, pregnancy card, XSS escaping)", () => {
+  const html = fs.readFileSync(path.resolve(__dirname, 'www', 'index.html'), 'utf8');
+
+  // Build realistic DOM element registry parsed from www/index.html IDs and key attributes
+  const domMap = new Map();
+  const winListeners = {};
+  const docListeners2 = {};
+
+  class RealMockEl {
+    constructor(tag, id = '') {
+      this.tagName = tag.toUpperCase();
+      this.id = id;
+      this.value = '';
+      this.checked = false;
+      this.hidden = false;
+      this.disabled = false;
+      this._innerHTML = '';
+      this.textContent = '';
+      this.innerText = '';
+      this.style = {};
+      this.dataset = {};
+      this.attributes = {};
+      this.listeners = {};
+      this.children = [];
+      this.parentNode = null;
+      this.className = '';
+      const self = this;
+      this.classList = {
+        classes: new Set(),
+        add: (...c) => c.forEach(x => self.classList.classes.add(x)),
+        remove: (...c) => c.forEach(x => self.classList.classes.delete(x)),
+        contains: (c) => self.classList.classes.has(c),
+        toggle: (c, f) => {
+          if (f === undefined) {
+            if (self.classList.classes.has(c)) self.classList.classes.delete(c);
+            else self.classList.classes.add(c);
+          } else if (f) self.classList.classes.add(c);
+          else self.classList.classes.delete(c);
+        }
+      };
+    }
+    get innerHTML() { return this._innerHTML; }
+    set innerHTML(val) {
+      this._innerHTML = String(val == null ? '' : val);
+      const idRe = /<([a-z0-9-]+)\b([^>]*)\bid="([^"]+)"([^>]*)>/gi;
+      let mm;
+      while ((mm = idRe.exec(this._innerHTML))) {
+        const tag = mm[1], attrs = mm[2] + ' ' + mm[4], eid = mm[3];
+        const child = new RealMockEl(tag, eid);
+        const vm2 = /\bvalue="([^"]*)"/i.exec(attrs);
+        if (vm2) child.value = vm2[1];
+        if (/\bchecked\b/i.test(attrs)) child.checked = true;
+        const clsm = /\bclass="([^"]*)"/i.exec(attrs);
+        if (clsm) { child.className = clsm[1]; clsm[1].split(/\s+/).filter(Boolean).forEach(c => child.classList.add(c)); }
+        const oncm = /\bonclick="([^"]*)"/i.exec(attrs);
+        if (oncm) child.setAttribute('onclick', oncm[1]);
+        child.parentNode = this;
+        domMap.set(eid, child);
+      }
+    }
+    setAttribute(k, v) {
+      this.attributes[k] = String(v);
+      if (k === 'id') { this.id = String(v); domMap.set(this.id, this); }
+      if (k.startsWith('data-')) this.dataset[k.slice(5).replace(/-([a-z])/g, (_, g) => g.toUpperCase())] = String(v);
+    }
+    getAttribute(k) { return this.attributes[k] !== undefined ? this.attributes[k] : null; }
+    removeAttribute(k) { delete this.attributes[k]; }
+    hasAttribute(k) { return this.attributes[k] !== undefined; }
+    addEventListener(ev, fn) { if (!this.listeners[ev]) this.listeners[ev] = []; this.listeners[ev].push(fn); }
+    dispatchEvent(ev) {
+      const t = typeof ev === 'string' ? ev : ev.type;
+      const o = typeof ev === 'string' ? { type: ev, target: this } : Object.assign(ev, { target: this });
+      (this.listeners[t] || []).forEach(fn => fn(o));
+      return true;
+    }
+    appendChild(c) { if (c) { c.parentNode = this; this.children.push(c); if (c.id) domMap.set(c.id, c); } return c; }
+    prepend(c) { if (c) { c.parentNode = this; this.children.unshift(c); if (c.id) domMap.set(c.id, c); } return c; }
+    insertBefore(c, r) { if (c) { c.parentNode = this; const i = this.children.indexOf(r); if (i === -1) this.children.push(c); else this.children.splice(i, 0, c); if (c.id) domMap.set(c.id, c); } return c; }
+    removeChild(c) { const i = this.children.indexOf(c); if (i !== -1) { this.children.splice(i, 1); c.parentNode = null; } return c; }
+    remove() { if (this.parentNode) this.parentNode.removeChild(this); if (this.id) domMap.delete(this.id); }
+    querySelector(sel) {
+      if (sel.startsWith('#')) return domMap.get(sel.slice(1)) || null;
+      return null;
+    }
+    querySelectorAll(sel) {
+      if (sel === '[data-i18n]' || sel === '[data-i18n-placeholder]' || sel === '[data-i18n-title]' || sel === '[data-i18n-aria-label]') {
+        return [];
+      }
+      if (sel === '.rxck') return [];
+      const attrM = /^\[([^\]]+)\]$/.exec(sel);
+      if (attrM) {
+        const attr = attrM[1];
+        return [...domMap.values()].filter(el => el.hasAttribute(attr));
+      }
+      return [];
+    }
+    click() { this.dispatchEvent({ type: 'click', target: this }); }
+    scrollIntoView() {}
+  }
+
+  // Hydrate all IDs referenced in index.html + default select values + copy onclick
+  const idMatchRe = /<([a-z0-9-]+)\b([^>]*)\bid="([^"]+)"([^>]*)>/gi;
+  let m2;
+  while ((m2 = idMatchRe.exec(html))) {
+    const tag = m2[1], attrs = m2[2] + ' ' + m2[4], id = m2[3];
+    const el = new RealMockEl(tag, id);
+    const valM = /\bvalue="([^"]*)"/i.exec(attrs);
+    if (valM) el.value = valM[1];
+    if (/\bchecked\b/i.test(attrs)) el.checked = true;
+    const onclickM = /\bonclick="([^"]*)"/i.exec(attrs);
+    if (onclickM) el.setAttribute('onclick', onclickM[1]);
+    if (tag.toLowerCase() === 'select') {
+      const closeIdx = html.indexOf('</select>', m2.index);
+      if (closeIdx !== -1) {
+        const inner = html.slice(m2.index, closeIdx);
+        const optRe = /<option\b([^>]*)>([^<]*)<\/option>/gi;
+        const opts = [];
+        let om;
+        while ((om = optRe.exec(inner))) {
+          const oValM = /\bvalue="([^"]*)"/i.exec(om[1]);
+          opts.push({ val: oValM ? oValM[1] : om[2].trim(), sel: /\bselected\b/i.test(om[1]) });
+        }
+        const chosen = opts.find(o => o.sel) || opts[0];
+        if (chosen) el.value = chosen.val;
+      }
+    }
+    domMap.set(id, el);
+  }
+  // Ensure drugs container wraps list
+  if (domMap.has('drugs-directory-container') && domMap.has('drug-directory-list')) {
+    domMap.get('drugs-directory-container').appendChild(domMap.get('drug-directory-list'));
+  }
+
+  const storage2 = new Map();
+  const docEl2 = new RealMockEl('html');
+  const body2 = new RealMockEl('body');
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      tag_name: 'v9.9.9<img src=x onerror=alert(1)>',
+      body: '<script>evil()</script>Clinical & bug fixes',
+      published_at: '2026-11-11T00:00:00Z',
+      assets: [
+        { name: 'osrawy-v9.9.9.apk', browser_download_url: 'javascript:alert(1)' }
+      ]
+    })
+  });
+  const win2 = {
+    console,
+    CustomEvent: MockCustomEvent,
+    Event: MockEvent,
+    AbortController: typeof AbortController !== 'undefined' ? AbortController : function() { return { signal: {}, abort: () => {} }; },
+    fetch: mockFetch,
+    navigator: { onLine: false, clipboard: { writeText: async () => {} }, vibrate: () => true },
+    localStorage: {
+      getItem: k => storage2.has(k) ? storage2.get(k) : null,
+      setItem: (k, v) => storage2.set(k, String(v)),
+      removeItem: k => storage2.delete(k)
+    },
+    addEventListener: (ev, fn) => { if (!winListeners[ev]) winListeners[ev] = []; winListeners[ev].push(fn); },
+    removeEventListener: (ev, fn) => { winListeners[ev] = (winListeners[ev] || []).filter(f => f !== fn); },
+    dispatchEvent: (ev) => { (winListeners[ev.type] || []).forEach(fn => fn(ev)); return true; },
+    setTimeout: () => 0,
+    clearTimeout: () => {},
+    scrollTo: () => {},
+    document: {
+      readyState: 'loading',
+      documentElement: docEl2,
+      body: body2,
+      getElementById: id => domMap.get(id) || null,
+      createElement: tag => new RealMockEl(tag),
+      querySelector: sel => sel.startsWith('#') ? (domMap.get(sel.slice(1)) || null) : null,
+      querySelectorAll: sel => {
+        if (sel.includes('main-view-section')) {
+          return ['tab-diabetes', 'tab-htn', 'tab-drugs', 'tab-recent', 'tab-dlp', 'tab-tools', 'tab-leaflets']
+            .map(id => domMap.get(id)).filter(Boolean);
+        }
+        return [];
+      },
+      addEventListener: (ev, fn) => { if (!docListeners2[ev]) docListeners2[ev] = []; docListeners2[ev].push(fn); },
+      dispatchEvent: ev => { (docListeners2[ev.type || ev] || []).forEach(fn => fn(ev)); return true; }
+    }
+  };
+  win2.window = win2;
+  win2.self = win2;
+  const sb2 = win2;
+  const ctx2 = vm.createContext(win2);
+
+  const all13 = [
+    'i18n.js', 'drugs_data.js', 'patient_sync.js', 'clinical_tools.js',
+    'lipids_engine.js', 'primary_care_engine.js', 'prescription_share.js',
+    'drugs_directory.js', 'diabetes_engine.js', 'htn_engine.js',
+    'patient_leaflets.js', 'updater.js', 'app.js'
+  ];
+  for (const s of all13) {
+    vm.runInContext(fs.readFileSync(path.join(jsDir, s), 'utf8'), ctx2, { filename: s });
+  }
+  win2.document.dispatchEvent({ type: 'DOMContentLoaded' });
+
+  // Verify fresh startup HTN defaults align with DM & PatientSync.defaultState (before any edits)
+  assert(
+    domMap.get('htn-age').value === '52' &&
+    domMap.get('htn-egfr').value === '68' &&
+    domMap.get('htn-uacr').value === '45',
+    `Fresh startup HTN defaults match DM & PatientSync (age=${domMap.get('htn-age').value}, egfr=${domMap.get('htn-egfr').value}, uacr=${domMap.get('htn-uacr').value})`
+  );
+
+  // Verify switchMainTab exposed globally
+  assert(typeof win2.switchMainTab === 'function', "app.js exposes window.switchMainTab globally");
+
+  // Verify guardrail banner listener was deduplicated (attached once) and uses 🚨 for critical alerts + escapes XSS
+  const guardrailListenerCount = (winListeners['osrawy:patient-updated'] || []).filter(fn => fn.toString().includes('clinical-guardrail-banner')).length;
+  assert(guardrailListenerCount === 1, `clinical-guardrail-banner attaches exactly once across engines (count=${guardrailListenerCount})`);
+
+  sb2.PatientSync.updatePatient({
+    sex: 'f',
+    egfr: 22,
+    diabetes: true,
+    pregnancy: true,
+    gestationalWeeks: 16,
+    asthma: false,
+    name: '<script>alert(1)</script>'
+  });
+
+  const bannerHtml = domMap.get('clinical-guardrail-banner').innerHTML;
+  assert(bannerHtml.includes('🚨') && !bannerHtml.includes('guardrail-item info"><span class="guardrail-icon">ℹ️</span><div class="guardrail-msg">Critical'), "Critical guardrail alerts render 🚨 danger icon instead of ℹ️");
+
+  const ptBarHtml = domMap.get('patient-summary-bar').innerHTML;
+  assert(!ptBarHtml.includes('<script>') && ptBarHtml.includes('&lt;script&gt;'), "Patient summary bar escapes HTML in patient name");
+
+  // Trigger DM & HTN re-render (including DOM #preg=true path!) and ensure pregnancy cards show Labetalol and survive plan()/htnRender()
+  win2.htnRender();
+  domMap.get('preg').checked = true;
+  win2.plan();
+  const htnPregCard = domMap.get('htn-pregnancy-card');
+  const dmPregCard = domMap.get('dm-pregnancy-card');
+  assert(Boolean(htnPregCard && htnPregCard.innerHTML.includes('Labetalol') && !htnPregCard.innerHTML.includes('Safe First-Line:</b> Aspirin')), `htn-pregnancy-card shows Labetalol as Safe First-Line instead of Aspirin (html: ${htnPregCard ? htnPregCard.innerHTML.slice(0, 180) : 'null'})`);
+  assert(Boolean(dmPregCard && dmPregCard.innerHTML.includes('TDD')), "dm-pregnancy-card survives window.plan() re-render even when DOM #preg is checked");
+  domMap.get('preg').checked = false;
+  win2.plan();
+
+  // Case 21b: Navigation Back button works from tab-drugs and tab-recent (doesn't return false and exit app)
+  win2.switchMainTab('tab-tools');
+  win2.switchMainTab('tab-drugs');
+  assert(win2.handleAndroidBack() === true, "handleAndroidBack returns true from tab-drugs instead of exiting app");
+  win2.switchMainTab('tab-recent');
+  assert(win2.handleAndroidBack() === true, "handleAndroidBack returns true from tab-recent instead of exiting app");
+
+  // Case 21c: DLP updates render once into #lipids-container (no duplicate #lipid-engine-summary) and LipidsEngine preserves 0 values + medications fallback
+  win2.switchMainTab('tab-dlp');
+  sb2.PatientSync.updatePatient({ ldlC: 165, tc: 230 });
+  assert(!domMap.has('lipid-engine-summary') && domMap.get('lipids-container').innerHTML.includes('LDL-C'), "DLP tab uses single #lipids-container without duplicate #lipid-engine-summary");
+  const lipidZeroRes = sb2.LipidsEngine.evaluateLipidPathway({ egfr: 0, altUl: 0, ldlC: 140, tc: 210, hdlC: 45, triglycerides: 150, medications: ['rosuva'] });
+  assert(lipidZeroRes.alerts.some(a => a.id === 'lipid-guardrail-rosuva-renal'), "LipidsEngine preserves egfr=0 and recognizes 'rosuva' alias in medications array");
+
+  // Case 21d: DrugDirectory canonicalizes alias 'met' -> 'metformin' cleanly
+  sb2.PatientSync.updatePatient({ activeMeds: ['met'], medications: ['met'] });
+  win2.DrugDirectory.render('drugs-directory-container');
+  const dirListHtml = domMap.get('drug-directory-list').innerHTML;
+  assert(dirListHtml.includes('data-med-toggle="metformin"') && (dirListHtml.includes('✓ مضاف للخطة') || dirListHtml.includes('✓ In Plan')), "DrugDirectory marks metformin as In Plan when state.activeMeds contains alias 'met'");
+  win2.DrugDirectory.togglePatientMedication('metformin');
+  assert(!sb2.PatientSync.get().activeMeds.includes('met') && !sb2.PatientSync.get().activeMeds.includes('metformin'), "Toggling off metformin clears legacy 'met' alias cleanly");
+
+  // Case 21e: PatientSync saves & restores dmTherapy checkboxes and dlp-statin-intol
+  domMap.get('c-met').checked = false;
+  domMap.get('c-sglt').checked = true;
+  sb2.PatientSync.syncFromDiabetes();
+  sb2.PatientSync.updatePatient({ statinIntolerant: true });
+  sb2.PatientSync.saveToRecent('DraftCase21e');
+  domMap.get('c-met').checked = true;
+  domMap.get('c-sglt').checked = false;
+  domMap.get('dlp-statin-intol').checked = false;
+  const savedDraft = sb2.PatientSync.getRecentList()[0];
+  win2.loadRecentPatient(savedDraft.id);
+  assert(domMap.get('c-met').checked === false && domMap.get('c-sglt').checked === true && domMap.get('dlp-statin-intol').checked === true, "loadRecentPatient restores DM therapy checkboxes and statin-intolerant flag");
+
+  // #copy click does not attach duplicate fallback listener when onclick="RxShare.copyHtnToClipboard()" exists
+  const copyEl = domMap.get('copy');
+  assert((copyEl.listeners['click'] || []).length === 0, `#copy does not attach redundant duplicate click handlers in app.js/htn_engine.js (listeners=${(copyEl.listeners['click'] || []).length})`);
+
+  // Case 21f: Cross-tab bidirectional sync (DrugDirectory <-> DM/DLP, HTN <-> DLP lipids, pregnancy aliases, Tools Sync, resetPatient)
+  sb2.PatientSync.resetPatient();
+  domMap.get('c-met').checked = true;
+  sb2.PatientSync.syncFromDiabetes();
+  win2.DrugDirectory.togglePatientMedication('metformin');
+  assert(
+    domMap.get('c-met').checked === false &&
+    sb2.PatientSync.get().dmTherapy.met === false &&
+    sb2.PatientSync.get().activeMeds.length === 0 &&
+    sb2.PatientSync.get().medications.length === 0 &&
+    sb2.PatientSync.get().currentMeds.length === 0,
+    "Toggling Metformin OFF in DrugDirectory unchecks #c-met and clears dmTherapy.met + all med arrays"
+  );
+  domMap.get('a1c').value = '9.2';
+  domMap.get('pform').dispatchEvent('input');
+  assert(
+    !sb2.PatientSync.get().activeMeds.includes('met') && !sb2.PatientSync.get().medications.includes('met'),
+    "Subsequent DM form edit does not re-add Metformin after it was toggled off in DrugDirectory"
+  );
+  sb2.PatientSync.saveToRecent('DraftMetOff');
+  domMap.get('c-met').checked = true;
+  const metOffDraft = sb2.PatientSync.getRecentList()[0];
+  win2.loadRecentPatient(metOffDraft.id);
+  assert(domMap.get('c-met').checked === false && sb2.PatientSync.get().dmTherapy.met === false, "Saving & loading draft preserves Metformin OFF state");
+
+  win2.DrugDirectory.togglePatientMedication('ezetimibe');
+  assert(sb2.PatientSync.get().onEzetimibe === true && domMap.get('dlp-ezetimibe').checked === true, "Toggling Ezetimibe ON in DrugDirectory updates #dlp-ezetimibe.checked");
+  win2.DrugDirectory.togglePatientMedication('ezetimibe');
+  assert(sb2.PatientSync.get().onEzetimibe === false && domMap.get('dlp-ezetimibe').checked === false, "Toggling Ezetimibe OFF in DrugDirectory unchecks #dlp-ezetimibe");
+  domMap.get('dlp-ezetimibe').checked = true;
+  domMap.get('dlp-inputs-panel').dispatchEvent('change');
+  assert(sb2.PatientSync.get().onEzetimibe === true && sb2.PatientSync.get().activeMeds.includes('ezetimibe'), "Checking #dlp-ezetimibe syncs Ezetimibe into activeMeds");
+
+  domMap.get('tc').value = '265';
+  domMap.get('hdl').value = '36';
+  domMap.get('lunit').value = 'mmol';
+  domMap.get('f').dispatchEvent('input');
+  assert(
+    domMap.get('dlp-tc').value === '265' && domMap.get('dlp-hdl').value === '36' && domMap.get('dlp-unit').value === 'mmol',
+    "HTN lipid edits propagate to #dlp-tc, #dlp-hdl, and #dlp-unit"
+  );
+
+  domMap.get('dlp-tc').value = '240';
+  domMap.get('dlp-hdl').value = '48';
+  domMap.get('dlp-unit').value = 'mg';
+  domMap.get('dlp-inputs-panel').dispatchEvent('input');
+  assert(
+    domMap.get('tc').value === '240' && domMap.get('hdl').value === '48' && domMap.get('lunit').value === 'mg',
+    "DLP lipid edits propagate back to HTN #tc, #hdl, and #lunit"
+  );
+
+  sb2.PatientSync.updatePatient({ pregnancy: true, preg: true, pregHtn: true });
+  assert(domMap.get('preg').checked === true && domMap.get('preg-htn').checked === true, "updatePatient({ pregnancy: true }) checks both #preg and #preg-htn");
+  domMap.get('preg-htn').checked = false;
+  domMap.get('f').dispatchEvent('change');
+  assert(
+    sb2.PatientSync.get().pregnancy === false &&
+    sb2.PatientSync.get().preg === false &&
+    sb2.PatientSync.get().pregHtn === false &&
+    domMap.get('preg').checked === false &&
+    !domMap.has('htn-pregnancy-card') &&
+    !domMap.has('dm-pregnancy-card'),
+    "Unchecking #preg-htn clears all pregnancy aliases, #preg, and obstetric cards"
+  );
+
+  win2.switchMainTab('tab-tools');
+  domMap.get('tab-scr').value = '1.8';
+  domMap.get('tab-age').value = '74';
+  domMap.get('tab-sex').value = 'f';
+  domMap.get('tab-wt').value = '60';
+  domMap.get('tab-scr').dispatchEvent('input');
+  if (typeof domMap.get('btn-sync-tools-egfr').onclick === 'function') {
+    domMap.get('btn-sync-tools-egfr').onclick();
+  }
+  const toolsEgfrStr = String(sb2.PatientSync.get().egfr);
+  assert(
+    domMap.get('egfr').value === toolsEgfrStr &&
+    domMap.get('htn-egfr').value === toolsEgfrStr &&
+    domMap.get('tab-kdigo-egfr').value === toolsEgfrStr &&
+    domMap.get('age').value === '74' &&
+    domMap.get('htn-age').value === '74' &&
+    domMap.get('wt').value === '60',
+    `ClinicalTools sync button updates #egfr, #htn-egfr, #tab-kdigo-egfr, age, and weight consistently (eGFR=${toolsEgfrStr})`
+  );
+
+  sb2.PatientSync.resetPatient();
+  assert(
+    domMap.get('pname').value === 'Ahmed Mahmoud' &&
+    domMap.get('egfr').value === '68' &&
+    domMap.get('htn-egfr').value === '68' &&
+    domMap.get('c-met').checked === false &&
+    domMap.get('dlp-ezetimibe').checked === false &&
+    domMap.get('tc').value === '210' &&
+    domMap.get('dlp-tc').value === '210' &&
+    domMap.get('tab-age').value === '52' &&
+    domMap.get('tab-scr').value === '1.1' &&
+    domMap.get('tab-scr-unit').value === 'mg',
+    "resetPatient() restores DOM inputs/checkboxes cleanly across DM, HTN, DLP, and Tools tabs"
+  );
+
+  // Case 21g: Sex change 'f' -> 'm' clears pregnancy everywhere, DLP lipid edit clears manual HTN #risk, and mounted Tools/PC refresh on sync
+  sb2.PatientSync.updatePatient({ sex: 'f', pregnancy: true, preg: true, pregHtn: true });
+  assert(domMap.get('preg').checked === true && domMap.get('preg-htn').checked === true && domMap.has('htn-pregnancy-card'), "Precondition: pregnant female shows obstetric cards");
+  domMap.get('htn-sex').value = 'm';
+  domMap.get('f').dispatchEvent('change');
+  assert(
+    sb2.PatientSync.get().sex === 'm' &&
+    sb2.PatientSync.get().pregnancy === false &&
+    sb2.PatientSync.get().preg === false &&
+    sb2.PatientSync.get().pregHtn === false &&
+    domMap.get('preg').checked === false &&
+    domMap.get('preg-htn').checked === false &&
+    !domMap.has('htn-pregnancy-card') &&
+    !domMap.has('dm-pregnancy-card'),
+    "Changing #htn-sex from female to male ('change' event) clears all pregnancy flags, checkboxes, and obstetric cards"
+  );
+
+  // Manual #risk override cleared on DLP lipid update (recalculates PREVENT instead of staying stuck on '25')
+  domMap.get('risk').value = '25';
+  domMap.get('risk').dispatchEvent('input');
+  domMap.get('dlp-tc').value = '280';
+  domMap.get('dlp-inputs-panel').dispatchEvent('input');
+  const riskAfterDlp = domMap.get('risk').value;
+  assert(riskAfterDlp !== '25' && riskAfterDlp !== '' && !isNaN(parseFloat(riskAfterDlp)), `DLP lipid edit resets manual HTN #risk override and recalculates PREVENT (risk='${riskAfterDlp}')`);
+  domMap.get('risk').value = '31';
+  domMap.get('risk').dispatchEvent('input');
+  sb2.PatientSync.resetPatient();
+  assert(domMap.get('risk').value !== '31' && domMap.get('risk').value !== '', `resetPatient() clears manual HTN #risk override (risk='${domMap.get('risk').value}')`);
+
+  // Modal eGFR Apply syncs scr/scrUnit to Tools & mounted Tools/PC refresh automatically
+  if (domMap.has('primary-care-container')) {
+    win2.PrimaryCareEngine.renderPrimaryCareTab('primary-care-container');
+  }
+  domMap.get('calc-scr').value = '1.9';
+  domMap.get('calc-scr-unit').value = 'mg';
+  domMap.get('calc-scr-unit').dispatchEvent('change');
+  assert(domMap.get('calc-scr').value === '1.9', `Re-selecting same #calc-scr-unit ('mg') does not double-convert Scr (scr='${domMap.get('calc-scr').value}')`);
+  domMap.get('btn-apply-calculated-egfr').setAttribute('data-calculated-egfr', '38');
+  domMap.get('btn-apply-calculated-egfr').click();
+  assert(
+    sb2.PatientSync.get().egfr === 38 &&
+    sb2.PatientSync.get().scr === 1.9 &&
+    domMap.get('tab-scr').value === '1.9' &&
+    domMap.get('tab-kdigo-egfr').value === '38' &&
+    domMap.get('tab-kdigo-results').innerHTML.includes('G3b'),
+    "Applying eGFR from modal syncs scr/egfr into PatientSync and refreshes mounted Tools KDIGO panel"
+  );
+  sb2.PatientSync.updatePatient({ wt: 55, sex: 'f', pregnancy: true });
+  if (domMap.has('pc-thy-wt')) {
+    assert(
+      domMap.get('pc-thy-wt').value === '55' &&
+      domMap.get('pc-thy-preg').checked === true &&
+      typeof win2.dmResetRxUser === 'function',
+      "Mounted PrimaryCare Thyroid panel syncs DOM fields & exposes dmResetRxUser cleanly"
+    );
+  }
+  sb2.PatientSync.resetPatient();
+
+  // Verify updater modal escapes XSS and rejects javascript: URL
+  assert(typeof win2.AppUpdater === 'object' && typeof win2.AppUpdater.init === 'function', "AppUpdater loads cleanly alongside all 13 modules");
+  global.__case21UpdaterPromise = win2.AppUpdater.checkForUpdates(true).then(() => {
+    const uModal = domMap.get('update-modal');
+    const htmlStr = uModal ? uModal.innerHTML : '';
+    assert(Boolean(uModal && htmlStr.includes('&lt;img') && !htmlStr.includes('<img src=x')), "AppUpdater escapes HTML/img tags in release tag_name");
+    assert(Boolean(htmlStr.includes('&lt;script&gt;') && !htmlStr.includes('<script>evil()')), "AppUpdater escapes <script> tags in release body");
+    assert(Boolean(htmlStr.includes('https://github.com/DrWssn/osrawy-clinical-navigator/releases') && !htmlStr.includes('javascript:alert(1)')), "AppUpdater rejects javascript: URL and falls back to HTTPS releases URL");
+  });
+});
+
 // ---------------------------------------------------------------------
-// 5. Final Summary & Exit
+// 5. Final Summary & Exit (Await async checks cleanly)
 // ---------------------------------------------------------------------
 
-console.log("===============================================================");
-console.log(`SIMULATION RESULTS: Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);
-console.log("===============================================================");
+(async () => {
+  if (global.__case21UpdaterPromise) {
+    console.log("---------------------------------------------------------------");
+    console.log("Case 22 (Async): AppUpdater modal XSS escaping & HTTPS URL validation");
+    console.log("---------------------------------------------------------------");
+    try {
+      await global.__case21UpdaterPromise;
+    } catch (err) {
+      failedTests++;
+      console.error("  ❌ Exception in Case 22:", err);
+    }
+  }
 
-if (failedTests > 0) {
-  console.error(`\n❌ SIMULATION FAILED with ${failedTests} failed test(s).`);
-  process.exit(1);
-} else {
-  console.log(`\n🎯 ALL ${totalTests} CLINICAL SIMULATION TESTS PASSED SUCCESSFULLY! 100% PASS.`);
-  process.exit(0);
-}
+  console.log("===============================================================");
+  console.log(`SIMULATION RESULTS: Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);
+  console.log("===============================================================");
+
+  if (failedTests > 0) {
+    console.error(`\n❌ SIMULATION FAILED with ${failedTests} failed test(s).`);
+    process.exit(1);
+  } else {
+    console.log(`\n🎯 ALL ${totalTests} CLINICAL SIMULATION TESTS PASSED SUCCESSFULLY! 100% PASS.`);
+    process.exit(0);
+  }
+})();

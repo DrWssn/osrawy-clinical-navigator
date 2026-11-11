@@ -6,6 +6,16 @@
 
 const ClinicalTools = (function() {
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // --- 1. CKD-EPI 2021 Race-Free Equation & Cockcroft-Gault ---
 
   /**
@@ -346,6 +356,8 @@ const ClinicalTools = (function() {
     res.risk = risk;
     res.riskTier = riskTier;
     res.riskLevel = risk;
+    res.riskLabelEn = riskTier === 'HIGH' ? 'High Risk' : (riskTier === 'INTERMEDIATE' ? 'Intermediate Risk' : 'Low Risk');
+    res.riskLabelAr = riskTier === 'HIGH' ? 'خطورة عالية' : (riskTier === 'INTERMEDIATE' ? 'خطورة متوسطة' : 'خطورة منخفضة');
     res.referral = referral;
     res.interpretationEn = interpretationEn;
     res.interpretationAr = interpretationAr;
@@ -898,11 +910,17 @@ const ClinicalTools = (function() {
     if (ageInput && pt.age) ageInput.value = pt.age;
     if (sexSelect && pt.sex) sexSelect.value = pt.sex;
     if (wtInput && pt.wt) wtInput.value = pt.wt;
-    if (unitSelect && !unitSelect.value) unitSelect.value = 'mg';
+    if (unitSelect) {
+      unitSelect.value = (pt.scrUnit === 'umol') ? 'umol' : 'mg';
+      if (unitSelect.dataset) unitSelect.dataset.prevUnit = unitSelect.value;
+    }
 
-    // If Scr is empty, suggest 1.0 mg/dL or 88 µmol/L
-    if (scrInput && !scrInput.value) {
-      scrInput.value = (unitSelect && unitSelect.value === 'umol') ? '88.4' : '1.0';
+    if (scrInput) {
+      if (pt.scr !== undefined && pt.scr !== null && parseFloat(pt.scr) > 0) {
+        scrInput.value = pt.scr;
+      } else {
+        scrInput.value = (unitSelect && unitSelect.value === 'umol') ? '88.4' : '1.0';
+      }
     }
 
     renderEgfrCalculation();
@@ -1005,39 +1023,76 @@ const ClinicalTools = (function() {
     const val = parseInt(applyBtn.getAttribute('data-calculated-egfr'), 10);
     if (isNaN(val)) return;
 
-    // 1. Update PatientSync active patient
+    // 1. Update PatientSync active patient (updatePatient / setEGFR already syncs DOM & triggers engines)
+    let syncedViaSetEgfr = false;
     if (typeof window.PatientSync !== 'undefined') {
-      if (typeof window.PatientSync.setEGFR === 'function') {
+      const scrEl = document.getElementById('calc-scr');
+      const scrUnitEl = document.getElementById('calc-scr-unit');
+      const scrVal = scrEl ? parseFloat(scrEl.value) : NaN;
+      const scrUnitVal = (scrUnitEl && scrUnitEl.value === 'umol') ? 'umol' : 'mg';
+      const modal = document.getElementById('egfr-modal');
+      const isModalOpen = !!(modal && modal.classList && modal.classList.contains('open'));
+
+      if (typeof window.PatientSync.updatePatient === 'function' && (!isNaN(scrVal) && scrVal > 0)) {
+        const patch = {
+          egfr: val,
+          scr: scrVal,
+          scrUnit: scrUnitVal
+        };
+        if (isModalOpen) {
+          const ageEl = document.getElementById('calc-age');
+          const sexEl = document.getElementById('calc-sex');
+          const wtEl = document.getElementById('calc-wt');
+          const ageVal = ageEl ? parseFloat(ageEl.value) : NaN;
+          const wtVal = wtEl ? parseFloat(wtEl.value) : NaN;
+          if (!isNaN(ageVal) && ageVal > 0) patch.age = ageVal;
+          if (sexEl && sexEl.value) patch.sex = sexEl.value;
+          if (!isNaN(wtVal) && wtVal > 0) patch.wt = wtVal;
+        }
+        window.PatientSync.updatePatient(patch);
+        syncedViaSetEgfr = true;
+      } else if (typeof window.PatientSync.setEGFR === 'function') {
         window.PatientSync.setEGFR(val);
+        syncedViaSetEgfr = true;
       } else {
         const pt = window.PatientSync.get();
-        if (pt) pt.egfr = val;
+        if (pt) {
+          pt.egfr = val;
+          if (!isNaN(scrVal) && scrVal > 0) {
+            pt.scr = scrVal;
+            pt.scrUnit = scrUnitVal;
+          }
+        }
         window.PatientSync.saveActive();
         window.PatientSync.updatePatientBar();
+        if (typeof window.PatientSync.notifyUpdated === 'function') {
+          window.PatientSync.notifyUpdated();
+        }
       }
     }
 
-    // 2. Update Diabetes form #egfr
-    const diaEgfr = document.getElementById('egfr');
-    if (diaEgfr) {
-      diaEgfr.value = val;
-    }
+    if (!syncedViaSetEgfr) {
+      // 2. Fallback: Update Diabetes form #egfr & HTN form #htn-egfr
+      const diaEgfr = document.getElementById('egfr');
+      if (diaEgfr) {
+        diaEgfr.value = val;
+      }
 
-    // 3. Update HTN form #htn-egfr
-    const htnEgfr = document.getElementById('htn-egfr');
-    if (htnEgfr) {
-      htnEgfr.value = val;
-    }
+      const htnEgfr = document.getElementById('htn-egfr');
+      if (htnEgfr) {
+        htnEgfr.value = val;
+      }
 
-    // 4. Trigger engines recalculation
-    if (typeof window.plan === 'function') {
-      window.plan();
-    }
-    if (typeof window.htnRender === 'function') {
-      window.htnRender();
-    }
-    if (typeof window.htnRenderTitrate === 'function') {
-      window.htnRenderTitrate();
+      // 3. Fallback: Trigger engines recalculation
+      if (typeof window.plan === 'function') {
+        window.plan();
+      }
+      if (typeof window.htnRender === 'function') {
+        window.htnRender();
+      }
+      if (typeof window.htnRenderTitrate === 'function') {
+        window.htnRenderTitrate();
+      }
     }
 
     // 5. Close modal
@@ -1084,7 +1139,7 @@ const ClinicalTools = (function() {
         <div class="ldl-eval-top">
           <div>
             <span class="ldl-badge-glow ${assessment.riskKey}">${isAr ? 'تقييم خطورة المريض الحالي:' : 'Active Patient Assessment:'} <b>${isAr ? assessment.goal.titleAr : assessment.goal.titleEn}</b></span>
-            <div class="ldl-eval-name">${pt.name || (isAr ? 'مريض العيادة' : 'Current Patient')} · ${pt.age || 52} ${isAr ? 'سنة' : 'y'} · ${pt.sex === 'f' ? (isAr ? 'أنثى' : 'Female') : (isAr ? 'ذكر' : 'Male')}</div>
+            <div class="ldl-eval-name">${escapeHtml(pt.name) || (isAr ? 'مريض العيادة' : 'Current Patient')} · ${pt.age || 52} ${isAr ? 'سنة' : 'y'} · ${pt.sex === 'f' ? (isAr ? 'أنثى' : 'Female') : (isAr ? 'ذكر' : 'Male')}</div>
           </div>
           <div class="ldl-target-highlight">
             <small>${isAr ? 'الهدف العلاجي لـ LDL:' : 'Target LDL-C Goal:'}</small>
@@ -1258,18 +1313,24 @@ const ClinicalTools = (function() {
     }
 
     if (unitSelect) {
+      if (unitSelect.dataset && !unitSelect.dataset.prevUnit) {
+        unitSelect.dataset.prevUnit = unitSelect.value || 'mg';
+      }
       unitSelect.addEventListener('change', () => {
-        // Automatically convert the current number in scrInput when unit changes
-        if (scrInput && scrInput.value) {
+        const nextUnit = unitSelect.value || 'mg';
+        const prevUnit = (unitSelect.dataset && unitSelect.dataset.prevUnit) ? unitSelect.dataset.prevUnit : nextUnit;
+        // Only convert Scr when unit actually flips between mg/dL and µmol/L
+        if (prevUnit !== nextUnit && scrInput && scrInput.value) {
           const curVal = parseFloat(scrInput.value);
           if (!isNaN(curVal) && curVal > 0) {
-            if (unitSelect.value === 'umol') {
+            if (nextUnit === 'umol') {
               scrInput.value = (curVal * 88.4).toFixed(1);
             } else {
               scrInput.value = (curVal / 88.4).toFixed(2);
             }
           }
         }
+        if (unitSelect.dataset) unitSelect.dataset.prevUnit = nextUnit;
         renderEgfrCalculation();
       });
     }
@@ -1325,7 +1386,7 @@ const ClinicalTools = (function() {
       });
     }
 
-    // 6. Listen to I18n language change to refresh modal content if open
+    // 6. Listen to I18n language change to refresh modal and tab content
     if (typeof window.I18n !== 'undefined' && typeof window.I18n.onChange === 'function') {
       window.I18n.onChange(() => {
         if (egfrModal && egfrModal.classList.contains('open')) {
@@ -1333,6 +1394,10 @@ const ClinicalTools = (function() {
         }
         if (ldlModal && ldlModal.classList.contains('open')) {
           renderLdlMatrix();
+        }
+        const toolsContainer = document.getElementById('clinical-tools-container');
+        if (toolsContainer && toolsContainer.innerHTML.trim()) {
+          renderToolsTab('clinical-tools-container');
         }
       });
     }
@@ -1351,11 +1416,13 @@ const ClinicalTools = (function() {
       ? window.I18n.getLang() === 'ar'
       : true;
 
-    const initialAge = pt.age || 58;
+    const initialAge = (pt.age !== undefined && pt.age !== null && pt.age !== '') ? pt.age : 58;
     const initialSex = pt.sex || 'm';
-    const initialWt = pt.wt || 82;
-    const initialScr = 1.1;
-    const initialUacr = 30;
+    const initialWt = (pt.wt !== undefined && pt.wt !== null && pt.wt !== '') ? pt.wt : 82;
+    const initialScr = (pt.scr && parseFloat(pt.scr) > 0) ? pt.scr : 1.1;
+    const initialScrUnit = (pt.scrUnit === 'umol') ? 'umol' : 'mg';
+    const initialEgfr = (pt.egfr !== undefined && pt.egfr !== null && pt.egfr !== '') ? pt.egfr : 68;
+    const initialUacr = (pt.uacr !== undefined && pt.uacr !== null && pt.uacr !== '') ? pt.uacr : 30;
 
     container.innerHTML = `
       <div class="clinical-tools-dashboard" style="margin-bottom:24px;">
@@ -1393,8 +1460,8 @@ const ClinicalTools = (function() {
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوحدة:' : 'Unit:'}</label>
               <select id="tab-scr-unit" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
-                <option value="mg">mg/dL</option>
-                <option value="umol">µmol/L</option>
+                <option value="mg" ${initialScrUnit === 'mg' ? 'selected' : ''}>mg/dL</option>
+                <option value="umol" ${initialScrUnit === 'umol' ? 'selected' : ''}>µmol/L</option>
               </select>
             </div>
             <div>
@@ -1434,7 +1501,7 @@ const ClinicalTools = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px;">
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'معدل الترشيح (eGFR mL/min):' : 'eGFR (mL/min):'}</label>
-              <input type="number" id="tab-kdigo-egfr" value="${pt.egfr || 68}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-kdigo-egfr" value="${initialEgfr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'زلال البول UACR (mg/g):' : 'UACR (mg/g):'}</label>
@@ -1491,60 +1558,87 @@ const ClinicalTools = (function() {
     `;
 
     // Calculation helper
+    function readTabNum(id, fallback) {
+      const el = document.getElementById(id);
+      if (!el) return fallback;
+      const raw = String(el.value ?? '').trim();
+      if (raw === '') return fallback;
+      const val = parseFloat(raw);
+      return isNaN(val) ? fallback : val;
+    }
+
     function recalculateToolsTab() {
-      const scr = parseFloat(document.getElementById('tab-scr')?.value) || 1.0;
+      if (!document.getElementById('tab-egfr-results')) return;
+      const scr = readTabNum('tab-scr', 1.0);
       const unit = document.getElementById('tab-scr-unit')?.value || 'mg';
-      const age = parseFloat(document.getElementById('tab-age')?.value) || 58;
+      const age = readTabNum('tab-age', 58);
       const sex = document.getElementById('tab-sex')?.value || 'm';
-      const wt = parseFloat(document.getElementById('tab-wt')?.value) || 80;
+      const wt = readTabNum('tab-wt', 80);
 
       // 1. eGFR & CrCl
-      const egfrRes = calculateCKDEPI(scr, age, (sex === 'f'), unit);
+      const egfrRes = calculateCKDEPI(scr, unit, age, sex);
       const crclRes = calculateCrCl(scr, unit, age, sex, wt);
       const outBox = document.getElementById('tab-egfr-results');
       if (outBox) {
-        outBox.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-              <div style="font-size:18px; font-weight:700; color:var(--teal);">eGFR: ${egfrRes.egfr} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min/1.73m²</span></div>
-              <div style="font-size:13px; font-weight:600; color:var(--muted);">${isAr ? egfrRes.stage.nameAr : egfrRes.stage.nameEn}</div>
+        if (!egfrRes) {
+          outBox.innerHTML = `<div style="font-size:13px; color:var(--muted);">${isAr ? 'يرجى إدخال قيم صحيحة وموجبة للكرياتينين والعمر.' : 'Please enter valid positive values for Serum Creatinine and Age.'}</div>`;
+        } else {
+          const crclDisplay = crclRes ? `${crclRes.crcl}` : '—';
+          outBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-size:18px; font-weight:700; color:var(--teal);">eGFR: ${egfrRes.egfr} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min/1.73m²</span></div>
+                <div style="font-size:13px; font-weight:600; color:var(--muted);">${isAr ? egfrRes.stage.nameAr : egfrRes.stage.nameEn}</div>
+              </div>
+              <div style="text-align:${isAr ? 'left' : 'right'};">
+                <div style="font-size:16px; font-weight:700; color:var(--grape);">CrCl: ${crclDisplay} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min</span></div>
+                <div style="font-size:11px; color:var(--muted);">(Cockcroft-Gault)</div>
+              </div>
             </div>
-            <div style="text-align:${isAr ? 'left' : 'right'};">
-              <div style="font-size:16px; font-weight:700; color:var(--grape);">CrCl: ${crclRes.crcl} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min</span></div>
-              <div style="font-size:11px; color:var(--muted);">(Cockcroft-Gault)</div>
+            <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
+              <b>${isAr ? 'أمان الميتفورمين:' : 'Metformin:'}</b> ${isAr ? egfrRes.stage.metforminAr : egfrRes.stage.metforminEn} | 
+              <b>${isAr ? 'مثبطات SGLT2:' : 'SGLT2i:'}</b> ${isAr ? egfrRes.stage.sglt2iAr : egfrRes.stage.sglt2iEn}
             </div>
-          </div>
-          <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
-            <b>${isAr ? 'أمان الميتفورمين:' : 'Metformin:'}</b> ${isAr ? egfrRes.stage.metforminAr : egfrRes.stage.metforminEn} | 
-            <b>${isAr ? 'مثبطات SGLT2:' : 'SGLT2i:'}</b> ${isAr ? egfrRes.stage.sglt2iAr : egfrRes.stage.sglt2iEn}
-          </div>
-        `;
+          `;
+        }
       }
 
       // Sync button
       const syncBtn = document.getElementById('btn-sync-tools-egfr');
       if (syncBtn) {
         syncBtn.onclick = function() {
-          if (window.PatientSync && typeof window.PatientSync.update === 'function') {
-            window.PatientSync.update({
-              egfr: egfrRes.egfr,
-              age: age,
-              sex: sex,
-              wt: wt
-            });
+          if (!egfrRes) return;
+          const roundedEgfr = (typeof egfrRes.egfrInt === 'number') ? egfrRes.egfrInt : Math.round(egfrRes.egfr);
+          if (window.PatientSync) {
+            if (typeof window.PatientSync.updatePatient === 'function') {
+              window.PatientSync.updatePatient({
+                egfr: roundedEgfr,
+                age: age,
+                sex: sex,
+                wt: wt,
+                scr: scr,
+                scrUnit: unit
+              });
+            } else if (typeof window.PatientSync.setEGFR === 'function') {
+              window.PatientSync.setEGFR(roundedEgfr);
+            }
+            if (typeof recalculateToolsTab === 'function') {
+              recalculateToolsTab();
+            }
             if (window.RxShare && typeof window.RxShare.showToast === 'function') {
-              window.RxShare.showToast(isAr ? `✅ تم تحديث معدل الترشيح إلى ${egfrRes.egfr} mL/min ومزامنته` : `✅ eGFR updated to ${egfrRes.egfr} mL/min and synced`);
+              window.RxShare.showToast(isAr ? `✅ تم تحديث معدل الترشيح إلى ${roundedEgfr} mL/min ومزامنته` : `✅ eGFR updated to ${roundedEgfr} mL/min and synced`);
             }
           }
         };
       }
 
       // 2. KDIGO
-      const kEgfr = parseFloat(document.getElementById('tab-kdigo-egfr')?.value) || egfrRes.egfr;
-      const kUacr = parseFloat(document.getElementById('tab-kdigo-uacr')?.value) || 30;
+      const fallbackEgfr = egfrRes ? egfrRes.egfr : 68;
+      const kEgfr = readTabNum('tab-kdigo-egfr', fallbackEgfr);
+      const kUacr = readTabNum('tab-kdigo-uacr', 30);
       const kdigoRes = evaluateKdigoMatrix(kEgfr, kUacr);
       const kBox = document.getElementById('tab-kdigo-results');
-      if (kBox) {
+      if (kBox && kdigoRes) {
         const riskColor = (kdigoRes.riskTier === 'VERY_HIGH') ? '#DC2626' : (kdigoRes.riskTier === 'HIGH' ? '#EA580C' : (kdigoRes.riskTier === 'MODERATE' ? '#D97706' : '#16A34A'));
         kBox.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -1564,15 +1658,16 @@ const ClinicalTools = (function() {
       }
 
       // 3. DOAC
-      const doacRes = evaluateDoacDosing('apixaban', {
+      const doacRes = evaluateDoacDosing({
         age: age,
-        weight: wt,
-        scr: scr,
-        crcl: crclRes.crcl,
-        egfr: egfrRes.egfr
+        weightKg: wt,
+        creatinineMgDl: scr,
+        scrUnit: unit,
+        sex: sex,
+        crcl: crclRes ? crclRes.crcl : 0
       });
       const dBox = document.getElementById('tab-doac-results');
-      if (dBox) {
+      if (dBox && doacRes) {
         dBox.innerHTML = `
           <div style="font-size:13px; font-weight:600; margin-bottom:4px;">
             💊 <b>Apixaban (Eliquis):</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}
@@ -1584,26 +1679,33 @@ const ClinicalTools = (function() {
       }
 
       // 4. FIB-4
-      const ast = parseFloat(document.getElementById('tab-fib4-ast')?.value) || 38;
-      const alt = parseFloat(document.getElementById('tab-fib4-alt')?.value) || 42;
-      const pltVal = parseFloat(document.getElementById('tab-fib4-plt')?.value) || 210;
+      const ast = readTabNum('tab-fib4-ast', 38);
+      const alt = readTabNum('tab-fib4-alt', 42);
+      const pltVal = readTabNum('tab-fib4-plt', 210);
       const fib4Res = calculateFib4(age, ast, alt, pltVal);
       const fBox = document.getElementById('tab-fib4-results');
       if (fBox) {
-        const fibColor = (fib4Res.riskTier === 'HIGH') ? '#DC2626' : (fib4Res.riskTier === 'INTERMEDIATE' ? '#D97706' : '#16A34A');
-        fBox.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div style="font-size:15px; font-weight:700;">
-              FIB-4: <span style="color:${fibColor};">${fib4Res.score}</span> 
-              <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; color:#fff; background:${fibColor}; margin-right:4px;">
-                ${isAr ? fib4Res.riskLabelAr : fib4Res.riskLabelEn}
-              </span>
+        if (!fib4Res) {
+          fBox.innerHTML = `<div style="font-size:13px; color:var(--muted);">${isAr ? 'يرجى إدخال قيم صحيحة وموجبة للعمر و AST و ALT والصفائح الدموية.' : 'Please enter valid positive values for Age, AST, ALT, and Platelets.'}</div>`;
+        } else {
+          const fibColor = (fib4Res.riskTier === 'HIGH') ? '#DC2626' : (fib4Res.riskTier === 'INTERMEDIATE' ? '#D97706' : '#16A34A');
+          const fibLabel = isAr
+            ? (fib4Res.riskLabelAr || (fib4Res.riskTier === 'HIGH' ? 'خطورة عالية' : (fib4Res.riskTier === 'INTERMEDIATE' ? 'خطورة متوسطة' : 'خطورة منخفضة')))
+            : (fib4Res.riskLabelEn || (fib4Res.riskTier === 'HIGH' ? 'High Risk' : (fib4Res.riskTier === 'INTERMEDIATE' ? 'Intermediate Risk' : 'Low Risk')));
+          fBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div style="font-size:15px; font-weight:700;">
+                FIB-4: <span style="color:${fibColor};">${fib4Res.score}</span> 
+                <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; color:#fff; background:${fibColor}; margin-right:4px;">
+                  ${fibLabel}
+                </span>
+              </div>
             </div>
-          </div>
-          <div style="margin-top:6px; font-size:12px; border-top:1px solid var(--border); padding-top:4px;">
-            <b>${isAr ? 'التوصية السريرية:' : 'Recommendation:'}</b> ${isAr ? fib4Res.actionAr : fib4Res.actionEn}
-          </div>
-        `;
+            <div style="margin-top:6px; font-size:12px; border-top:1px solid var(--border); padding-top:4px;">
+              <b>${isAr ? 'التوصية السريرية:' : 'Recommendation:'}</b> ${isAr ? fib4Res.actionAr : fib4Res.actionEn}
+            </div>
+          `;
+        }
       }
     }
 
@@ -1638,6 +1740,10 @@ const ClinicalTools = (function() {
           if (typeof window.renderRecentPatients === 'function') window.renderRecentPatients();
         }
       };
+    }
+
+    if (typeof window !== 'undefined') {
+      window.recalculateToolsTab = recalculateToolsTab;
     }
 
     // Initial calculation

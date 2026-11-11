@@ -150,11 +150,11 @@ const RxShare = (function() {
    * Multi-Engine Comprehensive Bilingual Prescription & Clinical Report
    * Integrates Vitals, Targets, Lipids, Primary Care, Safety Guardrails & Monitoring Schedule
    */
-  function buildPrescriptionReport(lang) {
+  function buildPrescriptionReport(lang, patientOverride) {
     const activeLang = lang || ((typeof window !== 'undefined' && typeof window.I18n !== 'undefined') ? window.I18n.getLang() : 'ar');
     const isAr = (activeLang === 'ar');
     const cfg = loadSettings();
-    const pt = (typeof PatientSync !== 'undefined') ? PatientSync.get() : {};
+    const pt = patientOverride || ((typeof PatientSync !== 'undefined') ? PatientSync.get() : {});
     const bmi = (typeof PatientSync !== 'undefined') ? PatientSync.getBMI(pt.wt, pt.ht) : '—';
     const dateStr = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -221,7 +221,7 @@ const RxShare = (function() {
       text += `💊 *الخطة الدوائية المعتمدة (Rx):*\n\n`;
 
       // Active Patient Medications formatted with OsrawyDrugsDirectory
-      const activeMedsList = pt.activeMeds || pt.meds || pt.currentMeds || [];
+      const activeMedsList = (pt.activeMeds && pt.activeMeds.length > 0) ? pt.activeMeds : (pt.meds || pt.currentMeds || pt.medications || []);
       if (activeMedsList && activeMedsList.length > 0) {
         text += `🔹 *الأدوية الحالية للمريض (Active Medications):*\n`;
         activeMedsList.forEach((medId, idx) => {
@@ -234,6 +234,8 @@ const RxShare = (function() {
           else if (typeof window !== 'undefined' && window.DrugDirectory) dir = window.DrugDirectory;
           else if (typeof globalThis !== 'undefined' && globalThis.DrugDirectory) dir = globalThis.DrugDirectory;
           else if (typeof global !== 'undefined' && global.DrugDirectory) dir = global.DrugDirectory;
+          else if (typeof DrugsDirectory !== 'undefined') dir = DrugsDirectory;
+          else if (typeof window !== 'undefined' && window.DrugsDirectory) dir = window.DrugsDirectory;
 
           let line = '';
           if (dir && typeof dir.formatMedicationLine === 'function') {
@@ -283,8 +285,9 @@ const RxShare = (function() {
       // Primary Care Recommendations (Asthma / COPD / Thyroid)
       if (pcReport) {
         if (pt.asthma && pcReport.asthma) {
+          const asthmaRxAr = (pcReport.asthma.recommendationDetails && pcReport.asthma.recommendationDetails.nameAr) || pcReport.asthma.recommendation || '';
           text += `🔹 *علاج الربو الشعبي (GINA 2024):*\n`;
-          text += `  • ${pcReport.asthma.trackNameAr} - ${pcReport.asthma.recommendation.nameAr}\n\n`;
+          text += `  • ${pcReport.asthma.trackNameAr} - ${asthmaRxAr}\n\n`;
         }
         if (pt.copd && pcReport.copd) {
           text += `🔹 *علاج السدة الرئوية (GOLD 2024):*\n`;
@@ -318,8 +321,10 @@ const RxShare = (function() {
 
         if (htnPreg) {
           text += `\n🩺 *بروتوكول تحويل أدوية الضغط أثناء الحمل والنفاس:*\n`;
-          text += `• الخيار الأول المعتمد: ${htnPreg.firstLine.drugNameAr} - ${htnPreg.firstLine.doseAr}\n`;
-          text += `• مبرر الاختيار: ${htnPreg.firstLine.reasonAr}\n`;
+          if (htnPreg.firstLine) {
+            text += `• الخيار الأول المعتمد: ${htnPreg.firstLine.drugNameAr} - ${htnPreg.firstLine.doseAr}\n`;
+            text += `• مبرر الاختيار: ${htnPreg.firstLine.reasonAr}\n`;
+          }
           if (htnPreg.aspirinProphylaxis && htnPreg.aspirinProphylaxis.indicated) {
             text += `• وقاية تسمم الحمل: أسبرين أطفال (81–150 مجم/يوم عند النوم حتى الأسبوع 36)\n`;
           }
@@ -329,7 +334,9 @@ const RxShare = (function() {
           if (htnPreg.isSevereEmergency) {
             text += `• 🚨 طوارئ ارتفاع الضغط الشديد (≥160/110): يتطلب خفضاً إسعافياً خلال 30-60 دقيقة وكبريتات المغنيسيوم.\n`;
           }
-          text += `• أدوية محظورة تم إيقافها فوراً: ${htnPreg.stoppedDrugs.join('، ')}\n`;
+          if (htnPreg.stoppedDrugs && htnPreg.stoppedDrugs.length > 0) {
+            text += `• أدوية محظورة تم إيقافها فوراً: ${htnPreg.stoppedDrugs.join('، ')}\n`;
+          }
         }
 
         if (dmPreg) {
@@ -412,7 +419,7 @@ const RxShare = (function() {
       text += `💊 *Prescribed & Recommended Regimens (Rx):*\n\n`;
 
       // Active Patient Medications formatted with OsrawyDrugsDirectory
-      const activeMedsListEn = pt.activeMeds || pt.meds || pt.currentMeds || [];
+      const activeMedsListEn = (pt.activeMeds && pt.activeMeds.length > 0) ? pt.activeMeds : (pt.meds || pt.currentMeds || pt.medications || []);
       if (activeMedsListEn && activeMedsListEn.length > 0) {
         text += `🔹 *Active Patient Medications:*\n`;
         activeMedsListEn.forEach((medId, idx) => {
@@ -425,6 +432,8 @@ const RxShare = (function() {
           else if (typeof window !== 'undefined' && window.DrugDirectory) dir = window.DrugDirectory;
           else if (typeof globalThis !== 'undefined' && globalThis.DrugDirectory) dir = globalThis.DrugDirectory;
           else if (typeof global !== 'undefined' && global.DrugDirectory) dir = global.DrugDirectory;
+          else if (typeof DrugsDirectory !== 'undefined') dir = DrugsDirectory;
+          else if (typeof window !== 'undefined' && window.DrugsDirectory) dir = window.DrugsDirectory;
 
           let line = '';
           if (dir && typeof dir.formatMedicationLine === 'function') {
@@ -473,8 +482,9 @@ const RxShare = (function() {
       // Primary Care
       if (pcReport) {
         if (pt.asthma && pcReport.asthma) {
+          const asthmaRxEn = (pcReport.asthma.recommendationDetails && pcReport.asthma.recommendationDetails.nameEn) || pcReport.asthma.recommendation || '';
           text += `🔹 *Asthma Care (GINA 2024):*\n`;
-          text += `  • ${pcReport.asthma.trackNameEn} - ${pcReport.asthma.recommendation.nameEn}\n\n`;
+          text += `  • ${pcReport.asthma.trackNameEn} - ${asthmaRxEn}\n\n`;
         }
         if (pt.copd && pcReport.copd) {
           text += `🔹 *COPD Care (GOLD 2024):*\n`;
@@ -508,8 +518,10 @@ const RxShare = (function() {
 
         if (htnPreg) {
           text += `\n🩺 *Hypertension in Pregnancy & Switching Strategy:*\n`;
-          text += `• Recommended First-Line: ${htnPreg.firstLine.drugName} - ${htnPreg.firstLine.doseEn}\n`;
-          text += `• Clinical Rationale: ${htnPreg.firstLine.reasonEn}\n`;
+          if (htnPreg.firstLine) {
+            text += `• Recommended First-Line: ${htnPreg.firstLine.drugName} - ${htnPreg.firstLine.doseEn}\n`;
+            text += `• Clinical Rationale: ${htnPreg.firstLine.reasonEn}\n`;
+          }
           if (htnPreg.aspirinProphylaxis && htnPreg.aspirinProphylaxis.indicated) {
             text += `• Preeclampsia Prophylaxis: Low-dose Aspirin (81–150 mg/day at bedtime through 36 weeks)\n`;
           }
@@ -519,7 +531,9 @@ const RxShare = (function() {
           if (htnPreg.isSevereEmergency) {
             text += `• 🚨 Severe Obstetric HTN Emergency (≥160/110): Immediate IV lowering and Magnesium Sulfate required.\n`;
           }
-          text += `• Teratogens Stopped: ${htnPreg.stoppedDrugs.join(', ')}\n`;
+          if (htnPreg.stoppedDrugs && htnPreg.stoppedDrugs.length > 0) {
+            text += `• Teratogens Stopped: ${htnPreg.stoppedDrugs.join(', ')}\n`;
+          }
         }
 
         if (dmPreg) {
@@ -624,22 +638,24 @@ const RxShare = (function() {
 
   function copySummaryToClipboard() {
     const text = buildWhatsAppText();
+    const isAr = (typeof window !== 'undefined' && window.I18n && window.I18n.getLang) ? window.I18n.getLang() === 'ar' : true;
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✅ تم نسخ الوصفة العلاجية بنجاح!');
+        showToast(isAr ? '✅ تم نسخ الوصفة العلاجية بنجاح!' : '✅ Prescription copied to clipboard!');
       }).catch(() => {
-        showToast('❌ تعذر النسخ للحافظة');
+        showToast(isAr ? '❌ تعذر النسخ للحافظة' : '❌ Failed to copy to clipboard');
       });
     }
   }
 
   function copyHtnToClipboard() {
     const text = buildHtnWhatsAppText();
+    const isAr = (typeof window !== 'undefined' && window.I18n && window.I18n.getLang) ? window.I18n.getLang() === 'ar' : true;
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✅ تم نسخ خطة علاج الضغط بنجاح!');
+        showToast(isAr ? '✅ تم نسخ خطة علاج الضغط بنجاح!' : '✅ Hypertension plan copied to clipboard!');
       }).catch(() => {
-        showToast('❌ تعذر النسخ للحافظة');
+        showToast(isAr ? '❌ تعذر النسخ للحافظة' : '❌ Failed to copy to clipboard');
       });
     }
   }

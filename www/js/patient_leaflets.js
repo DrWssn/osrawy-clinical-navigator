@@ -316,6 +316,16 @@
     let currentLang = 'ar';       // 'ar', 'en'
     let fontScale = 1.0;          // 0.85 to 1.35
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function getPatientSync() {
       if (typeof window.OsrawyPatientSync !== 'undefined') return window.OsrawyPatientSync;
       if (typeof window.PatientSync !== 'undefined') return window.PatientSync;
@@ -635,7 +645,7 @@
           <div class="targets-card-header">
             <div>
               <span class="targets-badge">${isAr ? 'أهدافك العلاجية الفردية' : 'Your Individualized Health Targets'}</span>
-              <h2 style="margin:4px 0 0;font-size:18px;">${isAr ? 'خطة التحكم الشخصية' : 'Personal Health Plan'} · ${targets.patientName} (${targets.age} ${isAr ? 'سنة' : 'years'})</h2>
+              <h2 style="margin:4px 0 0;font-size:18px;">${isAr ? 'خطة التحكم الشخصية' : 'Personal Health Plan'} · ${escapeHtml(targets.patientName)} (${targets.age} ${isAr ? 'سنة' : 'years'})</h2>
             </div>
             <div class="targets-sync-indicator">
               <span class="sync-dot"></span>
@@ -883,8 +893,8 @@
       if (zoomInBtn) {
         zoomInBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          if (fontScale < 1.35) {
-            fontScale += 0.1;
+          if (fontScale < 1.3) {
+            fontScale = Math.round((fontScale + 0.1) * 10) / 10;
             render();
           }
         });
@@ -893,7 +903,7 @@
         zoomOutBtn.addEventListener('click', (e) => {
           e.preventDefault();
           if (fontScale > 0.85) {
-            fontScale -= 0.1;
+            fontScale = Math.round((fontScale - 0.1) * 10) / 10;
             render();
           }
         });

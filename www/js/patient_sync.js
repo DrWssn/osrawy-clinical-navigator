@@ -57,6 +57,8 @@ const PatientSync = (function() {
     ascvd: false,
     diabetes: true,
     dm: true,
+    oob: true,
+    cheap: true,
     statinIntolerant: false,
     pregnancy: false,
     trimester: 2,
@@ -74,7 +76,25 @@ const PatientSync = (function() {
     currentMeds: []
   };
 
-  let currentPatient = Object.assign({}, defaultState);
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function parseNumOr(val, fallback) {
+    if (val === undefined || val === null) return fallback;
+    const s = String(val).trim();
+    if (s === '') return fallback;
+    const n = parseFloat(s);
+    return isNaN(n) ? fallback : n;
+  }
+
+  let currentPatient = JSON.parse(JSON.stringify(defaultState));
 
   function getBMI(wt, ht) {
     if (!wt || !ht) return null;
@@ -122,9 +142,14 @@ const PatientSync = (function() {
   function evaluateSafetyGuardrails(state) {
     const p = state || currentPatient;
     const alerts = [];
-    const egfr = parseFloat(p.egfr) || 0;
-    const k = parseFloat(p.k) || 0;
-    const medsRaw = p.meds || p.activeMeds || p.currentMeds || [];
+    const egfr = parseNumOr(p.egfr, 0);
+    const k = parseNumOr(p.k, 0);
+    const medsRaw =
+      (Array.isArray(p.meds) && p.meds.length ? p.meds : null) ||
+      (Array.isArray(p.activeMeds) && p.activeMeds.length ? p.activeMeds : null) ||
+      (Array.isArray(p.currentMeds) && p.currentMeds.length ? p.currentMeds : null) ||
+      p.medications ||
+      [];
     const meds = Array.isArray(medsRaw) ? medsRaw.map(m => String(m).toLowerCase()) : [];
 
     // Helper to check if a class or drug is active
@@ -274,11 +299,307 @@ const PatientSync = (function() {
     return guardrails;
   }
 
+  function getEffectiveMedsList(pt) {
+    if (!pt || typeof pt !== 'object') return [];
+    if (Array.isArray(pt.medications) && pt.medications.length) return pt.medications.slice();
+    if (Array.isArray(pt.activeMeds) && pt.activeMeds.length) return pt.activeMeds.slice();
+    if (Array.isArray(pt.currentMeds) && pt.currentMeds.length) return pt.currentMeds.slice();
+    return [];
+  }
+
+  function isMetMed(m) {
+    const l = String(m || '').toLowerCase();
+    return l === 'met' || l === 'metformin';
+  }
+
+  function isEzetMed(m) {
+    const l = String(m || '').toLowerCase();
+    return l === 'ezetimibe' || l.includes('ezetimibe');
+  }
+
+  function setDomValue(el, val) {
+    if (!el || val === undefined || val === null) return;
+    if (typeof document !== 'undefined' && document.activeElement === el) return;
+    const str = String(val);
+    if (String(el.value) !== str) el.value = str;
+  }
+
+  function setDomChecked(el, val) {
+    if (!el) return;
+    const next = !!val;
+    if (Boolean(el.checked) !== next) el.checked = next;
+  }
+
+  function normalizePatientState(patchOrPt, isFullApply) {
+    const medKeys = ['medications', 'activeMeds', 'currentMeds'];
+    const providedMedKeys = (patchOrPt && typeof patchOrPt === 'object')
+      ? medKeys.filter(k => Array.isArray(patchOrPt[k]))
+      : [];
+
+    let resolvedMeds;
+    if (providedMedKeys.length > 0) {
+      const nonEmptyKey = providedMedKeys.find(k => patchOrPt[k].length > 0);
+      resolvedMeds = nonEmptyKey ? patchOrPt[nonEmptyKey].slice() : [];
+      currentPatient.medications = resolvedMeds.slice();
+      currentPatient.activeMeds = resolvedMeds.slice();
+      currentPatient.currentMeds = resolvedMeds.slice();
+    } else if (isFullApply) {
+      resolvedMeds = getEffectiveMedsList(currentPatient);
+      currentPatient.medications = resolvedMeds.slice();
+      currentPatient.activeMeds = resolvedMeds.slice();
+      currentPatient.currentMeds = resolvedMeds.slice();
+    } else {
+      resolvedMeds = getEffectiveMedsList(currentPatient);
+    }
+
+    const patchDmTx = (patchOrPt && patchOrPt.dmTherapy && typeof patchOrPt.dmTherapy === 'object') ? patchOrPt.dmTherapy : null;
+    const prevDmTx = (currentPatient.dmTherapy && typeof currentPatient.dmTherapy === 'object') ? currentPatient.dmTherapy : {};
+
+    if (providedMedKeys.length > 0) {
+      if (isFullApply && patchDmTx && patchDmTx.met !== undefined) {
+        const hasMetBefore = resolvedMeds.some(isMetMed);
+        if (patchDmTx.met && !hasMetBefore) {
+          resolvedMeds.unshift('met');
+        } else if (!patchDmTx.met && hasMetBefore) {
+          resolvedMeds = resolvedMeds.filter(m => !isMetMed(m));
+        }
+        currentPatient.medications = resolvedMeds.slice();
+        currentPatient.activeMeds = resolvedMeds.slice();
+        currentPatient.currentMeds = resolvedMeds.slice();
+      }
+      const hasMet = resolvedMeds.some(isMetMed);
+      const hasEzet = resolvedMeds.some(isEzetMed);
+      currentPatient.dmTherapy = Object.assign({}, prevDmTx, patchDmTx || {}, {
+        met: (isFullApply && patchDmTx && patchDmTx.met !== undefined) ? !!patchDmTx.met : hasMet
+      });
+      currentPatient.onEzetimibe = hasEzet;
+    } else {
+      let medsDirty = false;
+      if (patchDmTx && patchDmTx.met !== undefined) {
+        const wantMet = !!patchDmTx.met;
+        const hasMet = resolvedMeds.some(isMetMed);
+        if (wantMet && !hasMet) {
+          resolvedMeds.unshift('met');
+          medsDirty = true;
+        } else if (!wantMet && hasMet) {
+          resolvedMeds = resolvedMeds.filter(m => !isMetMed(m));
+          medsDirty = true;
+        }
+        currentPatient.dmTherapy = Object.assign({}, prevDmTx, patchDmTx, { met: wantMet });
+      } else if (isFullApply) {
+        currentPatient.dmTherapy = Object.assign({}, prevDmTx, { met: resolvedMeds.some(isMetMed) });
+      } else if (patchDmTx) {
+        currentPatient.dmTherapy = Object.assign({}, prevDmTx, patchDmTx);
+      }
+
+      if (patchOrPt && patchOrPt.onEzetimibe !== undefined) {
+        const wantEzet = !!patchOrPt.onEzetimibe;
+        const hasEzet = resolvedMeds.some(isEzetMed);
+        if (wantEzet && !hasEzet) {
+          resolvedMeds.push('ezetimibe');
+          medsDirty = true;
+        } else if (!wantEzet && hasEzet) {
+          resolvedMeds = resolvedMeds.filter(m => !isEzetMed(m));
+          medsDirty = true;
+        }
+        currentPatient.onEzetimibe = wantEzet;
+      } else if (isFullApply) {
+        currentPatient.onEzetimibe = resolvedMeds.some(isEzetMed);
+      }
+
+      if (medsDirty) {
+        currentPatient.medications = resolvedMeds.slice();
+        currentPatient.activeMeds = resolvedMeds.slice();
+        currentPatient.currentMeds = resolvedMeds.slice();
+      }
+    }
+
+    if (patchOrPt && typeof patchOrPt === 'object') {
+      if (patchOrPt.tc !== undefined && patchOrPt.totalCholesterol === undefined) {
+        currentPatient.totalCholesterol = currentPatient.tc;
+      } else if (patchOrPt.totalCholesterol !== undefined && patchOrPt.tc === undefined) {
+        currentPatient.tc = currentPatient.totalCholesterol;
+      } else if (isFullApply) {
+        const resolvedTc = (patchOrPt.tc !== undefined) ? patchOrPt.tc : currentPatient.totalCholesterol;
+        if (resolvedTc !== undefined) {
+          currentPatient.tc = resolvedTc;
+          currentPatient.totalCholesterol = resolvedTc;
+        }
+      }
+
+      if (patchOrPt.hdl !== undefined && patchOrPt.hdlC === undefined) {
+        currentPatient.hdlC = currentPatient.hdl;
+      } else if (patchOrPt.hdlC !== undefined && patchOrPt.hdl === undefined) {
+        currentPatient.hdl = currentPatient.hdlC;
+      } else if (isFullApply) {
+        const resolvedHdl = (patchOrPt.hdl !== undefined) ? patchOrPt.hdl : currentPatient.hdlC;
+        if (resolvedHdl !== undefined) {
+          currentPatient.hdl = resolvedHdl;
+          currentPatient.hdlC = resolvedHdl;
+        }
+      }
+
+      if (patchOrPt.lunit !== undefined && patchOrPt.lipidUnit === undefined) {
+        currentPatient.lipidUnit = currentPatient.lunit;
+      } else if (patchOrPt.lipidUnit !== undefined && patchOrPt.lunit === undefined) {
+        currentPatient.lunit = currentPatient.lipidUnit;
+      } else if (isFullApply) {
+        const resolvedUnit = patchOrPt.lunit || patchOrPt.lipidUnit || currentPatient.lunit || 'mg';
+        currentPatient.lunit = resolvedUnit;
+        currentPatient.lipidUnit = resolvedUnit;
+      }
+
+      if (patchOrPt.diabetes !== undefined && patchOrPt.dm === undefined) {
+        currentPatient.dm = !!currentPatient.diabetes;
+      } else if (patchOrPt.dm !== undefined && patchOrPt.diabetes === undefined) {
+        currentPatient.diabetes = !!currentPatient.dm;
+      } else if (isFullApply) {
+        const hasDm = (patchOrPt.diabetes !== undefined)
+          ? !!patchOrPt.diabetes
+          : ((patchOrPt.dm !== undefined) ? !!patchOrPt.dm : true);
+        currentPatient.diabetes = hasDm;
+        currentPatient.dm = hasDm;
+      }
+
+      if (patchOrPt.sex === 'm' && !('pregnancy' in patchOrPt || 'preg' in patchOrPt || 'pregHtn' in patchOrPt)) {
+        currentPatient.pregnancy = false;
+        currentPatient.preg = false;
+        currentPatient.pregHtn = false;
+      } else if ('pregnancy' in patchOrPt || 'preg' in patchOrPt || 'pregHtn' in patchOrPt || isFullApply) {
+        const isPreg = ('pregnancy' in patchOrPt)
+          ? !!patchOrPt.pregnancy
+          : (('preg' in patchOrPt)
+            ? !!patchOrPt.preg
+            : (('pregHtn' in patchOrPt)
+              ? !!patchOrPt.pregHtn
+              : !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn)));
+        currentPatient.pregnancy = isPreg;
+        currentPatient.preg = isPreg;
+        currentPatient.pregHtn = isPreg;
+      }
+    }
+  }
+
+  function syncDomFromState(isFullResetOrApply) {
+    if (typeof document === 'undefined') return;
+    const $ = id => document.getElementById(id);
+
+    // Diabetes inputs
+    setDomValue($('pname'), currentPatient.name || '');
+    setDomValue($('age'), currentPatient.age);
+    setDomValue($('sex'), currentPatient.sex || 'm');
+    setDomValue($('wt'), currentPatient.wt);
+    setDomValue($('iwt'), currentPatient.wt);
+    setDomValue($('ht'), currentPatient.ht);
+    setDomValue($('dur'), currentPatient.dur);
+    setDomValue($('hf'), currentPatient.hf || 'none');
+    setDomValue($('a1c'), currentPatient.a1c);
+    setDomValue($('fpg'), currentPatient.fpg);
+    setDomValue($('ifpg'), currentPatient.fpg);
+    setDomValue($('egfr'), currentPatient.egfr);
+    setDomValue($('uacr'), currentPatient.uacr);
+    setDomChecked($('cheap'), currentPatient.cheap !== false);
+    setDomChecked($('ascvd'), currentPatient.ascvd);
+    setDomChecked($('hrisk'), currentPatient.hrisk);
+    setDomChecked($('masld'), currentPatient.masld);
+    setDomChecked($('smoker'), currentPatient.smoker);
+    setDomChecked($('hypo'), currentPatient.hypo);
+    setDomChecked($('frail'), currentPatient.frail);
+    setDomChecked($('catab'), currentPatient.catab);
+    setDomChecked($('pancr'), currentPatient.pancr);
+    setDomChecked($('geni'), currentPatient.geni);
+    const isPreg = !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn);
+    setDomChecked($('preg'), isPreg);
+
+    const dmTx = currentPatient.dmTherapy || {};
+    const allMeds = getEffectiveMedsList(currentPatient);
+    const hasMet = (dmTx.met !== undefined) ? !!dmTx.met : allMeds.some(isMetMed);
+    setDomChecked($('c-met'), hasMet);
+    setDomChecked($('c-su'), dmTx.su);
+    setDomChecked($('c-dpp'), dmTx.dpp);
+    setDomChecked($('c-sglt'), dmTx.sglt);
+    setDomChecked($('c-glp'), dmTx.glp);
+    setDomChecked($('c-pio'), dmTx.pio);
+    setDomChecked($('c-ins'), dmTx.ins);
+
+    // HTN inputs
+    setDomValue($('sbp'), currentPatient.sbp);
+    setDomValue($('dbp'), currentPatient.dbp);
+    setDomValue($('htn-age'), currentPatient.age);
+    setDomValue($('htn-sex'), currentPatient.sex || 'm');
+    setDomValue($('meds'), String(currentPatient.medsCount !== undefined ? currentPatient.medsCount : '0'));
+    setDomChecked($('oob'), currentPatient.oob);
+    setDomValue($('htn-egfr'), currentPatient.egfr);
+    setDomValue($('htn-uacr'), currentPatient.uacr);
+    setDomValue($('k'), currentPatient.k);
+    setDomChecked($('dm'), currentPatient.diabetes !== false && currentPatient.dm !== false);
+    setDomChecked($('cad'), currentPatient.ascvd);
+    setDomChecked($('hf-htn'), currentPatient.hf === 'hfref');
+    setDomChecked($('stroke'), currentPatient.stroke);
+    setDomChecked($('af'), currentPatient.af);
+    setDomChecked($('gout'), currentPatient.gout);
+    setDomChecked($('asthma'), currentPatient.asthma);
+    setDomChecked($('bph'), currentPatient.bph);
+    setDomChecked($('smk'), currentPatient.smoker);
+    setDomChecked($('statin'), currentPatient.statin);
+    setDomChecked($('frail-htn'), currentPatient.frail);
+    setDomChecked($('ortho'), currentPatient.ortho);
+    setDomChecked($('preg-htn'), isPreg);
+
+    const tcVal = currentPatient.tc !== undefined ? currentPatient.tc : currentPatient.totalCholesterol;
+    const hdlVal = currentPatient.hdl !== undefined ? currentPatient.hdl : currentPatient.hdlC;
+    const lunitVal = currentPatient.lunit || currentPatient.lipidUnit || 'mg';
+    setDomValue($('tc'), tcVal);
+    setDomValue($('hdl'), hdlVal);
+    setDomValue($('lunit'), lunitVal);
+
+    // DLP inputs
+    setDomValue($('dlp-ldl'), currentPatient.ldlC);
+    setDomValue($('dlp-tc'), tcVal);
+    setDomValue($('dlp-hdl'), hdlVal);
+    setDomValue($('dlp-tg'), currentPatient.triglycerides);
+    setDomValue($('dlp-alt'), currentPatient.altUl);
+    setDomValue($('dlp-unit'), lunitVal);
+    setDomChecked($('dlp-statin-intol'), currentPatient.statinIntolerant);
+    setDomChecked($('dlp-ezetimibe'), currentPatient.onEzetimibe || allMeds.some(isEzetMed));
+
+    // Tools / Primary Care mounted inputs if currently rendered
+    setDomValue($('tab-age'), currentPatient.age);
+    setDomValue($('tab-sex'), currentPatient.sex || 'm');
+    setDomValue($('tab-wt'), currentPatient.wt);
+    if (currentPatient.scr !== undefined && currentPatient.scr !== null && currentPatient.scr !== '') {
+      setDomValue($('tab-scr'), currentPatient.scr);
+      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg');
+    } else if (isFullResetOrApply) {
+      setDomValue($('tab-scr'), 1.1);
+      setDomValue($('tab-scr-unit'), currentPatient.scrUnit || 'mg');
+    }
+    setDomValue($('tab-kdigo-egfr'), currentPatient.egfr);
+    setDomValue($('tab-kdigo-uacr'), currentPatient.uacr);
+    setDomValue($('pc-thy-wt'), currentPatient.wt);
+    setDomChecked($('pc-thy-ascvd'), currentPatient.ascvd);
+    setDomChecked($('pc-thy-preg'), isPreg);
+    setDomChecked($('pc-thy-asthma'), currentPatient.asthma);
+  }
+
+  function renderEngines() {
+    if (typeof window !== 'undefined') {
+      if (typeof window.plan === 'function') window.plan();
+      if (typeof window.htnRender === 'function') window.htnRender();
+      if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+      if (typeof window.renderPregnancyCards === 'function') window.renderPregnancyCards(currentPatient);
+      if (typeof window.recalculateToolsTab === 'function') window.recalculateToolsTab();
+      if (typeof window.updatePrimaryCareUi === 'function') window.updatePrimaryCareUi();
+    }
+  }
+
   function loadActive() {
     try {
       const s = localStorage.getItem(ACTIVE_KEY);
       if (s) {
-        currentPatient = Object.assign(currentPatient, JSON.parse(s));
+        const parsed = JSON.parse(s);
+        currentPatient = Object.assign(currentPatient, parsed);
+        normalizePatientState(parsed, true);
       }
     } catch(e) {}
     return currentPatient;
@@ -306,7 +627,7 @@ const PatientSync = (function() {
         id: 'pt_' + Date.now(),
         timestamp: new Date().toLocaleString(),
         label: label || currentPatient.name || 'Anonymous Patient',
-        data: Object.assign({}, currentPatient)
+        data: JSON.parse(JSON.stringify(currentPatient))
       };
       const updated = [item, ...list.filter(x => x.label !== item.label).slice(0, 19)];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -336,42 +657,102 @@ const PatientSync = (function() {
       const $ = id => (typeof document !== 'undefined' ? document.getElementById(id) : null);
       if (!$('pname')) return;
 
+      const prevSex = currentPatient.sex;
       currentPatient.name = $('pname').value || '';
-      currentPatient.age = parseFloat($('age').value) || 52;
+      currentPatient.age = parseNumOr($('age').value, 52);
       currentPatient.sex = $('sex').value || 'm';
-      currentPatient.wt = parseFloat($('wt').value) || 96;
-      currentPatient.ht = parseFloat($('ht').value) || 170;
-      currentPatient.dur = parseFloat($('dur').value) || 4;
+      currentPatient.wt = parseNumOr($('wt').value, 96);
+      currentPatient.ht = parseNumOr($('ht').value, 170);
+      currentPatient.dur = parseNumOr($('dur').value, 4);
       currentPatient.hf = $('hf').value || 'none';
-      currentPatient.a1c = parseFloat($('a1c').value) || 8.9;
-      currentPatient.fpg = parseFloat($('fpg').value) || 190;
-      currentPatient.egfr = parseFloat($('egfr').value) || 68;
-      currentPatient.uacr = parseFloat($('uacr').value) || 45;
+      currentPatient.a1c = parseNumOr($('a1c').value, 8.9);
+      currentPatient.fpg = parseNumOr($('fpg').value, 190);
+      currentPatient.egfr = parseNumOr($('egfr').value, 68);
+      currentPatient.uacr = parseNumOr($('uacr').value, 45);
       currentPatient.ascvd = !!($('ascvd') && $('ascvd').checked);
+      currentPatient.hrisk = !!($('hrisk') && $('hrisk').checked);
+      currentPatient.masld = !!($('masld') && $('masld').checked);
       currentPatient.smoker = !!($('smoker') && $('smoker').checked);
+      if ($('hypo')) currentPatient.hypo = $('hypo').checked;
+      if ($('frail')) currentPatient.frail = $('frail').checked;
+      currentPatient.catab = !!($('catab') && $('catab').checked);
+      currentPatient.pancr = !!($('pancr') && $('pancr').checked);
+      currentPatient.geni = !!($('geni') && $('geni').checked);
+      if ($('cheap')) currentPatient.cheap = $('cheap').checked;
       currentPatient.diabetes = true;
       currentPatient.dm = true;
 
-      if ($('preg')) currentPatient.pregnancy = $('preg').checked;
+      if (prevSex !== 'm' && currentPatient.sex === 'm') {
+        currentPatient.pregnancy = false;
+        currentPatient.preg = false;
+        currentPatient.pregHtn = false;
+        setDomChecked($('preg'), false);
+        setDomChecked($('preg-htn'), false);
+      } else if ($('preg')) {
+        const isPreg = !!$('preg').checked;
+        currentPatient.pregnancy = isPreg;
+        currentPatient.preg = isPreg;
+        currentPatient.pregHtn = isPreg;
+      }
 
-      // Propagate to HTN inputs if present
-      if ($('htn-age')) $('htn-age').value = currentPatient.age;
-      if ($('htn-sex')) $('htn-sex').value = currentPatient.sex;
-      if ($('htn-egfr')) $('htn-egfr').value = currentPatient.egfr;
-      if ($('htn-uacr')) $('htn-uacr').value = currentPatient.uacr;
-      if ($('cad')) $('cad').checked = currentPatient.ascvd;
-      if ($('hf-htn')) $('hf-htn').checked = (currentPatient.hf === 'hfref');
-      if ($('smk')) $('smk').checked = currentPatient.smoker;
-      if ($('dm')) $('dm').checked = true;
-      if ($('preg-htn') && $('preg')) $('preg-htn').checked = $('preg').checked;
+      // Preserve all Diabetes therapy checkboxes for draft save/restore
+      currentPatient.dmTherapy = {
+        met: !!($('c-met') && $('c-met').checked),
+        su: !!($('c-su') && $('c-su').checked),
+        dpp: !!($('c-dpp') && $('c-dpp').checked),
+        sglt: !!($('c-sglt') && $('c-sglt').checked),
+        glp: !!($('c-glp') && $('c-glp').checked),
+        pio: !!($('c-pio') && $('c-pio').checked),
+        ins: !!($('c-ins') && $('c-ins').checked)
+      };
+
+      // Sync #c-met checkbox cleanly with medications/activeMeds/currentMeds without erasing other added drugs
+      if ($('c-met')) {
+        const baseMeds = getEffectiveMedsList(currentPatient);
+        const hasMet = baseMeds.some(isMetMed);
+        let nextMeds = baseMeds.slice();
+        if ($('c-met').checked) {
+          if (!hasMet) nextMeds.unshift('met');
+        } else {
+          nextMeds = nextMeds.filter(m => !isMetMed(m));
+        }
+        currentPatient.activeMeds = nextMeds.slice();
+        currentPatient.medications = nextMeds.slice();
+        currentPatient.currentMeds = nextMeds.slice();
+      }
+
+      // Propagate to HTN & mounted Tools/PC inputs if present
+      setDomValue($('htn-age'), currentPatient.age);
+      setDomValue($('htn-sex'), currentPatient.sex);
+      setDomValue($('htn-egfr'), currentPatient.egfr);
+      setDomValue($('htn-uacr'), currentPatient.uacr);
+      setDomChecked($('cad'), currentPatient.ascvd);
+      setDomChecked($('hf-htn'), currentPatient.hf === 'hfref');
+      setDomChecked($('smk'), currentPatient.smoker);
+      setDomChecked($('dm'), true);
+      if ($('frail')) setDomChecked($('frail-htn'), $('frail').checked);
+      setDomChecked($('preg-htn'), !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn));
+      setDomValue($('tab-age'), currentPatient.age);
+      setDomValue($('tab-sex'), currentPatient.sex);
+      setDomValue($('tab-wt'), currentPatient.wt);
+      setDomValue($('tab-kdigo-egfr'), currentPatient.egfr);
+      setDomValue($('tab-kdigo-uacr'), currentPatient.uacr);
+      setDomValue($('pc-thy-wt'), currentPatient.wt);
+      setDomChecked($('pc-thy-ascvd'), currentPatient.ascvd);
+      setDomChecked($('pc-thy-preg'), !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn));
 
       saveActive();
       updatePatientBar();
       notifyUpdated();
 
-      // Recalculate HTN if available
-      if (typeof window !== 'undefined' && typeof window.htnRender === 'function') window.htnRender();
-      if (typeof window !== 'undefined' && typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+      // Recalculate HTN and mounted helpers if available
+      if (typeof window !== 'undefined') {
+        if (typeof window.htnRender === 'function') window.htnRender();
+        if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+        if (typeof window.renderPregnancyCards === 'function') window.renderPregnancyCards(currentPatient);
+        if (typeof window.recalculateToolsTab === 'function') window.recalculateToolsTab();
+        if (typeof window.updatePrimaryCareUi === 'function') window.updatePrimaryCareUi();
+      }
     } finally {
       isSyncing = false;
     }
@@ -384,48 +765,94 @@ const PatientSync = (function() {
       const $ = id => (typeof document !== 'undefined' ? document.getElementById(id) : null);
       if (!$('sbp')) return;
 
-      currentPatient.sbp = parseFloat($('sbp').value) || 148;
-      currentPatient.dbp = parseFloat($('dbp').value) || 94;
-      currentPatient.age = parseFloat($('htn-age').value) || currentPatient.age;
+      const prevSex = currentPatient.sex;
+      currentPatient.sbp = parseNumOr($('sbp').value, 148);
+      currentPatient.dbp = parseNumOr($('dbp').value, 94);
+      currentPatient.age = parseNumOr($('htn-age').value, currentPatient.age);
       currentPatient.sex = $('htn-sex').value || currentPatient.sex;
-      currentPatient.egfr = parseFloat($('htn-egfr').value) || currentPatient.egfr;
-      currentPatient.uacr = parseFloat($('htn-uacr').value) || currentPatient.uacr;
-      currentPatient.k = parseFloat($('k').value) || 4.6;
+      currentPatient.egfr = parseNumOr($('htn-egfr').value, currentPatient.egfr);
+      currentPatient.uacr = parseNumOr($('htn-uacr').value, currentPatient.uacr);
+      currentPatient.k = parseNumOr($('k').value, 4.6);
+      if ($('meds')) currentPatient.medsCount = $('meds').value || '0';
+      if ($('oob')) currentPatient.oob = $('oob').checked;
       currentPatient.smoker = !!($('smk') && $('smk').checked);
       currentPatient.statin = !!($('statin') && $('statin').checked);
       currentPatient.ascvd = !!($('cad') && $('cad').checked);
-      if ($('dm')) currentPatient.diabetes = $('dm').checked;
-      if ($('preg-htn')) currentPatient.pregnancy = $('preg-htn').checked;
+      if ($('stroke')) currentPatient.stroke = $('stroke').checked;
+      if ($('af')) currentPatient.af = $('af').checked;
+      if ($('gout')) currentPatient.gout = $('gout').checked;
+      if ($('asthma')) currentPatient.asthma = $('asthma').checked;
+      if ($('bph')) currentPatient.bph = $('bph').checked;
+      if ($('ortho')) currentPatient.ortho = $('ortho').checked;
+      if ($('dm')) {
+        currentPatient.diabetes = !!$('dm').checked;
+        currentPatient.dm = !!$('dm').checked;
+      }
+      if ($('hf-htn')) {
+        currentPatient.hf = $('hf-htn').checked ? 'hfref' : (currentPatient.hf === 'hfref' ? 'none' : currentPatient.hf);
+        setDomValue($('hf'), currentPatient.hf);
+      }
+      if ($('frail-htn')) {
+        currentPatient.frail = $('frail-htn').checked;
+        setDomChecked($('frail'), currentPatient.frail);
+      }
+      if (prevSex !== 'm' && currentPatient.sex === 'm') {
+        currentPatient.pregnancy = false;
+        currentPatient.preg = false;
+        currentPatient.pregHtn = false;
+        setDomChecked($('preg'), false);
+        setDomChecked($('preg-htn'), false);
+      } else if ($('preg-htn')) {
+        const isPreg = !!$('preg-htn').checked;
+        currentPatient.pregnancy = isPreg;
+        currentPatient.preg = isPreg;
+        currentPatient.pregHtn = isPreg;
+      }
 
-      // Lipid values from HTN panel if available
+      // Lipid values from HTN panel synced to state and DLP inputs
       if ($('tc')) {
-        currentPatient.tc = parseFloat($('tc').value) || currentPatient.tc;
+        currentPatient.tc = parseNumOr($('tc').value, currentPatient.tc);
         currentPatient.totalCholesterol = currentPatient.tc;
+        setDomValue($('dlp-tc'), currentPatient.tc);
       }
       if ($('hdl')) {
-        currentPatient.hdl = parseFloat($('hdl').value) || currentPatient.hdl;
+        currentPatient.hdl = parseNumOr($('hdl').value, currentPatient.hdl);
         currentPatient.hdlC = currentPatient.hdl;
+        setDomValue($('dlp-hdl'), currentPatient.hdl);
       }
       if ($('lunit')) {
         currentPatient.lunit = $('lunit').value || 'mg';
         currentPatient.lipidUnit = currentPatient.lunit;
+        setDomValue($('dlp-unit'), currentPatient.lunit);
       }
 
-      // Propagate back to Diabetes inputs
-      if ($('age')) $('age').value = currentPatient.age;
-      if ($('sex')) $('sex').value = currentPatient.sex;
-      if ($('egfr')) $('egfr').value = currentPatient.egfr;
-      if ($('uacr')) $('uacr').value = currentPatient.uacr;
-      if ($('ascvd')) $('ascvd').checked = currentPatient.ascvd;
-      if ($('smoker')) $('smoker').checked = currentPatient.smoker;
-      if ($('preg') && $('preg-htn')) $('preg').checked = $('preg-htn').checked;
+      // Propagate back to Diabetes & mounted Tools/PC inputs
+      setDomValue($('age'), currentPatient.age);
+      setDomValue($('sex'), currentPatient.sex);
+      setDomValue($('egfr'), currentPatient.egfr);
+      setDomValue($('uacr'), currentPatient.uacr);
+      setDomChecked($('ascvd'), currentPatient.ascvd);
+      setDomChecked($('smoker'), currentPatient.smoker);
+      setDomChecked($('preg'), !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn));
+      setDomValue($('tab-age'), currentPatient.age);
+      setDomValue($('tab-sex'), currentPatient.sex);
+      setDomValue($('tab-kdigo-egfr'), currentPatient.egfr);
+      setDomValue($('tab-kdigo-uacr'), currentPatient.uacr);
+      setDomChecked($('pc-thy-ascvd'), currentPatient.ascvd);
+      setDomChecked($('pc-thy-preg'), !!(currentPatient.pregnancy || currentPatient.preg || currentPatient.pregHtn));
+      setDomChecked($('pc-thy-asthma'), currentPatient.asthma);
 
       saveActive();
       updatePatientBar();
       notifyUpdated();
 
-      // Recalculate Diabetes if available
-      if (typeof window !== 'undefined' && typeof window.plan === 'function') window.plan();
+      // Recalculate Diabetes and mounted helpers if available
+      if (typeof window !== 'undefined') {
+        if (typeof window.plan === 'function') window.plan();
+        if (typeof window.renderPregnancyCards === 'function') window.renderPregnancyCards(currentPatient);
+        if (typeof window.recalculateToolsTab === 'function') window.recalculateToolsTab();
+        if (typeof window.updatePrimaryCareUi === 'function') window.updatePrimaryCareUi();
+      }
     } finally {
       isSyncing = false;
     }
@@ -440,7 +867,7 @@ const PatientSync = (function() {
     const sexLabel = currentPatient.sex === 'm' ? t('opt_male', 'ذكر') : t('opt_female', 'أنثى');
     const ageUnit = t('bar_years', 'سنة');
     bar.innerHTML = `
-      <div class="pt-bar-item"><span class="pt-bar-label">${t('bar_name', 'الاسم:')}</span> <b>${currentPatient.name || t('bar_new_patient', 'مريض جديد')}</b></div>
+      <div class="pt-bar-item"><span class="pt-bar-label">${t('bar_name', 'الاسم:')}</span> <b>${escapeHtml(currentPatient.name) || t('bar_new_patient', 'مريض جديد')}</b></div>
       <div class="pt-bar-item"><span class="pt-bar-label">${t('bar_age', 'العمر:')}</span> <b>${currentPatient.age} ${ageUnit}</b> (${sexLabel})</div>
       <div class="pt-bar-item"><span class="pt-bar-label">BMI:</span> <b>${bmi || '—'}</b> (${currentPatient.wt} kg)</div>
       <div class="pt-bar-item"><span class="pt-bar-label">eGFR:</span> <b>${currentPatient.egfr}</b></div>
@@ -450,66 +877,48 @@ const PatientSync = (function() {
   }
 
   function applyPatient(pt) {
-    currentPatient = Object.assign({}, defaultState, pt);
-    if (typeof document !== 'undefined') {
-      const $ = id => document.getElementById(id);
-      if ($('pname')) $('pname').value = pt.name || '';
-      if ($('age')) $('age').value = pt.age;
-      if ($('sex')) $('sex').value = pt.sex;
-      if ($('wt')) $('wt').value = pt.wt;
-      if ($('ht')) $('ht').value = pt.ht;
-      if ($('dur')) $('dur').value = pt.dur;
-      if ($('hf')) $('hf').value = pt.hf;
-      if ($('a1c')) $('a1c').value = pt.a1c;
-      if ($('fpg')) $('fpg').value = pt.fpg;
-      if ($('egfr')) $('egfr').value = pt.egfr;
-      if ($('uacr')) $('uacr').value = pt.uacr;
-      if ($('ascvd')) $('ascvd').checked = !!pt.ascvd;
-      if ($('smoker')) $('smoker').checked = !!pt.smoker;
-
-      if ($('sbp')) $('sbp').value = pt.sbp || 148;
-      if ($('dbp')) $('dbp').value = pt.dbp || 94;
-      if ($('htn-age')) $('htn-age').value = pt.age;
-      if ($('htn-sex')) $('htn-sex').value = pt.sex;
-      if ($('htn-egfr')) $('htn-egfr').value = pt.egfr;
-      if ($('htn-uacr')) $('htn-uacr').value = pt.uacr;
-      if ($('k')) $('k').value = pt.k || 4.6;
-      if ($('cad')) $('cad').checked = !!pt.ascvd;
-      if ($('smk')) $('smk').checked = !!pt.smoker;
-      if ($('statin')) $('statin').checked = !!pt.statin;
-      if ($('tc') && pt.tc) $('tc').value = pt.tc;
-      if ($('hdl') && pt.hdl) $('hdl').value = pt.hdl;
-      if ($('lunit') && pt.lunit) $('lunit').value = pt.lunit;
+    let clonedDefault = JSON.parse(JSON.stringify(defaultState));
+    let clonedPt = pt || {};
+    try {
+      if (pt) clonedPt = JSON.parse(JSON.stringify(pt));
+    } catch(e) {}
+    currentPatient = Object.assign(clonedDefault, clonedPt);
+    normalizePatientState(clonedPt, true);
+    if (typeof window !== 'undefined') {
+      if (typeof window.dmResetRxUser === 'function') window.dmResetRxUser();
+      if (typeof window.htnResetRiskManual === 'function') window.htnResetRiskManual();
+    }
+    if (!isSyncing) {
+      isSyncing = true;
+      try {
+        syncDomFromState(true);
+      } finally {
+        isSyncing = false;
+      }
     }
 
     saveActive();
     updatePatientBar();
     notifyUpdated();
-
-    if (typeof window !== 'undefined') {
-      if (typeof window.plan === 'function') window.plan();
-      if (typeof window.htnRender === 'function') window.htnRender();
-      if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
-    }
+    renderEngines();
   }
 
   function setEGFR(val) {
-    const num = Math.round(parseFloat(val) || 0);
+    const parsed = parseFloat(val);
+    const num = isNaN(parsed) ? 0 : Math.round(parsed);
     currentPatient.egfr = num;
-    if (typeof document !== 'undefined') {
-      const $ = id => document.getElementById(id);
-      if ($('egfr')) $('egfr').value = num;
-      if ($('htn-egfr')) $('htn-egfr').value = num;
+    if (!isSyncing) {
+      isSyncing = true;
+      try {
+        syncDomFromState();
+      } finally {
+        isSyncing = false;
+      }
     }
     saveActive();
     updatePatientBar();
     notifyUpdated();
-
-    if (typeof window !== 'undefined') {
-      if (typeof window.plan === 'function') window.plan();
-      if (typeof window.htnRender === 'function') window.htnRender();
-      if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
-    }
+    renderEngines();
     return num;
   }
 
@@ -523,9 +932,34 @@ const PatientSync = (function() {
     currentPatient.medications = [];
     currentPatient.activeMeds = [];
     currentPatient.currentMeds = [];
+    currentPatient.dmTherapy = {
+      met: false,
+      su: false,
+      dpp: false,
+      sglt: false,
+      glp: false,
+      pio: false,
+      ins: false
+    };
+    currentPatient.onEzetimibe = false;
+    currentPatient.preg = false;
+    currentPatient.pregHtn = false;
+    if (typeof window !== 'undefined') {
+      if (typeof window.dmResetRxUser === 'function') window.dmResetRxUser();
+      if (typeof window.htnResetRiskManual === 'function') window.htnResetRiskManual();
+    }
+    if (!isSyncing) {
+      isSyncing = true;
+      try {
+        syncDomFromState(true);
+      } finally {
+        isSyncing = false;
+      }
+    }
     try {
       updatePatientBar();
       notifyUpdated();
+      renderEngines();
     } catch(e) {}
     return currentPatient;
   }
@@ -533,21 +967,36 @@ const PatientSync = (function() {
   function updatePatient(patch) {
     if (patch && typeof patch === 'object') {
       Object.assign(currentPatient, patch);
-      if (patch.medications && !patch.activeMeds) {
-        currentPatient.activeMeds = patch.medications.slice();
+      normalizePatientState(patch, false);
+      const touchesPrevent = (
+        'tc' in patch || 'totalCholesterol' in patch ||
+        'hdl' in patch || 'hdlC' in patch ||
+        'lunit' in patch || 'lipidUnit' in patch ||
+        'smoker' in patch || 'statin' in patch ||
+        'diabetes' in patch || 'dm' in patch
+      );
+      if (touchesPrevent && !('risk' in patch) && typeof window !== 'undefined' && typeof window.htnResetRiskManual === 'function') {
+        window.htnResetRiskManual();
+      }
+      if (!isSyncing) {
+        isSyncing = true;
+        try {
+          syncDomFromState(false);
+        } finally {
+          isSyncing = false;
+        }
       }
       saveActive();
       updatePatientBar();
       notifyUpdated();
+      renderEngines();
     }
     return currentPatient;
   }
 
   function setField(field, value) {
-    currentPatient[field] = value;
-    saveActive();
-    updatePatientBar();
-    notifyUpdated();
+    if (!field) return currentPatient;
+    return updatePatient({ [field]: value });
   }
 
   return {

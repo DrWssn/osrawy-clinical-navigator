@@ -18,7 +18,7 @@
   function read(){
     const n = id => { const v = parseFloat($(id).value); return isNaN(v) ? null : v; };
     const c = id => $(id).checked;
-    return { s:n('sbp'), d:n('dbp'), age:n('htn-age'), sex:$('htn-sex').value, meds:+$('meds').value, risk:n('risk'),
+    return { s:n('sbp'), d:n('dbp'), age:n('htn-age'), sex:$('htn-sex').value || 'm', meds:+$('meds').value, risk:n('risk'),
       oob:c('oob'), dm:c('dm'), cad:c('cad'), hf:c('hf-htn'), stroke:c('stroke'), af:c('af'), gout:c('gout'),
       asthma:c('asthma'), bph:c('bph'), frail:c('frail-htn'), ortho:c('ortho'), preg:c('preg-htn') && $('htn-sex').value==='f',
       egfr:n('htn-egfr'), uacr:n('htn-uacr'), k:n('k') };
@@ -45,7 +45,7 @@
     m:{a:0.7688528,n:0.0736174,h:-0.0954431,s1:-0.4347345,s2:0.3362658,d:0.7692857,sm:0.4386871,e1:0.5378979,e2:0.0164827,m:0.288879,st:-0.1337349,ms:-0.0475924,stn:0.150273,an:-0.0517874,ah:0.0191169,as:-0.1049477,ad:-0.2251948,asm:-0.0895067,ae:-0.1543702,c:-3.031168}
   };
   function prevent(q){ // tc, hdl in mg/dL
-    const k = PV[q.sex];
+    const k = PV[q.sex] || PV.m;
     const A=(q.age-55)/10, N=(q.tc-q.hdl)*0.02586-3.5, H=(q.hdl*0.02586-1.3)/0.3,
       S1=(Math.min(q.sbp,110)-110)/20, S2=(Math.max(q.sbp,110)-130)/20,
       E1=(Math.min(q.egfr,60)-60)/-15, E2=(Math.max(q.egfr,60)-90)/-15;
@@ -56,7 +56,10 @@
   }
   let riskManual = false;
   $('risk').addEventListener('input', () => { riskManual = $('risk').value !== ''; });
-  ['tc','hdl','lunit','smk','statin'].forEach(id => $(id).addEventListener('input', () => { riskManual = false; }));
+  ['tc','hdl','lunit','smk','statin'].forEach(id => {
+    $(id).addEventListener('input', () => { riskManual = false; });
+    $(id).addEventListener('change', () => { riskManual = false; });
+  });
 
   function calcRisk(){
     const box = $('riskbox');
@@ -244,18 +247,24 @@
     $('out').innerHTML = sections.join('');
     window.__summary = summary.join('\n');
     window.__tgt = [tS, tD];
+    if (typeof window !== 'undefined' && typeof window.renderPregnancyCards === 'function') {
+      window.renderPregnancyCards();
+    }
   }
 
   $('f').addEventListener('input', render);
+  $('f').addEventListener('change', render);
   $('f').addEventListener('submit', e=>e.preventDefault());
-  $('copy').addEventListener('click', ()=>{
-    const t = window.__summary || '';
-    const done = ()=>{ $('toast').hidden=false; setTimeout(()=>$('toast').hidden=true, 1600); };
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(t).then(done).catch(()=>fallback(t));
-    } else fallback(t);
-    function fallback(txt){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} ta.remove(); }
-  });
+  if ($('copy') && !$('copy').getAttribute('onclick')) {
+    $('copy').addEventListener('click', ()=>{
+      const t = window.__summary || '';
+      const done = ()=>{ $('toast').hidden=false; setTimeout(()=>$('toast').hidden=true, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(t).then(done).catch(()=>fallback(t));
+      } else fallback(t);
+      function fallback(txt){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} ta.remove(); }
+    });
+  }
 
   // ---------- Switch & titrate ----------
   // Each dose step: [dose, level]; level 0 = low, 1 = standard, 2 = high (fractional/negative allowed).
@@ -396,16 +405,27 @@
   $('ti-drug').addEventListener('change', ()=>{ fillDose($('ti-dose'), byId($('ti-drug').value), 0); renderTitrate(); });
   $('ti-dose').addEventListener('change', renderTitrate);
   $('f').addEventListener('input', renderTitrate);
+  $('f').addEventListener('change', renderTitrate);
   renderSwitch();
   setLens(lens);
   renderTitrate();
 
   window.htnRender = render;
   window.htnRenderTitrate = renderTitrate;
+  window.htnResetRiskManual = () => {
+    riskManual = false;
+    const r = $('risk');
+    if (r) r.value = '';
+  };
 
   // Cross-engine clinical safety alerts listener
   var target = (typeof window !== 'undefined') ? window : globalThis;
-  if (target && target.addEventListener) {
+  if (target && target.addEventListener && !target.__osrawyGuardrailListenerAttached) {
+    target.__osrawyGuardrailListenerAttached = true;
+    var escH = function(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
     target.addEventListener('osrawy:patient-updated', function(ev) {
       var banner = document.getElementById('clinical-guardrail-banner');
       if (!banner) return;
@@ -426,9 +446,13 @@
       banner.style.display = 'block';
       banner.innerHTML = list.map(function(item) {
         var text = typeof item === 'string' ? item : (item.text || item.message || item.title || '');
-        var type = (typeof item === 'object' && (item.type || item.level)) || 'danger';
-        var icon = (typeof item === 'object' && item.icon) || (type === 'danger' ? '🚨' : (type === 'warn' || type === 'warning' ? '⚠️' : 'ℹ️'));
-        return '<div class="guardrail-item ' + type + '"><span class="guardrail-icon">' + icon + '</span><div class="guardrail-msg">' + text + '</div></div>';
+        var rawType = String((typeof item === 'object' && (item.type || item.level)) || 'danger').toLowerCase();
+        var cssType = (rawType === 'critical' || rawType === 'danger' || rawType === 'error')
+          ? 'danger'
+          : (rawType === 'warn' || rawType === 'warning' ? 'warn' : 'info');
+        var icon = (typeof item === 'object' && item.icon) ||
+          (cssType === 'danger' ? '🚨' : (cssType === 'warn' ? '⚠️' : 'ℹ️'));
+        return '<div class="guardrail-item ' + cssType + '"><span class="guardrail-icon">' + escH(icon) + '</span><div class="guardrail-msg">' + escH(text) + '</div></div>';
       }).join('');
     });
   }

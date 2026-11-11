@@ -205,11 +205,21 @@ const OsrawyPrimaryCareEngine = (function() {
   function evaluateCopdGold(patientInput) {
     const p = patientInput || (typeof PatientSync !== 'undefined' ? PatientSync.get() : {});
 
-    const moderateExac = parseFloat(p.moderateExacerbations !== undefined ? p.moderateExacerbations : (p.copdExacerbations || 0));
-    const hospExac = parseFloat(p.hospitalExacerbations !== undefined ? p.hospitalExacerbations : (p.copdHospitalExacerbations || 0));
-    const mmrc = parseFloat(p.mMRC !== undefined ? p.mMRC : (p.copdMmrc || 0));
-    const cat = parseFloat(p.catScore !== undefined ? p.catScore : (p.copdCat || 0));
-    const eos = parseFloat(p.bloodEosinophils !== undefined ? p.bloodEosinophils : (p.copdEosinophils || 150)); // cells/µL
+    function pickNum(vals, fallback) {
+      for (let i = 0; i < vals.length; i++) {
+        if (vals[i] !== undefined && vals[i] !== null && vals[i] !== '') {
+          const n = parseFloat(vals[i]);
+          if (!isNaN(n)) return n;
+        }
+      }
+      return fallback;
+    }
+
+    const moderateExac = pickNum([p.moderateExacerbations, p.exacerbationsLastYear, p.copdExacerbations], 0);
+    const hospExac = pickNum([p.hospitalExacerbations, p.hospitalizationsLastYear, p.copdHospitalExacerbations], 0);
+    const mmrc = pickNum([p.mMRC, p.mmrcScore, p.copdMmrc], 0);
+    const cat = pickNum([p.catScore, p.copdCat], 0);
+    const eos = pickNum([p.bloodEosinophils, p.eosinophilsPerUl, p.copdEosinophils], 150); // cells/µL
 
     // High exacerbation risk: ≥2 moderate exacerbations OR ≥1 leading to hospitalization -> Group E
     const isHighRisk = (moderateExac >= 2 || hospExac >= 1);
@@ -307,13 +317,19 @@ const OsrawyPrimaryCareEngine = (function() {
   function evaluateThyroid(patientInput) {
     const p = patientInput || (typeof PatientSync !== 'undefined' ? PatientSync.get() : {});
 
-    const tsh = parseFloat(p.tsh) || 2.5;
-    const ft4 = (p.ft4 !== undefined) ? parseFloat(p.ft4) : 1.2;
-    const age = parseFloat(p.age) || 52;
-    const wt = parseFloat(p.weightKg || p.wt) || 70;
+    function parseNumOr(val, def) {
+      if (val === undefined || val === null || val === '') return def;
+      const n = parseFloat(val);
+      return isNaN(n) ? def : n;
+    }
+
+    const tsh = parseNumOr(p.tsh, 2.5);
+    const ft4 = parseNumOr(p.ft4, 1.2);
+    const age = parseNumOr(p.age, 52);
+    const wt = parseNumOr(p.weightKg !== undefined ? p.weightKg : p.wt, 70);
     const isPregnant = !!(p.pregnancy || p.pregnant || p.preg || p.pregHtn);
-    const trimester = parseInt(p.trimester) || 1;
-    const hasAscvd = !!(p.ascvd || p.cad || p.hf !== 'none');
+    const trimester = parseInt(p.trimester, 10) || 1;
+    const hasAscvd = !!(p.ascvd || p.cad || (p.hf && p.hf !== 'none' && p.hf !== false));
     const hasAsthmaOrCopd = !!(p.asthma || p.copd);
 
     let status = 'euthyroid';
@@ -434,6 +450,15 @@ const OsrawyPrimaryCareEngine = (function() {
         rxEn = `${thionamideEn} For symptom control: Propranolol 10–40 mg tid–qid for rapid tremor and tachycardia relief.`;
         rxAr = `${thionamideAr} للسيطرة على الأعراض: بروبرانولول (إندرال) 10-40 مجم 3 مرات يومياً لعلاج الخفقان والرعشة.`;
       }
+    } else if (status === 'subclinical_hypo' && !rxEn) {
+      rxEn = 'Mild subclinical hypothyroidism (TSH 4.5–9.9 mIU/L): Repeat TSH + Free T4 + Anti-TPO in 6–12 weeks. Consider Levothyroxine trial only if symptomatic, pregnant, planning pregnancy, or Anti-TPO positive.';
+      rxAr = 'قصور تحت إكلينيكي خفيف (TSH بين 4.5 و 9.9): يُعاد فحص TSH و Free T4 مع Anti-TPO بعد 6–12 أسبوعاً. لا يبدأ الليفوثيروكسين إلا مع وجود أعراض أو حمل أو التخطيط للحمل.';
+    } else if (status === 'subclinical_hyper') {
+      rxEn = 'Subclinical hyperthyroidism (TSH 0.1–0.39 mIU/L): Repeat TSH + Free T4/T3 in 6–12 weeks; evaluate for Graves/toxic nodule if persistent, especially if age ≥ 65 or cardiovascular/osteoporosis risk.';
+      rxAr = 'فرط نشاط تحت إكلينيكي: يُعاد فحص TSH و Free T4/T3 خلال 6–12 أسبوعاً؛ تقييم أسباب فرط النشاط ومتابعة نبض القلب وهشاشة العظام (خاصة بعمر ≥ 65).';
+    } else if (status === 'euthyroid') {
+      rxEn = 'Euthyroid state: No thyroid hormone replacement or antithyroid therapy required. Routine monitoring only if clinically indicated.';
+      rxAr = 'وظائف الغدة الدرقية طبيعية: لا يتطلب علاجاً دوائياً للغدة الدرقية حالياً.';
     }
 
     return {
@@ -482,11 +507,23 @@ const OsrawyPrimaryCareEngine = (function() {
   }
 
   // --- 5. Interactive Primary Care Tab UI Renderer ---
+  let _pcI18nBound = false;
+
   function renderPrimaryCareTab(containerId) {
     if (typeof document === 'undefined') return;
     const cid = containerId || 'primary-care-container';
     const container = document.getElementById(cid);
     if (!container) return;
+
+    if (!_pcI18nBound && typeof window !== 'undefined' && window.I18n && typeof window.I18n.onChange === 'function') {
+      _pcI18nBound = true;
+      window.I18n.onChange(() => {
+        const el = document.getElementById(cid);
+        if (el && el.innerHTML.trim()) {
+          renderPrimaryCareTab(cid);
+        }
+      });
+    }
 
     const pt = (typeof window.PatientSync !== 'undefined' && typeof window.PatientSync.get === 'function') ? window.PatientSync.get() : {};
     const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function')
@@ -590,7 +627,7 @@ const OsrawyPrimaryCareEngine = (function() {
           </div>
           <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
             <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-ascvd" ${pt.ascvd ? 'checked' : ''}> <span>${isAr ? 'أمراض شرايين القلب / كبار السن' : 'ASCVD / Elderly'}</span></label>
-            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-preg" ${pt.pregnancy ? 'checked' : ''}> <span>${isAr ? 'حامل (Pregnancy)' : 'Pregnant'}</span></label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-preg" ${(pt.pregnancy || pt.preg || pt.pregHtn) ? 'checked' : ''}> <span>${isAr ? 'حامل (Pregnancy)' : 'Pregnant'}</span></label>
             <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="pc-thy-asthma" ${pt.asthma ? 'checked' : ''}> <span>${isAr ? 'مريض ربو (Asthma)' : 'Asthma'}</span></label>
           </div>
           <div id="pc-thy-output" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
@@ -598,11 +635,21 @@ const OsrawyPrimaryCareEngine = (function() {
       </div>
     `;
 
+    function readPcNum(id, fallback, isInt) {
+      const el = document.getElementById(id);
+      if (!el) return fallback;
+      const raw = String(el.value ?? '').trim();
+      if (raw === '') return fallback;
+      const val = isInt ? parseInt(raw, 10) : parseFloat(raw);
+      return isNaN(val) ? fallback : val;
+    }
+
     function updatePrimaryCareUi() {
+      if (!document.getElementById('pc-thy-output')) return;
       // Asthma eval
-      const saba = parseFloat(document.getElementById('pc-asthma-saba')?.value) || 0;
-      const step = parseInt(document.getElementById('pc-asthma-step')?.value, 10) || 2;
-      const track = parseInt(document.getElementById('pc-asthma-track')?.value, 10) || 1;
+      const saba = readPcNum('pc-asthma-saba', 0, false);
+      const step = readPcNum('pc-asthma-step', 2, true);
+      const track = readPcNum('pc-asthma-track', 1, true);
       const day = !!document.getElementById('pc-asthma-day')?.checked;
       const night = !!document.getElementById('pc-asthma-night')?.checked;
       const limit = !!document.getElementById('pc-asthma-limit')?.checked;
@@ -621,30 +668,36 @@ const OsrawyPrimaryCareEngine = (function() {
       if (aOut) {
         const aColor = aRes.controlLevel === 'uncontrolled' ? '#DC2626' : (aRes.controlLevel === 'partly_controlled' ? '#D97706' : '#16A34A');
         const alertsHtml = (aRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FEF2F2; color:#991B1B; font-size:12px; border:1px solid #FCA5A5;">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        const recName = isAr
+          ? ((aRes.recommendationDetails && aRes.recommendationDetails.nameAr) || aRes.recommendation || '')
+          : ((aRes.recommendationDetails && aRes.recommendationDetails.nameEn) || aRes.recommendation || '');
+        const recDesc = isAr
+          ? ((aRes.recommendationDetails && aRes.recommendationDetails.descAr) || '')
+          : ((aRes.recommendationDetails && aRes.recommendationDetails.descEn) || '');
         aOut.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
             <span style="font-weight:700; color:${aColor}; font-size:14px;">${isAr ? aRes.controlNameAr : aRes.controlNameEn}</span>
             <span style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:4px; background:var(--teal); color:#fff;">Step ${aRes.recommendedStep}</span>
           </div>
-          <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'العلاج الموصى به:' : 'Recommended Regimen:'}</b> ${isAr ? (aRes.stepDetails?.nameAr || aRes.rxAr) : (aRes.stepDetails?.nameEn || aRes.rxEn)}</div>
-          <div style="margin-top:4px; font-size:12px; color:var(--muted);">${isAr ? (aRes.stepDetails?.descAr || '') : (aRes.stepDetails?.descEn || '')}</div>
+          <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'العلاج الموصى به:' : 'Recommended Regimen:'}</b> ${recName}</div>
+          <div style="margin-top:4px; font-size:12px; color:var(--muted);">${recDesc}</div>
           ${alertsHtml}
         `;
       }
 
       // COPD eval
-      const exac = parseInt(document.getElementById('pc-copd-exac')?.value, 10) || 0;
-      const hosp = parseInt(document.getElementById('pc-copd-hosp')?.value, 10) || 0;
-      const mmrc = parseInt(document.getElementById('pc-copd-mmrc')?.value, 10) || 0;
-      const cat = parseInt(document.getElementById('pc-copd-cat')?.value, 10) || 0;
-      const eos = parseInt(document.getElementById('pc-copd-eos')?.value, 10) || 0;
+      const exac = readPcNum('pc-copd-exac', 0, true);
+      const hosp = readPcNum('pc-copd-hosp', 0, true);
+      const mmrc = readPcNum('pc-copd-mmrc', 0, true);
+      const cat = readPcNum('pc-copd-cat', 0, true);
+      const eos = readPcNum('pc-copd-eos', 150, true);
 
       const cRes = evaluateCopdGold({
-        exacerbationsLastYear: exac,
-        hospitalizationsLastYear: hosp,
-        mmrcScore: mmrc,
+        moderateExacerbations: exac,
+        hospitalExacerbations: hosp,
+        mMRC: mmrc,
         catScore: cat,
-        eosinophilsPerUl: eos
+        bloodEosinophils: eos
       });
 
       const cOut = document.getElementById('pc-copd-output');
@@ -661,9 +714,9 @@ const OsrawyPrimaryCareEngine = (function() {
       }
 
       // Thyroid eval
-      const tsh = parseFloat(document.getElementById('pc-thy-tsh')?.value) || 2.5;
-      const ft4 = parseFloat(document.getElementById('pc-thy-ft4')?.value) || 1.1;
-      const twt = parseFloat(document.getElementById('pc-thy-wt')?.value) || 70;
+      const tsh = readPcNum('pc-thy-tsh', 2.5, false);
+      const ft4 = readPcNum('pc-thy-ft4', 1.1, false);
+      const twt = readPcNum('pc-thy-wt', 70, false);
       const ascvd = !!document.getElementById('pc-thy-ascvd')?.checked;
       const tPreg = !!document.getElementById('pc-thy-preg')?.checked;
       const tAsthma = !!document.getElementById('pc-thy-asthma')?.checked;
@@ -705,6 +758,10 @@ const OsrawyPrimaryCareEngine = (function() {
       inp.addEventListener('input', updatePrimaryCareUi);
       inp.addEventListener('change', updatePrimaryCareUi);
     });
+
+    if (typeof window !== 'undefined') {
+      window.updatePrimaryCareUi = updatePrimaryCareUi;
+    }
 
     updatePrimaryCareUi();
   }

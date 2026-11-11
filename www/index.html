@@ -255,7 +255,7 @@
       <input type="number" id="dbp" value="94" min="40" max="160" aria-label="Diastolic" data-i18n-aria-label="aria_diastolic">
     </div>
     <div class="row">
-      <label class="f"><span data-i18n="lbl_age_years">Age (years)</span><input type="number" id="htn-age" value="56" min="18" max="110"></label>
+      <label class="f"><span data-i18n="lbl_age_years">Age (years)</span><input type="number" id="htn-age" value="52" min="18" max="110"></label>
       <label class="f"><span data-i18n="lbl_sex">Sex</span><select id="htn-sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></label>
       <label class="f"><span data-i18n="lbl_cur_bp_drugs">Current BP drugs</span><select id="meds">
         <option value="0" selected data-i18n="opt_meds_none">None (new)</option><option value="1" data-i18n="opt_meds_1">1 class</option><option value="2" data-i18n="opt_meds_2">2 classes</option><option value="3" data-i18n="opt_meds_3">3+ incl. diuretic</option></select></label>
@@ -291,9 +291,9 @@
           <span data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</span>
           <button type="button" class="btn-calc-pill btn-open-egfr-calc" title="حاسبة وظائف الكلى CKD-EPI 2021" data-i18n-title="calc_egfr_btn_title">🧮 <span data-i18n="btn_calc">حاسبة</span></button>
         </div>
-        <input type="number" id="htn-egfr" value="72" min="3" max="150">
+        <input type="number" id="htn-egfr" value="68" min="3" max="150">
       </label>
-      <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="120" min="0" max="10000"></label>
+      <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="45" min="0" max="10000"></label>
       <label class="f"><span data-i18n="lbl_k">K⁺ (mmol/L)</span><input type="number" id="k" value="4.6" min="2" max="8" step="0.1"></label>
     </div>
     <p class="hint" data-i18n="hint_htn_labs">UACR ≥30 mg/g counts as albuminuria; eGFR &lt;60 or UACR ≥30 counts as CKD.</p>
@@ -393,6 +393,9 @@
         <button class="filter-chip active" data-drug-filter="all" data-i18n="drugs_filter_all">الكل</button>
         <button class="filter-chip" data-drug-filter="diabetes" data-i18n="drugs_filter_diabetes">أدوية السكر</button>
         <button class="filter-chip" data-drug-filter="htn" data-i18n="drugs_filter_htn">أدوية الضغط</button>
+        <button class="filter-chip" data-drug-filter="dlp" data-i18n="drugs_filter_dlp">الدهون</button>
+        <button class="filter-chip" data-drug-filter="resp" data-i18n="drugs_filter_resp">الجهاز التنفسي</button>
+        <button class="filter-chip" data-drug-filter="thyroid" data-i18n="drugs_filter_thyroid">الغدة الدرقية</button>
       </div>
 
       <div class="drug-filters-row">
@@ -428,23 +431,23 @@
       <div class="ph" style="--c:var(--teal);--cs:var(--teal-soft)"><span class="ic">🩸</span><h2 data-i18n="dlp_inputs_title">بيانات الدهون ومخاطر القلب (Lipids &amp; ASCVD)</h2></div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:10px;">
         <div>
-          <label style="font-size:12px; color:var(--muted);">LDL-C:</label>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_ldl">LDL-C:</label>
           <input type="number" id="dlp-ldl" value="130" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
         </div>
         <div>
-          <label style="font-size:12px; color:var(--muted);">Total Chol (TC):</label>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_tc">Total Chol (TC):</label>
           <input type="number" id="dlp-tc" value="210" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
         </div>
         <div>
-          <label style="font-size:12px; color:var(--muted);">HDL-C:</label>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_hdl">HDL-C:</label>
           <input type="number" id="dlp-hdl" value="42" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
         </div>
         <div>
-          <label style="font-size:12px; color:var(--muted);">Triglycerides (TG):</label>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_tg">Triglycerides (TG):</label>
           <input type="number" id="dlp-tg" value="180" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
         </div>
         <div>
-          <label style="font-size:12px; color:var(--muted);">ALT (U/L):</label>
+          <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_alt">ALT (U/L):</label>
           <input type="number" id="dlp-alt" value="28" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
         </div>
         <div>
@@ -456,13 +459,11 @@
         </div>
       </div>
       <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:13px;">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-statin-intol"> <span>عدم تحمل الستاتين (Statin Intolerant)</span></label>
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-ezetimibe"> <span>يتناول Ezetimibe</span></label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-statin-intol"> <span data-i18n="chk_statin_intol">عدم تحمل الستاتين (Statin Intolerant)</span></label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="dlp-ezetimibe"> <span data-i18n="chk_on_ezetimibe">يتناول Ezetimibe</span></label>
       </div>
     </div>
-    <div id="lipid-engine-summary"></div>
     <div id="lipids-container"></div>
-    <div id="dlp-container"></div>
   </section>
 
   <!-- MAIN TAB: CLINICAL TOOLS & PRIMARY CARE -->
