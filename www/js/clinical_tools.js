@@ -51,23 +51,471 @@ const ClinicalTools = (function() {
 
   /**
    * Cockcroft-Gault Creatinine Clearance (CrCl)
-   * CrCl = ((140 - Age) * Weight) / (72 * Scr_mg) * (0.85 if female else 1.0)
+   * Formula: CrCl = ((140 - Age) * Weight_kg) / (72 * Scr_mg_dL) * (0.85 if female else 1.0)
+   * Signature: calculateCrCl(age, weightKg, creatinineMgDl, sex)
+   * Also supports legacy signature: calculateCrCl(scrVal, scrUnit, ageVal, sexVal, wtVal)
+   * or object parameter: calculateCrCl({ age, weightKg, creatinineMgDl, sex })
    */
-  function calculateCrCl(scrVal, scrUnit, ageVal, sexVal, wtVal) {
-    const scr = parseFloat(scrVal) || 0;
-    const age = parseFloat(ageVal) || 0;
-    const sex = (sexVal === 'f') ? 'f' : 'm';
-    const wt = parseFloat(wtVal) || 0;
+  function calculateCrCl(arg1, arg2, arg3, arg4, arg5) {
+    let age = 0, wt = 0, scrMg = 0, sex = 'm';
 
-    if (scr <= 0 || age <= 0 || wt <= 0) return null;
-    const scrMg = (scrUnit === 'umol') ? (scr / 88.4) : scr;
+    if (typeof arg2 === 'string' && (arg2 === 'mg' || arg2 === 'umol')) {
+      // Legacy: calculateCrCl(scrVal, scrUnit, ageVal, sexVal, wtVal)
+      const scr = parseFloat(arg1) || 0;
+      scrMg = (arg2 === 'umol') ? (scr / 88.4) : scr;
+      age = parseFloat(arg3) || 0;
+      sex = (arg4 === 'f') ? 'f' : 'm';
+      wt = parseFloat(arg5) || 0;
+    } else if (typeof arg1 === 'object' && arg1 !== null) {
+      // Object input: { age, weightKg/wt, creatinineMgDl/scr, sex }
+      age = parseFloat(arg1.age) || 0;
+      wt = parseFloat(arg1.weightKg || arg1.wt || arg1.weight) || 0;
+      const sVal = parseFloat(arg1.creatinineMgDl || arg1.scr || arg1.creatinine || arg1.scrMg) || 0;
+      const u = arg1.scrUnit || arg1.unit || 'mg';
+      scrMg = (u === 'umol') ? (sVal / 88.4) : sVal;
+      const sRaw = String(arg1.sex || arg1.gender || 'm').toLowerCase();
+      sex = (sRaw === 'f' || sRaw === 'female') ? 'f' : 'm';
+    } else {
+      // Standard: calculateCrCl(age, weightKg, creatinineMgDl, sex)
+      age = parseFloat(arg1) || 0;
+      wt = parseFloat(arg2) || 0;
+      scrMg = parseFloat(arg3) || 0;
+      const sRaw = String(arg4 || 'm').toLowerCase();
+      sex = (sRaw === 'f' || sRaw === 'female') ? 'f' : 'm';
+    }
+
+    if (scrMg <= 0 || age <= 0 || wt <= 0) return null;
 
     const factor = (sex === 'f') ? 0.85 : 1.0;
     const crcl = ((140 - age) * wt) / (72 * scrMg) * factor;
+    const crclRound = Math.round(crcl * 10) / 10;
+    const crclInt = Math.round(crcl);
+
+    const numObj = new Number(crclRound);
+    numObj.crcl = crclRound;
+    numObj.crclInt = crclInt;
+    numObj.value = crclRound;
+    numObj.age = age;
+    numObj.weightKg = wt;
+    numObj.creatinineMgDl = Math.round(scrMg * 100) / 100;
+    numObj.sex = sex;
+    numObj.toString = () => String(crclRound);
+    numObj.valueOf = () => crclRound;
+    return numObj;
+  }
+
+  /**
+   * KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD
+   * Prognosis of CKD by GFR and Albuminuria Categories (Heatmap Matrix)
+   * @param {number|object} egfrVal - eGFR in mL/min/1.73m² (or object with egfr & acrMgG)
+   * @param {number} [acrVal] - Urine Albumin-to-Creatinine Ratio (UACR) in mg/g
+   */
+  function evaluateKdigoMatrix(egfrVal, acrVal) {
+    let egfr = 0, acr = 0;
+    if (typeof egfrVal === 'object' && egfrVal !== null) {
+      egfr = parseFloat(egfrVal.egfr || egfrVal.eGFR) || 0;
+      acr = parseFloat(egfrVal.acrMgG || egfrVal.uacr || egfrVal.acr || egfrVal.urineAcr) || 0;
+    } else {
+      egfr = parseFloat(egfrVal) || 0;
+      acr = parseFloat(acrVal) || 0;
+    }
+
+    // Determine G-stage (KDIGO 2024)
+    let gStage = 'G1';
+    let gDescEn = 'Normal or high (≥90 mL/min/1.73m²)';
+    let gDescAr = 'طبيعي أو مرتفع (≥90 مل/دقيقة)';
+    if (egfr >= 90) {
+      gStage = 'G1';
+    } else if (egfr >= 60) {
+      gStage = 'G2';
+      gDescEn = 'Mildly decreased (60–89 mL/min/1.73m²)';
+      gDescAr = 'انخفاض طفيف (60–89 مل/دقيقة)';
+    } else if (egfr >= 45) {
+      gStage = 'G3a';
+      gDescEn = 'Mildly to moderately decreased (45–59 mL/min/1.73m²)';
+      gDescAr = 'انخفاض طفيف إلى متوسط (45–59 مل/دقيقة)';
+    } else if (egfr >= 30) {
+      gStage = 'G3b';
+      gDescEn = 'Moderately to severely decreased (30–44 mL/min/1.73m²)';
+      gDescAr = 'انخفاض متوسط إلى شديد (30–44 مل/دقيقة)';
+    } else if (egfr >= 15) {
+      gStage = 'G4';
+      gDescEn = 'Severely decreased (15–29 mL/min/1.73m²)';
+      gDescAr = 'انخفاض شديد (15–29 مل/دقيقة)';
+    } else {
+      gStage = 'G5';
+      gDescEn = 'Kidney failure (<15 mL/min/1.73m²)';
+      gDescAr = 'فشل كلوي نهائي (<15 مل/دقيقة)';
+    }
+
+    // Determine A-stage (Albuminuria KDIGO 2024)
+    let aStage = 'A1';
+    let aDescEn = 'Normal to mildly increased (<30 mg/g or <3 mg/mmol)';
+    let aDescAr = 'طبيعي أو ارتفاع طفيف (<30 مجم/جم)';
+    if (acr < 30) {
+      aStage = 'A1';
+    } else if (acr <= 300) {
+      aStage = 'A2';
+      aDescEn = 'Moderately increased (30–300 mg/g or 3–30 mg/mmol)';
+      aDescAr = 'ارتفاع متوسط / بيلة ألبومينية دقيقة (30–300 مجم/جم)';
+    } else {
+      aStage = 'A3';
+      aDescEn = 'Severely increased (>300 mg/g or >30 mg/mmol)';
+      aDescAr = 'ارتفاع شديد / بيلة ألبومينية صريحة (>300 مجم/جم)';
+    }
+
+    const composite = `${gStage}${aStage}`;
+
+    // KDIGO 2024 Matrix Tiers:
+    // Green (Low risk): G1A1, G2A1
+    // Yellow (Moderately increased risk): G1A2, G2A2, G3aA1
+    // Orange (High risk): G1A3, G2A3, G3aA2, G3bA1
+    // Red (Very high risk): G3aA3, G3bA2, G3bA3, G4A1, G4A2, G4A3, G5A1, G5A2, G5A3
+    let risk = 'low';
+    let riskTier = 'LOW';
+    let color = 'green';
+    let riskLabelEn = 'Low Risk';
+    let riskLabelAr = 'خطورة منخفضة';
+    let monitoringEn = '1 time per year';
+    let monitoringAr = 'مرة واحدة سنوياً';
+    let monitorPerYear = 1;
+    let referral = false;
+    let recommendationEn = '';
+    let recommendationAr = '';
+
+    if (gStage === 'G4' || gStage === 'G5' || (gStage === 'G3b' && (aStage === 'A2' || aStage === 'A3')) || (gStage === 'G3a' && aStage === 'A3')) {
+      risk = 'very_high';
+      riskTier = 'VERY_HIGH';
+      color = 'red';
+      riskLabelEn = 'Very High Risk';
+      riskLabelAr = 'خطورة عالية جداً';
+      monitoringEn = '3 to 4+ times per year; Nephrology referral recommended';
+      monitoringAr = '3 إلى 4+ مرات سنوياً؛ يُوصى بتحويل المريض لاستشاري أمراض الكلى';
+      monitorPerYear = 4;
+      referral = true;
+      recommendationEn = 'Very high risk of CKD progression, ESKD, and cardiovascular mortality. SGLT2i and ACEi/ARB recommended if indicated. Nephrology referral strongly recommended.';
+      recommendationAr = 'خطورة عالية جداً لتدهور وظائف الكلى والفشل الكلوي وأمراض القلب. يُوصى بمثبطات SGLT2 وحاصرات الرينين، مع تحويل عاجل لأخصائي الكلى.';
+    } else if ((gStage === 'G3b' && aStage === 'A1') || (gStage === 'G3a' && aStage === 'A2') || ((gStage === 'G1' || gStage === 'G2') && aStage === 'A3')) {
+      risk = 'high';
+      riskTier = 'HIGH';
+      color = 'orange';
+      riskLabelEn = 'High Risk';
+      riskLabelAr = 'خطورة عالية';
+      monitoringEn = '2 times per year';
+      monitoringAr = 'مرتان سنوياً';
+      monitorPerYear = 2;
+      referral = (aStage === 'A3' || gStage === 'G3b');
+      recommendationEn = 'High risk of CKD progression and CV events. Optimize BP (<130/80), initiate ACEi/ARB for albuminuria, add SGLT2i for cardiorenal protection, and monitor every 6 months.';
+      recommendationAr = 'خطورة عالية لتدهور وظائف الكلى. اضبط الضغط (<130/80)، ابدأ أدوية ACEi/ARB للزلال وأضف مثبط SGLT2 لحماية الكلى، وراقب كل 6 أشهر.';
+    } else if ((gStage === 'G3a' && aStage === 'A1') || ((gStage === 'G1' || gStage === 'G2') && aStage === 'A2')) {
+      risk = 'moderate';
+      riskTier = 'MODERATE';
+      color = 'yellow';
+      riskLabelEn = 'Moderately Increased Risk';
+      riskLabelAr = 'خطورة متزايدة بشكل معتدل';
+      monitoringEn = '1 time per year';
+      monitoringAr = 'مرة واحدة سنوياً';
+      monitorPerYear = 1;
+      referral = false;
+      recommendationEn = 'Moderately increased risk. Screen and treat cardiovascular risk factors, optimize glycemic & BP control, re-evaluate eGFR and UACR annually.';
+      recommendationAr = 'خطورة متزايدة بشكل معتدل. علاج عوامل الخطورة القلبية، ضبط السكر وضغط الدم، وإعادة فحص وظائف الكلى وزلال البول سنوياً.';
+    } else {
+      risk = 'low';
+      riskTier = 'LOW';
+      color = 'green';
+      riskLabelEn = 'Low Risk (No evidence of CKD if no structural damage)';
+      riskLabelAr = 'خطورة منخفضة (لا يوجد دليل على اعتلال الكلى ما لم توجد علامات نسيجية)';
+      monitoringEn = '1 time per year (if high risk for CKD: diabetes/HTN)';
+      monitoringAr = 'مرة واحدة سنوياً (إذا كان المريض معرضاً لخطر الاعتلال كالسكري والضغط)';
+      monitorPerYear = 1;
+      referral = false;
+      recommendationEn = 'Low risk. Maintain healthy lifestyle, monitor annually if diabetic or hypertensive.';
+      recommendationAr = 'خطورة منخفضة. الحفاظ على نمط حياة صحي وإعادة الفحص سنوياً لمرضى السكري والضغط.';
+    }
 
     return {
-      crcl: Math.round(crcl * 10) / 10,
-      crclInt: Math.round(crcl)
+      egfr,
+      acrMgG: acr,
+      gStage,
+      aStage,
+      stage: composite,
+      composite,
+      risk: riskTier,
+      riskTier,
+      riskLevel: risk,
+      color,
+      riskLabelEn,
+      riskLabelAr,
+      gDescEn,
+      gDescAr,
+      aDescEn,
+      aDescAr,
+      monitoringEn,
+      monitoringAr,
+      monitorPerYear,
+      referral,
+      recommendationEn,
+      recommendationAr,
+      actionEn: recommendationEn,
+      actionAr: recommendationAr
+    };
+  }
+
+  /**
+   * FIB-4 (Fibrosis-4 Index) for Liver Fibrosis Screening in MASLD/NAFLD
+   * Formula: FIB-4 = (Age [yr] × AST [U/L]) / (Platelets [10^9/L] × √ALT [U/L])
+   * Guidelines: AASLD / EASL / ADA 2024-2025 Standards of Care
+   */
+  function calculateFib4(arg1, arg2, arg3, arg4) {
+    let age = 0, ast = 0, alt = 0, plt = 0;
+
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      age = parseFloat(arg1.age) || 0;
+      ast = parseFloat(arg1.astUl || arg1.ast || arg1.got) || 0;
+      alt = parseFloat(arg1.altUl || arg1.alt || arg1.gpt) || 0;
+      plt = parseFloat(arg1.platelets10e9L || arg1.platelets || arg1.plt) || 0;
+    } else {
+      age = parseFloat(arg1) || 0;
+      ast = parseFloat(arg2) || 0;
+      alt = parseFloat(arg3) || 0;
+      plt = parseFloat(arg4) || 0;
+    }
+
+    // Protect against platelet count in /uL vs 10^9/L (e.g. 250,000 vs 250)
+    if (plt > 1000) {
+      plt = plt / 1000;
+    }
+
+    if (age <= 0 || ast <= 0 || alt <= 0 || plt <= 0) return null;
+
+    const fib4 = (age * ast) / (plt * Math.sqrt(alt));
+    const scoreRound = Math.round(fib4 * 100) / 100;
+
+    // Cutoffs (AASLD / ADA 2024-2025):
+    // Age < 65: Low risk < 1.30, High risk > 2.67, Indeterminate 1.30 - 2.67
+    // Age >= 65: Low risk < 2.00, High risk > 2.67, Indeterminate 2.00 - 2.67
+    const lowCutoff = (age >= 65) ? 2.00 : 1.30;
+    const highCutoff = 2.67;
+
+    let risk = 'LOW';
+    let riskTier = 'LOW';
+    let referral = false;
+    let interpretationEn = '';
+    let interpretationAr = '';
+    let actionEn = '';
+    let actionAr = '';
+    let planEn = '';
+    let planAr = '';
+
+    if (scoreRound > highCutoff) {
+      risk = 'HIGH';
+      riskTier = 'HIGH';
+      referral = true;
+      interpretationEn = `High risk of advanced liver fibrosis / cirrhosis (F3–F4). Score: ${scoreRound} (> 2.67).`;
+      interpretationAr = `خطورة عالية لتليف الكبد المتقدم أو التشمع (F3–F4). النتيجة: ${scoreRound} (> 2.67).`;
+      actionEn = 'Refer to Gastroenterology / Hepatology for specialized liver fibrosis assessment (FibroScan / VCTE) and avoid hepatotoxic medications.';
+      actionAr = 'يُوصى بتحويل المريض فوراً لاستشاري الكبد والجهاز الهضمي لعمل قياس مرونة الكبد (FibroScan / VCTE) وتجنب الأدوية السامة للكبد.';
+      planEn = actionEn;
+      planAr = actionAr;
+    } else if (scoreRound >= lowCutoff) {
+      risk = 'INTERMEDIATE';
+      riskTier = 'INTERMEDIATE';
+      referral = false;
+      interpretationEn = `Indeterminate / Intermediate risk of advanced fibrosis. Score: ${scoreRound} (${lowCutoff}–${highCutoff}).`;
+      interpretationAr = `خطورة غير مؤكدة / متوسطة لتليف الكبد. النتيجة: ${scoreRound} (${lowCutoff}–${highCutoff}).`;
+      actionEn = 'Second-line non-invasive assessment indicated: Enhanced Liver Fibrosis (ELF) test or vibration-controlled transient elastography (VCTE / FibroScan).';
+      actionAr = 'يُوصى بفحص تأكيدي ثانوي: قياس مرونة الكبد (FibroScan) أو تحليل ELF لتحديد دقيق لدرجة التليف.';
+      planEn = actionEn;
+      planAr = actionAr;
+    } else {
+      risk = 'LOW';
+      riskTier = 'LOW';
+      referral = false;
+      interpretationEn = `Low risk of advanced liver fibrosis (F0–F1). Score: ${scoreRound} (< ${lowCutoff}). Negative predictive value > 90%.`;
+      interpretationAr = `خطورة منخفضة لتليف الكبد المتقدم (F0–F1). النتيجة: ${scoreRound} (< ${lowCutoff}). القيمة التنبؤية السلبية تتجاوز 90%.`;
+      actionEn = 'Continue lifestyle interventions, manage metabolic comorbidities, and repeat FIB-4 screening in 2–3 years (or 1–2 years if high metabolic risk).';
+      actionAr = 'الاستمرار في تحسين نمط الحياة وضبط السكر والدهون، وتكرار فحص FIB-4 كل 2-3 سنوات.';
+      planEn = actionEn;
+      planAr = actionAr;
+    }
+
+    const res = new Number(scoreRound);
+    res.score = scoreRound;
+    res.fib4 = scoreRound;
+    res.value = scoreRound;
+    res.risk = risk;
+    res.riskTier = riskTier;
+    res.riskLevel = risk;
+    res.referral = referral;
+    res.interpretationEn = interpretationEn;
+    res.interpretationAr = interpretationAr;
+    res.actionEn = actionEn;
+    res.actionAr = actionAr;
+    res.planEn = planEn;
+    res.planAr = planAr;
+    res.lowCutoff = lowCutoff;
+    res.highCutoff = highCutoff;
+    res.age = age;
+    res.ast = ast;
+    res.alt = alt;
+    res.platelets = plt;
+    res.toString = () => String(scoreRound);
+    res.valueOf = () => scoreRound;
+    return res;
+  }
+
+  /**
+   * DOAC (Direct Oral Anticoagulant) Renal & Clinical Dosing Evaluation
+   * Evaluates Apixaban (Eliquis) based on 2-of-3 criteria & CrCl
+   * Evaluates Rivaroxaban (Xarelto) based on CrCl
+   * Reference: ESC 2024 / AHA-ACC-ACCP-HRS AF Guidelines
+   */
+  function evaluateDoacDosing(patientInput) {
+    const pt = patientInput || (typeof PatientSync !== 'undefined' ? PatientSync.get() : {});
+    const age = parseFloat(pt.age) || 0;
+    const wt = parseFloat(pt.weightKg || pt.wt || pt.weight) || 0;
+    const scrVal = parseFloat(pt.creatinineMgDl || pt.scr || pt.creatinine || pt.scrMg) || 0;
+    const unit = pt.scrUnit || pt.unit || 'mg';
+    const scrMg = (unit === 'umol') ? (scrVal / 88.4) : scrVal;
+    const sexRaw = String(pt.sex || pt.gender || 'm').toLowerCase();
+    const sex = (sexRaw === 'f' || sexRaw === 'female') ? 'f' : 'm';
+
+    // CrCl from input or calculated via Cockcroft-Gault
+    let crcl = parseFloat(pt.crcl);
+    if (isNaN(crcl) || crcl <= 0) {
+      const calc = calculateCrCl(age, wt, scrMg, sex);
+      crcl = calc ? calc.crcl : 0;
+    }
+
+    // --- 1. Apixaban (Eliquis) Dosing ---
+    // Standard dose for NVAF: 5 mg BID
+    // Reduced dose to 2.5 mg BID if >= 2 of 3 criteria met:
+    // 1) Age >= 80 years
+    // 2) Body weight <= 60 kg
+    // 3) Serum creatinine >= 1.5 mg/dL (133 umol/L)
+    const critAge = (age >= 80);
+    const critWeight = (wt > 0 && wt <= 60);
+    const critScr = (scrMg >= 1.5);
+    const criteriaCount = (critAge ? 1 : 0) + (critWeight ? 1 : 0) + (critScr ? 1 : 0);
+    const meets2of3 = (criteriaCount >= 2);
+
+    let apixabanDose = '5 mg PO BID';
+    let apixabanDoseAr = '٥ ملغ مرتين يومياً';
+    let apixabanEn = 'Apixaban: 5 mg PO BID (Standard dose)';
+    let apixabanAr = 'أبيكسابان: ٥ ملغ فموياً مرتين يومياً (5 mg PO BID)';
+    let apixabanReduced = false;
+    let apixabanContraindicated = false;
+    let apixabanReasonEn = 'Standard dose: fewer than 2 dose-reduction criteria met.';
+    let apixabanReasonAr = 'الجرعة القياسية: المريض يستوفي أقل من معيارين من معايير تخفيض الجرعة.';
+
+    if (crcl > 0 && crcl < 15) {
+      apixabanContraindicated = true;
+      apixabanDose = 'Contraindicated / Not recommended';
+      apixabanDoseAr = 'ممنوع استخدامه / غير موصى به';
+      apixabanEn = 'Apixaban: Contraindicated / Not recommended (CrCl < 15 mL/min)';
+      apixabanAr = 'أبيكسابان: غير موصى به / ممنوع استخدامه (تصفية الكرياتينين < 15)';
+      apixabanReasonEn = `CrCl is ${crcl} mL/min (<15 mL/min). Apixaban is contraindicated / not recommended in severe ESRD without dialysis per European/KDIGO guidelines.`;
+      apixabanReasonAr = `تصفية الكرياتينين ${crcl} مل/دقيقة (<15). يُحظر استخدام أبيكسابان في الفشل الكلوي النهائي دون غسيل.`;
+    } else if (meets2of3) {
+      apixabanReduced = true;
+      apixabanDose = '2.5 mg PO BID';
+      apixabanDoseAr = '٢.٥ ملغ مرتين يومياً';
+      apixabanEn = 'Apixaban: 2.5 mg PO BID (Dose reduced per 2-of-3 ABC criteria)';
+      apixabanAr = 'أبيكسابان: ٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID - مخفض)';
+      const metList = [];
+      if (critAge) metList.push(`Age ≥ 80 (${age} y)`);
+      if (critWeight) metList.push(`Weight <= 60 kg (${wt} kg)`);
+      if (critScr) metList.push(`Serum Creatinine ≥ 1.5 mg/dL (${scrMg} mg/dL)`);
+      apixabanReasonEn = `Dose reduced to 2.5 mg PO BID: Patient meets ${criteriaCount} of 3 dose-reduction criteria [${metList.join(', ')}].`;
+      apixabanReasonAr = `تم تخفيض الجرعة إلى ٢.٥ ملغ (2.5 mg PO BID) لاستيفاء ${criteriaCount} من 3 معايير لتخفيض الجرعة (${metList.join('، ')}).`;
+    } else if (crcl >= 15 && crcl < 30) {
+      apixabanReduced = true;
+      apixabanDose = '2.5 mg PO BID';
+      apixabanDoseAr = '٢.٥ ملغ مرتين يومياً';
+      apixabanEn = 'Apixaban: 2.5 mg PO BID (CrCl 15–29 mL/min)';
+      apixabanAr = 'أبيكسابان: ٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID)';
+      apixabanReasonEn = `CrCl 15–29 mL/min (${crcl} mL/min): Dose reduction to 2.5 mg PO BID recommended for advanced renal impairment.`;
+      apixabanReasonAr = `تصفية الكرياتينين 15–29 مل/دقيقة: يُوصى بتخفيض الجرعة إلى ٢.٥ ملغ مرتين يومياً لقصور وظائف الكلى.`;
+    }
+
+    const apixaban = {
+      drug: 'Apixaban (Eliquis)',
+      drugAr: 'أبيكسابان (إليكويس)',
+      dose: apixabanDose,
+      doseEn: apixabanDose,
+      doseAr: apixabanDoseAr,
+      frequency: 'twice daily',
+      frequencyAr: 'مرتين يومياً',
+      reducedDose: apixabanReduced,
+      contraindicated: apixabanContraindicated,
+      criteriaCount,
+      meets2of3,
+      criteria: {
+        ageGte80: critAge,
+        weightLte60: critWeight,
+        scrGte1_5: critScr
+      },
+      reasonEn: apixabanReasonEn,
+      reasonAr: apixabanReasonAr,
+      clinicalNotesEn: 'Take with or without food. Monitor renal function at least annually (every 3–6 months if CrCl < 50 mL/min).',
+      clinicalNotesAr: 'يؤخذ مع أو بدون طعام. راقب وظائف الكلى سنوياً على الأقل (وكل 3-6 أشهر إذا كانت التصفية < 50 مل/دقيقة).'
+    };
+
+    // --- 2. Rivaroxaban (Xarelto) Dosing ---
+    // Standard dose for NVAF: 20 mg once daily with the evening meal / with food
+    // Renal reduction: CrCl 15-49 mL/min -> 15 mg once daily with food
+    // CrCl < 15 mL/min: Contraindicated / avoid
+    let rivaroxabanDose = '20 mg PO daily with food';
+    let rivaroxabanDoseAr = '20 مجم مرة واحدة يومياً مع وجبة العشاء/الطعام';
+    let rivaroxabanEn = 'Rivaroxaban: 20 mg PO daily with food';
+    let rivaroxabanAr = 'ريفاروكسابان: ٢٠ ملغ فموياً مرة واحدة يومياً مع وجبة الطعام (20 mg PO daily with food)';
+    let rivaroxabanReduced = false;
+    let rivaroxabanContraindicated = false;
+    let rivaroxabanReasonEn = `CrCl ≥ 50 mL/min (${crcl} mL/min): Standard 20 mg daily with food.`;
+    let rivaroxabanReasonAr = `تصفية الكرياتينين ≥ 50 مل/دقيقة (${crcl} مل/دقيقة): الجرعة القياسية 20 مجم يومياً مع الطعام.`;
+
+    if (crcl > 0 && crcl < 15) {
+      rivaroxabanContraindicated = true;
+      rivaroxabanDose = 'Contraindicated / Not recommended';
+      rivaroxabanDoseAr = 'ممنوع استخدامه / غير موصى به';
+      rivaroxabanEn = 'Rivaroxaban: Contraindicated / Not recommended (CrCl < 15 mL/min)';
+      rivaroxabanAr = 'ريفاروكسابان: غير موصى به / ممنوع استخدامه';
+      rivaroxabanReasonEn = `CrCl is ${crcl} mL/min (<15 mL/min). Rivaroxaban is contraindicated / not recommended due to bleeding risk in ESRD.`;
+      rivaroxabanReasonAr = `تصفية الكرياتينين ${crcl} مل/دقيقة (<15). يُحظر استخدام ريفاروكسابان لخطر النزيف في الفشل الكلوي المتقدم.`;
+    } else if (crcl >= 15 && crcl < 50) {
+      rivaroxabanReduced = true;
+      rivaroxabanDose = '15 mg PO daily with food';
+      rivaroxabanDoseAr = '15 مجم مرة واحدة يومياً مع وجبة الطعام (مساءً)';
+      rivaroxabanEn = 'Rivaroxaban: 15 mg PO daily with food (CrCl 15–49 mL/min)';
+      rivaroxabanAr = 'ريفاروكسابان: ١٥ ملغ فموياً مرة واحدة يومياً مع الطعام (15 mg PO daily with food)';
+      rivaroxabanReasonEn = `CrCl 15–49 mL/min (${crcl} mL/min): Dose reduced to 15 mg once daily with food to maintain therapeutic exposure.`;
+      rivaroxabanReasonAr = `تصفية الكرياتينين 15–49 مل/دقيقة (${crcl} مل/دقيقة): تم تخفيض الجرعة إلى 15 مجم مرة واحدة يومياً مع وجبة الطعام.`;
+    }
+
+    const rivaroxaban = {
+      drug: 'Rivaroxaban (Xarelto)',
+      drugAr: 'ريفاروكسابان (زاريلتو)',
+      dose: rivaroxabanDose,
+      doseEn: rivaroxabanDose,
+      doseAr: rivaroxabanDoseAr,
+      frequency: 'once daily with food',
+      frequencyAr: 'مرة واحدة يومياً مع وجبة طعام رئيسية',
+      reducedDose: rivaroxabanReduced,
+      contraindicated: rivaroxabanContraindicated,
+      reasonEn: rivaroxabanReasonEn,
+      reasonAr: rivaroxabanReasonAr,
+      clinicalNotesEn: 'MUST be taken with food (preferably evening meal) for adequate absorption (AUC increases by 39% with food).',
+      clinicalNotesAr: 'يجب تناوله مع الطعام (يفضل مع وجبة العشاء) لضمان الامتصاص الكامل؛ الطعام يزيد من التوافر الحيوي بنسبة 39%.'
+    };
+
+    return {
+      crcl,
+      apixabanEn,
+      apixabanAr,
+      rivaroxabanEn,
+      rivaroxabanAr,
+      apixaban,
+      rivaroxaban
     };
   }
 
@@ -893,6 +1341,9 @@ const ClinicalTools = (function() {
   return {
     calculateCKDEPI,
     calculateCrCl,
+    evaluateKdigoMatrix,
+    calculateFib4,
+    evaluateDoacDosing,
     getStageInfo,
     assessPatientLdlRisk,
     openEgfrModal,
@@ -911,4 +1362,14 @@ const ClinicalTools = (function() {
 
 if (typeof window !== 'undefined') {
   window.ClinicalTools = ClinicalTools;
+  window.OsrawyClinicalTools = ClinicalTools;
+}
+
+if (typeof global !== 'undefined') {
+  global.ClinicalTools = ClinicalTools;
+  global.OsrawyClinicalTools = ClinicalTools;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ClinicalTools;
 }

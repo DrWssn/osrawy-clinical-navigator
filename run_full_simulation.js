@@ -262,11 +262,12 @@ const requiredScripts = [
   'drugs_data.js',
   'patient_sync.js',
   'clinical_tools.js',
-  'diabetes_engine.js',
-  'htn_engine.js',
   'lipids_engine.js',
   'primary_care_engine.js',
   'prescription_share.js',
+  'drugs_directory.js',
+  'diabetes_engine.js',
+  'htn_engine.js',
   'patient_leaflets.js'
 ];
 
@@ -300,7 +301,7 @@ function getModule(...names) {
 
 const I18n = getModule('I18n');
 const PatientSync = getModule('OsrawyPatientSync', 'PatientSync');
-const ClinicalTools = getModule('ClinicalTools');
+const ClinicalTools = getModule('OsrawyClinicalTools', 'ClinicalTools');
 const DiabetesEngine = getModule('DiabetesEngine');
 const HtnEngine = getModule('HtnEngine');
 const LipidsEngine = getModule('LipidsEngine', 'OsrawyLipids', 'OsrawyLipidsEngine');
@@ -308,6 +309,9 @@ const PrimaryCareEngine = getModule('PrimaryCareEngine', 'OsrawyPrimaryCare', 'O
 const RxShare = getModule('RxShare', 'PrescriptionShare', 'OsrawyRxShare');
 const PatientLeaflets = getModule('PatientLeaflets', 'OsrawyPatientLeaflets');
 const OsrawyQRCode = getModule('OsrawyQRCode');
+const DrugsDirectory = getModule('OsrawyDrugsDirectory', 'DrugDirectory');
+const HtnPregnancy = getModule('OsrawyHtnPregnancy');
+const DmPregnancy = getModule('OsrawyDmPregnancy');
 
 // ---------------------------------------------------------------------
 // 3. Test Runner Infrastructure
@@ -796,6 +800,225 @@ runCase(9, "Patient leaflets (AR & EN) & Prescription share export", () => {
     const enSections = enReport.toLowerCase().includes('prescription') || enReport.toLowerCase().includes('patient') || enReport.toLowerCase().includes('targets');
     assert(enSections, "English prescription export includes clinical targets and metadata");
   }
+});
+
+// Case 10: Formulary trade name search in Arabic/English & display modes (generic/trade/both)
+runCase(10, "Formulary trade name search in Arabic/English & display modes (generic/trade/both)", () => {
+  const dir = getModule('OsrawyDrugsDirectory', 'DrugDirectory');
+  assert(dir !== null, "OsrawyDrugsDirectory module is present");
+  if (!dir) return;
+
+  // Search by English trade name
+  const jardianceHits = typeof dir.searchDrugs === 'function' ? dir.searchDrugs('Jardiance') : [];
+  assert(jardianceHits.length >= 1, "Search for 'Jardiance' returns matching drug");
+  if (jardianceHits.length >= 1) {
+    assert(jardianceHits[0].id === 'empagliflozin', "Jardiance correctly maps to empagliflozin");
+  }
+
+  // Search by Arabic trade name
+  const glucophageHits = typeof dir.searchDrugs === 'function' ? dir.searchDrugs('جلوكوفاج') : [];
+  assert(glucophageHits.length >= 1, "Search for 'جلوكوفاج' returns matching drug");
+  if (glucophageHits.length >= 1) {
+    assert(glucophageHits[0].id === 'metformin', "جلوكوفاج correctly maps to metformin");
+  }
+
+  const concorHits = typeof dir.searchDrugs === 'function' ? dir.searchDrugs('Concor') : [];
+  assert(concorHits.length >= 1, "Search for 'Concor' returns matching drug");
+  if (concorHits.length >= 1) {
+    assert(concorHits[0].id === 'bisoprolol', "Concor correctly maps to bisoprolol");
+  }
+
+  // Display modes: generic, trade, both
+  if (typeof dir.formatDrugDisplayName === 'function') {
+    const genName = dir.formatDrugDisplayName('atorvastatin', 'generic', 'en');
+    assert(genName === 'Atorvastatin', `Generic mode returns generic name: 'Atorvastatin' (got: ${genName})`);
+
+    const tradeName = dir.formatDrugDisplayName('atorvastatin', 'trade', 'en');
+    assert(tradeName === 'Lipitor', `Trade mode returns primary trade name: 'Lipitor' (got: ${tradeName})`);
+
+    const bothName = dir.formatDrugDisplayName('atorvastatin', 'both', 'en');
+    assert(bothName.includes('Atorvastatin') && bothName.includes('Lipitor'), `Both mode includes generic and trade names (got: ${bothName})`);
+
+    // Arabic display mode
+    const genAr = dir.formatDrugDisplayName('atorvastatin', 'generic', 'ar');
+    assert(genAr.includes('أتورفاستاتين'), `Arabic generic mode returns 'أتورفاستاتين' (got: ${genAr})`);
+  }
+
+  // Display mode getter/setter
+  if (typeof dir.setDisplayMode === 'function' && typeof dir.getDisplayMode === 'function') {
+    dir.setDisplayMode('trade');
+    assert(dir.getDisplayMode() === 'trade', "setDisplayMode('trade') sets active display mode");
+    dir.setDisplayMode('both');
+    assert(dir.getDisplayMode() === 'both', "setDisplayMode('both') sets active display mode");
+  }
+});
+
+// Case 11: KDIGO Heat-Map (eGFR 38 + UACR 350 -> G3bA3 Very High Risk)
+runCase(11, "KDIGO Heat-Map (eGFR 38 + UACR 350 -> G3bA3 Very High Risk)", () => {
+  const tools = getModule('OsrawyClinicalTools', 'ClinicalTools');
+  assert(tools !== null, "ClinicalTools / OsrawyClinicalTools module is present");
+  if (!tools || typeof tools.evaluateKdigoMatrix !== 'function') {
+    assert(false, "evaluateKdigoMatrix function is available");
+    return;
+  }
+
+  const kdigo = tools.evaluateKdigoMatrix(38, 350);
+  assert(kdigo !== null && typeof kdigo === 'object', "evaluateKdigoMatrix returns result object");
+  assert(kdigo.stage === 'G3bA3' || (kdigo.gStage === 'G3b' && kdigo.aStage === 'A3'), `eGFR 38 + UACR 350 staged as G3bA3 (got: ${kdigo.stage})`);
+  assert(kdigo.riskTier === 'VERY_HIGH' || String(kdigo.riskTier).includes('VERY_HIGH') || String(kdigo.risk).toUpperCase().includes('VERY HIGH'), `Risk tier classified as VERY_HIGH (got: ${kdigo.riskTier})`);
+  assert(Boolean(kdigo.actionEn && kdigo.actionAr), "KDIGO matrix provides bilingual action guidelines (EN/AR)");
+  assert(kdigo.monitorPerYear >= 3, `Intensive monitoring frequency assigned (>= 3/yr, got: ${kdigo.monitorPerYear})`);
+});
+
+// Case 12: FIB-4 Advanced Fibrosis Alert
+runCase(12, "FIB-4 Advanced Fibrosis Alert", () => {
+  const tools = getModule('OsrawyClinicalTools', 'ClinicalTools');
+  assert(tools !== null, "ClinicalTools module is present");
+  if (!tools || typeof tools.calculateFib4 !== 'function') {
+    assert(false, "calculateFib4 function is available");
+    return;
+  }
+
+  // Patient with elevated FIB-4: Age 62, AST 68, ALT 42, Platelets 135
+  const fib4High = tools.calculateFib4(62, 68, 42, 135);
+  assert(fib4High !== null, "calculateFib4 returns result object");
+  assert(fib4High.risk === 'HIGH' || String(fib4High.risk).includes('HIGH'), `FIB-4 score ${fib4High.score} classifies as HIGH risk of advanced fibrosis`);
+  assert(Boolean(fib4High.planEn && (fib4High.planEn.includes('Hepatology') || fib4High.planEn.toLowerCase().includes('fibrosis'))), "High FIB-4 recommends hepatology referral / avoiding hepatotoxic drugs");
+
+  // Low risk patient: Age 45, AST 22, ALT 25, Platelets 260
+  const fib4Low = tools.calculateFib4(45, 22, 25, 260);
+  assert(fib4Low.risk === 'LOW', `Low FIB-4 score (${fib4Low.score}) classifies as LOW risk`);
+});
+
+// Case 13: Apixaban 2-of-3 dose reduction (Age 82, Wt 56, Cr 1.6)
+runCase(13, "Apixaban 2-of-3 dose reduction (Age 82, Wt 56, Cr 1.6)", () => {
+  const tools = getModule('OsrawyClinicalTools', 'ClinicalTools');
+  assert(tools !== null, "ClinicalTools module is present");
+  if (!tools || typeof tools.evaluateDoacDosing !== 'function') {
+    assert(false, "evaluateDoacDosing function is available");
+    return;
+  }
+
+  // Patient meets all 3 ABC criteria: Age >= 80 (82), Weight <= 60 kg (56), SCr >= 1.5 mg/dL (1.6)
+  const doacReduced = tools.evaluateDoacDosing({
+    age: 82,
+    weightKg: 56,
+    creatinineMgDl: 1.6,
+    sex: 'female'
+  });
+  assert(doacReduced !== null, "evaluateDoacDosing returns dosing recommendation");
+  assert(Boolean(doacReduced.apixabanEn && doacReduced.apixabanEn.includes('2.5 mg PO BID')), `Apixaban reduced to 2.5 mg PO BID (got: ${doacReduced.apixabanEn})`);
+  assert(Boolean(doacReduced.apixabanAr && doacReduced.apixabanAr.includes('٢.٥ ملغ')), "Bilingual Arabic dose reduction text provided");
+
+  // Standard patient: Age 65, Weight 75 kg, SCr 1.0 mg/dL -> 5 mg PO BID
+  const doacStd = tools.evaluateDoacDosing({
+    age: 65,
+    weightKg: 75,
+    creatinineMgDl: 1.0,
+    sex: 'male'
+  });
+  assert(Boolean(doacStd.apixabanEn && doacStd.apixabanEn.includes('5 mg PO BID')), `Standard patient receives Apixaban 5 mg PO BID (got: ${doacStd.apixabanEn})`);
+});
+
+// Case 14: New Patient Reset clears medications and restores default eGFR
+runCase(14, "New Patient Reset clears medications and restores default eGFR", () => {
+  const pSync = getModule('OsrawyPatientSync', 'PatientSync');
+  assert(pSync !== null, "PatientSync module is present");
+  if (!pSync || typeof pSync.resetPatient !== 'function') {
+    assert(false, "resetPatient function is available on PatientSync");
+    return;
+  }
+
+  // Set patient state with custom values
+  if (typeof pSync.updatePatient === 'function') {
+    pSync.updatePatient({
+      egfr: 35,
+      medications: ['metformin', 'valsartan', 'empagliflozin'],
+      sbp: 160
+    });
+  }
+
+  // Reset patient
+  pSync.resetPatient();
+  const state = pSync.getState();
+
+  assert(Array.isArray(state.medications) && state.medications.length === 0, "resetPatient clears active medications array");
+  assert(state.egfr >= 60 || state.egfr === null || state.egfr === undefined || state.egfr === 90, `resetPatient restores default eGFR (got: ${state.egfr})`);
+  assert(state.trimester === 2 || state.gestationalWeeks === 16 || state.comorbidities !== undefined, "resetPatient maintains default schema with obstetric properties");
+});
+
+// Case 15: Pregnant patient with Asthma on Valsartan + Indapamide (preeclampsia Aspirin + Nifedipine ER switch)
+runCase(15, "Pregnant patient with Asthma on Valsartan + Indapamide (preeclampsia Aspirin + Nifedipine ER switch)", () => {
+  const htnPreg = getModule('OsrawyHtnPregnancy') || (HtnEngine && HtnEngine.OsrawyHtnPregnancy) || (HtnEngine && HtnEngine.evaluatePregnancyHtnProtocol ? HtnEngine : null);
+  const evalFn = (htnPreg && typeof htnPreg.evaluatePregnancyHtnProtocol === 'function')
+    ? htnPreg.evaluatePregnancyHtnProtocol
+    : (HtnEngine && typeof HtnEngine.evaluatePregnancyHtnProtocol === 'function' ? HtnEngine.evaluatePregnancyHtnProtocol : null);
+
+  assert(evalFn !== null, "evaluatePregnancyHtnProtocol is available");
+  if (!evalFn) return;
+
+  const obHtn = evalFn({
+    sbp: 164,
+    dbp: 112,
+    gestationalWeeks: 16,
+    comorbidities: { pregnancy: true, asthma: true },
+    medications: ['valsartan', 'indapamide']
+  });
+
+  assert(obHtn !== null, "evaluatePregnancyHtnProtocol returns evaluation result");
+
+  // Severe Obstetric HTN Emergency (>= 160/110)
+  const emergencyAlert = obHtn.alerts && obHtn.alerts.some(a => a.code === 'OBSTETRIC_HYPERTENSIVE_EMERGENCY' || JSON.stringify(a).toLowerCase().includes('emergency'));
+  assert(emergencyAlert, "Severe HTN (164/112) triggers OBSTETRIC_HYPERTENSIVE_EMERGENCY alert");
+
+  // Discontinue Teratogenic HTN drugs (Valsartan & Indapamide)
+  const teratoStop = obHtn.alerts && obHtn.alerts.some(a => a.code === 'STOP_TERATOGENIC_HTN_MEDS' || JSON.stringify(a).toLowerCase().includes('teratogenic') || JSON.stringify(a).includes('ممنوع'));
+  assert(teratoStop, "Valsartan and Indapamide trigger STOP_TERATOGENIC_HTN_MEDS alert");
+
+  // Preeclampsia Aspirin prophylaxis at 16 weeks (weeks 12-36)
+  const aspirinStep = obHtn.steps && obHtn.steps.some(s => s.code === 'PREECLAMPSIA_ASPIRIN_PROPHYLAXIS' || JSON.stringify(s).toLowerCase().includes('aspirin') || JSON.stringify(s).includes('أسبرين'));
+  assert(aspirinStep, "Gestational age 16 weeks triggers PREECLAMPSIA_ASPIRIN_PROPHYLAXIS step");
+
+  // Asthma-aware selection: Avoid Labetalol, pivot to Nifedipine ER
+  const nifedipineStep = obHtn.steps && obHtn.steps.some(s => s.code === 'PREGNANCY_HTN_STEP_1_NIFEDIPINE' || JSON.stringify(s).toLowerCase().includes('nifedipine') || JSON.stringify(s).includes('نيفيديبين'));
+  assert(nifedipineStep, "Maternal asthma pivots 1st-line therapy to Nifedipine ER (avoiding Labetalol bronchospasm)");
+});
+
+// Case 16: Trimester 3 (80 kg) pregnancy insulin calculation (72 U/d TDD, 36 U basal, 12 U/meal) & oral drug stop
+runCase(16, "Trimester 3 (80 kg) pregnancy insulin calculation (72 U/d TDD, 36 U basal, 12 U/meal) & oral drug stop", () => {
+  const dmPreg = getModule('OsrawyDmPregnancy') || (DiabetesEngine && DiabetesEngine.OsrawyDmPregnancy) || (DiabetesEngine && DiabetesEngine.evaluatePregnancyDmProtocol ? DiabetesEngine : null);
+  const evalFn = (dmPreg && typeof dmPreg.evaluatePregnancyDmProtocol === 'function')
+    ? dmPreg.evaluatePregnancyDmProtocol
+    : (DiabetesEngine && typeof DiabetesEngine.evaluatePregnancyDmProtocol === 'function' ? DiabetesEngine.evaluatePregnancyDmProtocol : null);
+
+  assert(evalFn !== null, "evaluatePregnancyDmProtocol is available");
+  if (!evalFn) return;
+
+  const obDm = evalFn({
+    weightKg: 80,
+    trimester: 3,
+    gestationalWeeks: 30,
+    comorbidities: { pregnancy: true },
+    medications: ['empagliflozin', 'semaglutide']
+  });
+
+  assert(obDm !== null, "evaluatePregnancyDmProtocol returns evaluation result");
+
+  // Discontinue non-insulin oral/injectable DM drugs
+  const stopOral = obDm.alerts && obDm.alerts.some(a => a.code === 'STOP_NON_INSULIN_PREGNANCY_DRUGS' || JSON.stringify(a).toLowerCase().includes('stop') || JSON.stringify(a).includes('أوقف'));
+  assert(stopOral, "SGLT2i (Empagliflozin) and GLP-1RA (Semaglutide) trigger STOP_NON_INSULIN_PREGNANCY_DRUGS alert");
+
+  // Trimester 3 weight-based calculation: 80 kg * 0.9 = 72 U/day TDD
+  assert(obDm.dosing && obDm.dosing.tddUnits === 72, `Trimester 3 TDD calculated as 72 U/day (got: ${obDm.dosing && obDm.dosing.tddUnits})`);
+
+  // Basal: 50% = 36 U/day
+  assert(obDm.dosing && obDm.dosing.basalUnits === 36, `Basal insulin calculated as 36 U/day (got: ${obDm.dosing && obDm.dosing.basalUnits})`);
+
+  // Prandial: 50% / 3 meals = 12 U/meal
+  assert(obDm.dosing && obDm.dosing.mealBolusUnits === 12, `Meal bolus calculated as 12 U before each of 3 meals (got: ${obDm.dosing && obDm.dosing.mealBolusUnits})`);
+
+  // Obstetric glycemic targets present
+  assert(Boolean(obDm.targets && obDm.targets.fastingMgDl && obDm.targets.fastingMgDl.includes('<95')), "Obstetric glycemic targets enforce fasting <95 mg/dL");
 });
 
 // ---------------------------------------------------------------------

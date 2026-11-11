@@ -1,186 +1,365 @@
 // ==============================================================
-// Interactive Drug Directory & Formulary Search (Saudi & Egypt)
+// Interactive Drug Directory & Saudi Regional Formulary
+// Osrawy Clinical Navigator - Trade-Name Search & Live eGFR Dosing
 // ==============================================================
 
-const DrugDirectory = (function() {
-  let activeMarket = 'saudi'; // default to saudi as requested
-  let activeFilter = 'all';
-  let activeTier = 'all';
+(function (global) {
+  const MODE_STORAGE_KEY = 'osrawy_rx_display_mode';
   let searchQuery = '';
+  let activeCategory = 'all';
+  let displayMode = (function () {
+    try {
+      return (global.localStorage && global.localStorage.getItem(MODE_STORAGE_KEY)) || 'both';
+    } catch (_) {
+      return 'both';
+    }
+  })();
 
-  function setMarket(market) {
-    activeMarket = market;
-    const btnSa = document.getElementById('market-btn-sa');
-    const btnEg = document.getElementById('market-btn-eg');
-    if (btnSa && btnEg) {
-      btnSa.classList.toggle('active', market === 'saudi');
-      btnEg.classList.toggle('active', market === 'egypt');
-    }
-    const headerMktBtn = document.getElementById('market-toggle-btn');
-    if (headerMktBtn) {
-      const isAr = (typeof window.I18n !== 'undefined' && window.I18n.getLang() === 'ar');
-      headerMktBtn.textContent = market === 'saudi' 
-        ? (isAr ? '🇸🇦 السوق السعودي (SAR)' : '🇸🇦 Saudi Market (SAR)')
-        : (isAr ? '🇪🇬 السوق المصري (EGP)' : '🇪🇬 Egypt Market (EGP)');
-    }
-    render();
-    if (typeof window.applyMarketToD === 'function') {
-      window.applyMarketToD(market);
-    }
+  const ID_ALIASES = {
+    'met': 'metformin',
+    'empa': 'empagliflozin',
+    'dapa': 'dapagliflozin',
+    'sema': 'semaglutide',
+    'tirz': 'tirzepatide',
+    'sita': 'sitagliptin',
+    'atorva': 'atorvastatin',
+    'rosuva': 'rosuvastatin'
+  };
+
+  function getFormulary() {
+    return global.OsrawyFormularyData || global.FORMULARY_DATA || [];
   }
 
-  function getMarket() {
-    return activeMarket;
+  function findDrugById(drugId) {
+    let cleanId = String(drugId || '').toLowerCase().trim();
+    if (ID_ALIASES[cleanId]) {
+      cleanId = ID_ALIASES[cleanId];
+    }
+    return getFormulary().find(d => d.id === cleanId) || null;
   }
 
   function normalizeArabic(str) {
     if (!str) return '';
-    return str.toLowerCase()
+    return String(str)
       .replace(/[أإآ]/g, 'ا')
       .replace(/ة/g, 'ه')
       .replace(/ى/g, 'ي')
-      .replace(/[\u064B-\u065F]/g, '') // remove tashkeel/diacritics
+      .replace(/[\u064B-\u065F]/g, '')
+      .toLowerCase()
       .trim();
   }
 
-  function render() {
-    const container = document.getElementById('drug-directory-list');
+  function searchDrugs(query = '', category = 'all') {
+    const rawQ = String(query || '').trim();
+    const q = rawQ.toLowerCase();
+    const qNorm = normalizeArabic(rawQ);
+    let cat = String(category || 'all').toLowerCase();
+    if (cat === 'diabetes') cat = 'dm';
+
+    return getFormulary().filter(drug => {
+      if (cat !== 'all' && drug.category !== cat) return false;
+      if (!rawQ) return true;
+
+      const haystack = [
+        drug.id,
+        drug.genericEn,
+        drug.genericAr,
+        drug.classEn,
+        drug.classAr,
+        ...(drug.tradeNamesEn || []),
+        ...(drug.tradeNamesAr || [])
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      if (haystack.includes(q)) return true;
+      if (qNorm) {
+        const normHaystack = normalizeArabic(haystack);
+        if (normHaystack.includes(qNorm)) return true;
+      }
+      return false;
+    });
+  }
+
+  // Formats a drug name as 'generic', 'trade', or 'both' for UI and Prescription Share
+  function formatDrugDisplayName(drugOrId, mode = displayMode, lang = 'en') {
+    const drug = typeof drugOrId === 'string' ? findDrugById(drugOrId) : drugOrId;
+    if (!drug) return String(drugOrId || '');
+
+    const isAr = lang === 'ar';
+    const generic = isAr ? drug.genericAr : drug.genericEn;
+    const trades = isAr ? drug.tradeNamesAr : drug.tradeNamesEn;
+    const primaryTrade = trades && trades.length > 0 ? trades[0] : generic;
+    const tradeList = trades && trades.length > 0 ? trades.slice(0, 2).join(' / ') : '';
+
+    if (mode === 'generic') return generic;
+    if (mode === 'trade') return primaryTrade;
+    return tradeList ? `${generic} (${tradeList})` : generic;
+  }
+
+  function evaluateRenalStatusForDrug(drugOrId, egfr = 90) {
+    const drug = typeof drugOrId === 'string' ? findDrugById(drugOrId) : drugOrId;
+    const val = Number(egfr != null ? egfr : 90);
+    const r = (drug && drug.renal) || {};
+    if (r.stopBelowEgfr && val < r.stopBelowEgfr) {
+      return {
+        status: 'contraindicated',
+        badgeEn: `Contraindicated at eGFR ${val} (<${r.stopBelowEgfr})`,
+        badgeAr: `ممنوع عند eGFR ${val} (<${r.stopBelowEgfr})`
+      };
+    }
+    if (r.cautionBelowEgfr && val < r.cautionBelowEgfr) {
+      return {
+        status: 'caution',
+        badgeEn: `Dose Adjust at eGFR ${val} (<${r.cautionBelowEgfr})`,
+        badgeAr: `تعديل جرعة عند eGFR ${val} (<${r.cautionBelowEgfr})`
+      };
+    }
+    return {
+      status: 'safe',
+      badgeEn: `Renal Safe (eGFR ${val})`,
+      badgeAr: `آمن كلوياً (eGFR ${val})`
+    };
+  }
+
+  function getPatientSync() {
+    return global.OsrawyPatientSync || global.PatientSync;
+  }
+
+  function getPatientState() {
+    const sync = getPatientSync();
+    if (!sync) return { egfr: 90, medications: [] };
+    if (typeof sync.getState === 'function') return sync.getState();
+    if (typeof sync.get === 'function') return sync.get();
+    return { egfr: 90, medications: [] };
+  }
+
+  function formatMedicationLine(drugId, lang = 'ar', mode = displayMode) {
+    const state = getPatientState();
+    const drug = findDrugById(drugId);
+    if (!drug) return `• ${drugId}`;
+
+    const isAr = lang === 'ar';
+    const title = formatDrugDisplayName(drug, mode, lang);
+    const dose = isAr ? drug.doseAr : drug.doseEn;
+    const renalStatus = evaluateRenalStatusForDrug(drug, state ? state.egfr : 90);
+    const renalRule = drug.renal ? (isAr ? drug.renal.ruleAr : drug.renal.ruleEn) : '';
+    const renalNote =
+      (renalStatus.status !== 'safe' && renalRule)
+        ? ` ⚠️ [${renalRule}]`
+        : '';
+
+    return `• ${title} — ${dose}${renalNote}`;
+  }
+
+  function setDisplayMode(mode) {
+    if (['generic', 'trade', 'both'].includes(mode)) {
+      displayMode = mode;
+      try {
+        if (global.localStorage) {
+          global.localStorage.setItem(MODE_STORAGE_KEY, mode);
+        }
+      } catch (_) {}
+      renderDirectory('drugs-directory-container');
+    }
+  }
+
+  function togglePatientMedication(drugId) {
+    const sync = getPatientSync();
+    if (!sync) return false;
+    const state = getPatientState();
+    const medsRaw = state.medications || state.activeMeds || state.currentMeds || [];
+    const meds = new Set(medsRaw.map(m => String(m).toLowerCase()));
+    const cleanId = String(drugId).toLowerCase();
+    let isAdded = false;
+    if (meds.has(cleanId)) {
+      meds.delete(cleanId);
+      isAdded = false;
+    } else {
+      meds.add(cleanId);
+      isAdded = true;
+    }
+    const arr = Array.from(meds);
+    if (typeof sync.updatePatient === 'function') {
+      sync.updatePatient({ medications: arr, activeMeds: arr, currentMeds: arr });
+    } else if (typeof sync.setField === 'function') {
+      sync.setField('medications', arr);
+      sync.setField('activeMeds', arr);
+      sync.setField('currentMeds', arr);
+    } else if (typeof sync.applyPatient === 'function') {
+      sync.applyPatient({ medications: arr, activeMeds: arr, currentMeds: arr });
+    } else {
+      state.medications = arr;
+      state.activeMeds = arr;
+      state.currentMeds = arr;
+    }
+    if (typeof sync.notifyUpdated === 'function') {
+      sync.notifyUpdated();
+    }
+    renderDirectory('drugs-directory-container');
+    return isAdded;
+  }
+
+  function renderDirectory(containerId = 'drugs-directory-container') {
+    const container = global.document && (
+      global.document.getElementById(containerId) ||
+      global.document.getElementById('drugs-directory-container') ||
+      global.document.getElementById('drug-directory-list')
+    );
     if (!container) return;
 
-    const rawQuery = searchQuery.trim();
-    const query = rawQuery.toLowerCase();
-    const qNorm = normalizeArabic(rawQuery);
+    const isAr = (typeof global.I18n !== 'undefined' && typeof global.I18n.getLang === 'function')
+      ? global.I18n.getLang() === 'ar'
+      : (global.document.documentElement ? (global.document.documentElement.lang === 'ar' || global.document.documentElement.dir === 'rtl') : false);
 
-    const items = Object.values(DRUG_DATABASE).filter(d => {
-      // Category filter
-      if (activeFilter !== 'all' && d.category !== activeFilter) return false;
-      
-      const mkt = d[activeMarket] || d.saudi;
-      // Tier filter
-      if (activeTier !== 'all' && String(mkt.tier) !== activeTier) return false;
+    const state = getPatientState();
+    const medsRaw = state.medications || state.activeMeds || state.currentMeds || [];
+    const activeMeds = new Set(medsRaw.map(m => String(m).toLowerCase()));
+    const results = searchDrugs(searchQuery, activeCategory);
 
-      // Text query match
-      if (!query) return true;
-      const matchName = d.name.toLowerCase().includes(query);
-      const matchCls = d.cls.toLowerCase().includes(query);
-      const matchBrands = mkt.brands.some(b => b.toLowerCase().includes(query) || normalizeArabic(b).includes(qNorm));
-      const matchAr = d.ar && Array.isArray(d.ar) && d.ar.some(a => normalizeArabic(a).includes(qNorm));
-      return matchName || matchCls || matchBrands || matchAr;
-    });
+    const cardsHtml = results
+      .map(drug => {
+        const isSelected = activeMeds.has(drug.id);
+        const renal = evaluateRenalStatusForDrug(drug, state.egfr);
+        const title = formatDrugDisplayName(drug, displayMode, isAr ? 'ar' : 'en');
+        const allBrands = (isAr ? drug.tradeNamesAr : drug.tradeNamesEn).join(' ، ');
 
-    const t = (k, def) => (typeof window.I18n !== 'undefined' ? window.I18n.t(k, def) : def);
-    const isAr = (typeof window.I18n !== 'undefined' && window.I18n.getLang() === 'ar');
-
-    if (items.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <p>${t('drugs_empty_found', 'لم يتم العثور على أدوية مطابقة للبحث')} "<b>${searchQuery}</b>"</p>
-          <small>${t('drugs_empty_hint', 'جرب البحث باسم المادة الفعالة أو الاسم التجاري في السوق السعودي')}</small>
-        </div>`;
-      return;
-    }
-
-    container.innerHTML = items.map(d => {
-      const mkt = d[activeMarket] || d.saudi;
-      const tierDescText = isAr 
-        ? (mkt.tier === 1 ? '● اقتصادي / منخفض' : mkt.tier === 2 ? '●● متوسط' : '●●● عالي التكلفة')
-        : mkt.tierDesc;
-
-      const tierBadge = mkt.tier === 1 
-        ? `<span class="cost t1">${tierDescText}</span>`
-        : mkt.tier === 2 
-        ? `<span class="cost t2">${tierDescText}</span>`
-        : `<span class="cost t3">${tierDescText}</span>`;
-
-      const brandsHtml = mkt.brands.map((b, i) => 
-        i === mkt.orig 
-          ? `<span class="brand-orig">★ ${b}</span>` 
-          : `<span class="brand-gen">${b}</span>`
-      ).join(' · ');
-
-      const marketLabel = activeMarket === 'saudi' 
-        ? t('mkt_saudi_short', 'السوق السعودي 🇸🇦') 
-        : t('mkt_egypt_short', 'السوق المصري 🇪🇬');
-
-      return `
-        <div class="drug-dir-card">
-          <div class="drug-dir-header">
-            <div>
-              <span class="drug-dir-cls">${d.cls}</span>
-              <h3 class="drug-dir-name">${d.name}</h3>
+        return `
+          <div class="leaflet-section-card drug-card-${renal.status}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+              <div>
+                <div class="leaflet-topic-title">${title}</div>
+                <div style="font-size:0.82rem; color:#475569;">
+                  ${isAr ? drug.classAr : drug.classEn} | ${isAr ? 'الأسماء التجارية:' : 'Brands:'} <strong>${allBrands}</strong>
+                </div>
+              </div>
+              <button type="button" class="action-chip ${isSelected ? 'primary-chip' : ''}" data-med-toggle="${drug.id}">
+                ${isSelected ? (isAr ? '✓ مضاف للخطة' : '✓ In Plan') : (isAr ? '+ أضف للخطة' : '+ Add')}
+              </button>
             </div>
-            <div class="drug-dir-price-box">
-              ${tierBadge}
-              <span class="drug-dir-price">${mkt.priceEst}</span>
+            <div style="margin-block-start:0.5rem; font-size:0.9rem;">
+              <strong>${isAr ? 'الجرعة:' : 'Dosing:'}</strong> ${isAr ? drug.doseAr : drug.doseEn}
+              <span style="color:#64748b;">(${drug.strengths.join(', ')})</span>
+            </div>
+            <div style="margin-block-start:0.4rem; font-size:0.82rem; font-weight:700;">
+              🩺 ${isAr ? renal.badgeAr : renal.badgeEn} — ${isAr ? drug.renal.ruleAr : drug.renal.ruleEn}
             </div>
           </div>
+        `;
+      })
+      .join('');
 
-          <div class="drug-dir-brands">
-            <small class="muted-label">${t('drugs_brands_label', 'الأسماء التجارية')} (${marketLabel}):</small>
-            <div class="brands-row">${brandsHtml}</div>
-          </div>
-
-          <div class="drug-dir-info-grid">
-            <div class="drug-dir-info-item">
-              <span class="info-label">💊 ${t('drugs_usual_dose', 'الجرعة المعتادة:')}</span>
-              <span class="info-val">${d.dose}</span>
-            </div>
-            <div class="drug-dir-info-item">
-              <span class="info-label">🫘 ${t('drugs_renal_adj', 'ضبط وظائف الكلى (eGFR):')}</span>
-              <span class="info-val renal">${d.renal(60)}</span>
-            </div>
-          </div>
-
-          <div class="drug-dir-caut">
-            <span class="info-label">⚠️ ${t('drugs_cautions', 'تنبيهات واحتياطات:')}</span>
-            <span>${d.caut}</span>
-          </div>
+    container.innerHTML = `
+      <div class="leaflet-toolbar">
+        <input
+          type="search"
+          id="formulary-search-input"
+          value="${searchQuery}"
+          placeholder="${isAr ? 'ابحث بالاسم العلمي أو التجاري (مثل: جلوكوفاج، جاردينس، ليبيتور، كونكور)...' : 'Search generic or Saudi brand (e.g., Jardiance, Lipitor, Concor, Exforge)...'}"
+          style="flex:1; min-width:240px; min-height:2.6rem; padding:0.5rem 0.85rem; border:1px solid #cbd5e1; border-radius:0.5rem;"
+        />
+        <div class="leaflet-actions">
+          <button type="button" class="action-chip ${displayMode === 'both' ? 'primary-chip' : ''}" data-rx-mode="both">
+            ${isAr ? 'علمي + تجاري' : 'Generic + Brand'}
+          </button>
+          <button type="button" class="action-chip ${displayMode === 'generic' ? 'primary-chip' : ''}" data-rx-mode="generic">
+            ${isAr ? 'علمي فقط' : 'Generic Only'}
+          </button>
+          <button type="button" class="action-chip ${displayMode === 'trade' ? 'primary-chip' : ''}" data-rx-mode="trade">
+            ${isAr ? 'تجاري فقط' : 'Brand Only'}
+          </button>
         </div>
-      `;
-    }).join('');
-  }
+      </div>
+      <div class="leaflet-topic-pills" style="margin-block-end:1rem;">
+        ${['all', 'dm', 'htn', 'dlp', 'resp', 'thyroid']
+          .map(
+            cat => `
+          <button type="button" class="pill-btn ${activeCategory === cat ? 'active' : ''}" data-cat="${cat}">
+            ${cat.toUpperCase()}
+          </button>`
+          )
+          .join('')}
+      </div>
+      <div>${cardsHtml || `<p>${isAr ? 'لا توجد نتائج مطابقة.' : 'No matching medications found.'}</p>`}</div>
+    `;
 
-  function init() {
-    const searchInput = document.getElementById('drug-search-input');
-    if (searchInput) {
-      searchInput.addEventListener('input', e => {
+    const inputEl = container.querySelector('#formulary-search-input');
+    if (inputEl) {
+      inputEl.addEventListener('input', e => {
         searchQuery = e.target.value;
-        render();
+        renderDirectory(containerId);
       });
     }
 
-    const filterBtns = document.querySelectorAll('[data-drug-filter]');
-    filterBtns.forEach(btn => {
+    // Also connect to header search input if present
+    const headerInput = global.document && global.document.getElementById('drug-search-input');
+    if (headerInput && !headerInput._dirBound) {
+      headerInput._dirBound = true;
+      headerInput.addEventListener('input', e => {
+        searchQuery = e.target.value;
+        renderDirectory(containerId);
+      });
+    }
+
+    container.querySelectorAll('[data-rx-mode]').forEach(btn => {
+      btn.addEventListener('click', () => setDisplayMode(btn.getAttribute('data-rx-mode')));
+    });
+
+    container.querySelectorAll('[data-cat]').forEach(btn => {
       btn.addEventListener('click', () => {
-        filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeFilter = btn.getAttribute('data-drug-filter');
-        render();
+        activeCategory = btn.getAttribute('data-cat');
+        renderDirectory(containerId);
       });
     });
 
-    const tierBtns = document.querySelectorAll('[data-drug-tier]');
-    tierBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        tierBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeTier = btn.getAttribute('data-drug-tier');
-        render();
-      });
+    container.querySelectorAll('[data-med-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => togglePatientMedication(btn.getAttribute('data-med-toggle')));
     });
-
-    render();
   }
 
-  return {
-    init,
-    setMarket,
-    getMarket,
-    render
+  if (typeof global.addEventListener === 'function') {
+    global.addEventListener('osrawy:patient-updated', () => {
+      renderDirectory('drugs-directory-container');
+    });
+  }
+
+  const OsrawyDrugsDirectory = {
+    searchDrugs,
+    findDrugById,
+    formatDrugDisplayName,
+    formatMedicationLine,
+    evaluateRenalStatusForDrug,
+    setDisplayMode,
+    getDisplayMode: () => displayMode,
+    togglePatientMedication,
+    renderDirectory,
+    // Backwards compatibility for legacy DrugDirectory calls
+    init: function() {
+      const searchInput = global.document && (global.document.getElementById('drug-search-input') || global.document.getElementById('formulary-search-input'));
+      if (searchInput && !searchInput._initBound) {
+        searchInput._initBound = true;
+        searchInput.addEventListener('input', e => {
+          searchQuery = e.target.value;
+          renderDirectory();
+        });
+      }
+      renderDirectory();
+    },
+    render: function() {
+      renderDirectory();
+    },
+    setMarket: function(market) {
+      // Compatibility stub
+    },
+    getMarket: function() {
+      return 'saudi';
+    }
   };
-})();
 
-if (typeof window !== 'undefined') {
-  window.DrugDirectory = DrugDirectory;
-}
+  global.OsrawyDrugsDirectory = OsrawyDrugsDirectory;
+  global.DrugDirectory = OsrawyDrugsDirectory;
 
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = OsrawyDrugsDirectory;
+  }
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

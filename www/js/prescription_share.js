@@ -219,6 +219,32 @@ const RxShare = (function() {
 
       // 3. Combined Medications List
       text += `💊 *الخطة الدوائية المعتمدة (Rx):*\n\n`;
+
+      // Active Patient Medications formatted with OsrawyDrugsDirectory
+      const activeMedsList = pt.activeMeds || pt.meds || pt.currentMeds || [];
+      if (activeMedsList && activeMedsList.length > 0) {
+        text += `🔹 *الأدوية الحالية للمريض (Active Medications):*\n`;
+        activeMedsList.forEach((medId, idx) => {
+          let dir = null;
+          if (typeof OsrawyDrugsDirectory !== 'undefined') dir = OsrawyDrugsDirectory;
+          else if (typeof window !== 'undefined' && window.OsrawyDrugsDirectory) dir = window.OsrawyDrugsDirectory;
+          else if (typeof globalThis !== 'undefined' && globalThis.OsrawyDrugsDirectory) dir = globalThis.OsrawyDrugsDirectory;
+          else if (typeof global !== 'undefined' && global.OsrawyDrugsDirectory) dir = global.OsrawyDrugsDirectory;
+          else if (typeof DrugDirectory !== 'undefined') dir = DrugDirectory;
+          else if (typeof window !== 'undefined' && window.DrugDirectory) dir = window.DrugDirectory;
+          else if (typeof globalThis !== 'undefined' && globalThis.DrugDirectory) dir = globalThis.DrugDirectory;
+          else if (typeof global !== 'undefined' && global.DrugDirectory) dir = global.DrugDirectory;
+
+          let line = '';
+          if (dir && typeof dir.formatMedicationLine === 'function') {
+            try { line = dir.formatMedicationLine(medId, 'ar'); } catch(e) {}
+          }
+          if (!line) line = String(medId);
+          text += `  ${idx + 1}. ${line}\n`;
+        });
+        text += `\n`;
+      }
+
       const rxData = getPrescriptionData();
       if (rxData.items && rxData.items.length > 0) {
         text += `🔹 *أدوية السكري:*\n`;
@@ -268,6 +294,59 @@ const RxShare = (function() {
           text += `🔹 *علاج الغدة الدرقية:*\n`;
           text += `  • ${pcReport.thyroid.statusNameAr}: ${pcReport.thyroid.rxAr}\n\n`;
         }
+      }
+
+      // Women's Health & Pregnancy Switching Protocol (Arabic)
+      const isPregnantOrPostpartumAr = !!(pt.pregnancy || pt.preg || pt.pregHtn || pt.postpartum || (pt.comorbidities && pt.comorbidities.postpartum));
+      if (isPregnantOrPostpartumAr) {
+        let htnPreg = null;
+        let dmPreg = null;
+        if (typeof OsrawyHtnPregnancy !== 'undefined' && typeof OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol === 'function') {
+          try { htnPreg = OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol(pt); } catch(e) {}
+        }
+        if (typeof OsrawyDmPregnancy !== 'undefined' && typeof OsrawyDmPregnancy.evaluatePregnancyDmProtocol === 'function') {
+          try { dmPreg = OsrawyDmPregnancy.evaluatePregnancyDmProtocol(pt); } catch(e) {}
+        }
+
+        text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        text += `🌸 *بروتوكول صحة المرأة والحمل والنفاس (Women's Health & Pregnancy Switching Protocol):*\n`;
+        if (pt.postpartum || (pt.comorbidities && pt.comorbidities.postpartum)) {
+          text += `• الحالة السريرية: فترة ما بعد الولادة والنفاس (Postpartum)\n`;
+        } else {
+          text += `• الحالة السريرية: حمل نشط (عمر الحمل: ${pt.gestationalWeeks || 16} أسبوعاً - الثلث ${pt.trimester || 2})\n`;
+        }
+
+        if (htnPreg) {
+          text += `\n🩺 *بروتوكول تحويل أدوية الضغط أثناء الحمل والنفاس:*\n`;
+          text += `• الخيار الأول المعتمد: ${htnPreg.firstLine.drugNameAr} - ${htnPreg.firstLine.doseAr}\n`;
+          text += `• مبرر الاختيار: ${htnPreg.firstLine.reasonAr}\n`;
+          if (htnPreg.aspirinProphylaxis && htnPreg.aspirinProphylaxis.indicated) {
+            text += `• وقاية تسمم الحمل: أسبرين أطفال (81–150 مجم/يوم عند النوم حتى الأسبوع 36)\n`;
+          }
+          if (htnPreg.methyldopaDepressionWarning) {
+            text += `• تحذير ميثيل دوبا: ${htnPreg.methyldopaDepressionWarning.titleAr} - ${htnPreg.methyldopaDepressionWarning.actionAr}\n`;
+          }
+          if (htnPreg.isSevereEmergency) {
+            text += `• 🚨 طوارئ ارتفاع الضغط الشديد (≥160/110): يتطلب خفضاً إسعافياً خلال 30-60 دقيقة وكبريتات المغنيسيوم.\n`;
+          }
+          text += `• أدوية محظورة تم إيقافها فوراً: ${htnPreg.stoppedDrugs.join('، ')}\n`;
+        }
+
+        if (dmPreg) {
+          text += `\n🩸 *بروتوكول تحويل أدوية السكري أثناء الحمل والنفاس:*\n`;
+          text += `• أهداف سكر الحمل: ${dmPreg.obstetricTargets.fastingLabelAr} | ${dmPreg.obstetricTargets.pp1hrLabelAr} | ${dmPreg.obstetricTargets.pp2hrLabelAr}\n`;
+          text += `• خطة الإنسولين المحسوبة: إجمالي الجرعة اليومية ${dmPreg.insulinDosing.tdd} وحدة/يوم (${dmPreg.insulinDosing.multiplier} وحدة/كجم)\n`;
+          text += `  - ${dmPreg.insulinDosing.basalRegimenAr}\n`;
+          text += `  - ${dmPreg.insulinDosing.prandialRegimenAr}\n`;
+          if (dmPreg.folicAcid && dmPreg.folicAcid.indicated) {
+            text += `• حمض الفوليك: جرعة عالية 5 مجم/يوم فموياً حتى الأسبوع 12.\n`;
+          }
+          if (dmPreg.postpartumManagement && dmPreg.postpartumManagement.isPostpartum) {
+            text += `• خطة النفاس: تقليص جرعة الإنسولين بنسبة 50% فوراً وفحص سكر الحمل (75g OGTT) في الأسابيع 4-12.\n`;
+          }
+          text += `• تنبيه الأدوية: إيقاف جميع خافضات السكر الفموية وغير الإنسولينية والاعتماد الحصري على الإنسولين.\n`;
+        }
+        text += `\n`;
       }
 
       // 4. Combined Safety & Guardrail Alerts
@@ -331,6 +410,32 @@ const RxShare = (function() {
 
       // 3. Regimens
       text += `💊 *Prescribed & Recommended Regimens (Rx):*\n\n`;
+
+      // Active Patient Medications formatted with OsrawyDrugsDirectory
+      const activeMedsListEn = pt.activeMeds || pt.meds || pt.currentMeds || [];
+      if (activeMedsListEn && activeMedsListEn.length > 0) {
+        text += `🔹 *Active Patient Medications:*\n`;
+        activeMedsListEn.forEach((medId, idx) => {
+          let dir = null;
+          if (typeof OsrawyDrugsDirectory !== 'undefined') dir = OsrawyDrugsDirectory;
+          else if (typeof window !== 'undefined' && window.OsrawyDrugsDirectory) dir = window.OsrawyDrugsDirectory;
+          else if (typeof globalThis !== 'undefined' && globalThis.OsrawyDrugsDirectory) dir = globalThis.OsrawyDrugsDirectory;
+          else if (typeof global !== 'undefined' && global.OsrawyDrugsDirectory) dir = global.OsrawyDrugsDirectory;
+          else if (typeof DrugDirectory !== 'undefined') dir = DrugDirectory;
+          else if (typeof window !== 'undefined' && window.DrugDirectory) dir = window.DrugDirectory;
+          else if (typeof globalThis !== 'undefined' && globalThis.DrugDirectory) dir = globalThis.DrugDirectory;
+          else if (typeof global !== 'undefined' && global.DrugDirectory) dir = global.DrugDirectory;
+
+          let line = '';
+          if (dir && typeof dir.formatMedicationLine === 'function') {
+            try { line = dir.formatMedicationLine(medId, 'en'); } catch(e) {}
+          }
+          if (!line) line = String(medId);
+          text += `  ${idx + 1}. ${line}\n`;
+        });
+        text += `\n`;
+      }
+
       const rxData = getPrescriptionData();
       if (rxData.items && rxData.items.length > 0) {
         text += `🔹 *Diabetes Medications:*\n`;
@@ -379,6 +484,59 @@ const RxShare = (function() {
           text += `🔹 *Thyroid Care:*\n`;
           text += `  • ${pcReport.thyroid.statusNameEn}: ${pcReport.thyroid.rxEn}\n\n`;
         }
+      }
+
+      // Women's Health & Pregnancy Switching Protocol (English)
+      const isPregnantOrPostpartumEn = !!(pt.pregnancy || pt.preg || pt.pregHtn || pt.postpartum || (pt.comorbidities && pt.comorbidities.postpartum));
+      if (isPregnantOrPostpartumEn) {
+        let htnPreg = null;
+        let dmPreg = null;
+        if (typeof OsrawyHtnPregnancy !== 'undefined' && typeof OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol === 'function') {
+          try { htnPreg = OsrawyHtnPregnancy.evaluatePregnancyHtnProtocol(pt); } catch(e) {}
+        }
+        if (typeof OsrawyDmPregnancy !== 'undefined' && typeof OsrawyDmPregnancy.evaluatePregnancyDmProtocol === 'function') {
+          try { dmPreg = OsrawyDmPregnancy.evaluatePregnancyDmProtocol(pt); } catch(e) {}
+        }
+
+        text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        text += `🌸 *Women's Health & Pregnancy Switching Protocol:*\n`;
+        if (pt.postpartum || (pt.comorbidities && pt.comorbidities.postpartum)) {
+          text += `• Clinical Status: Postpartum Care\n`;
+        } else {
+          text += `• Clinical Status: Active Pregnancy (Gestational Age: ${pt.gestationalWeeks || 16} weeks - Trimester ${pt.trimester || 2})\n`;
+        }
+
+        if (htnPreg) {
+          text += `\n🩺 *Hypertension in Pregnancy & Switching Strategy:*\n`;
+          text += `• Recommended First-Line: ${htnPreg.firstLine.drugName} - ${htnPreg.firstLine.doseEn}\n`;
+          text += `• Clinical Rationale: ${htnPreg.firstLine.reasonEn}\n`;
+          if (htnPreg.aspirinProphylaxis && htnPreg.aspirinProphylaxis.indicated) {
+            text += `• Preeclampsia Prophylaxis: Low-dose Aspirin (81–150 mg/day at bedtime through 36 weeks)\n`;
+          }
+          if (htnPreg.methyldopaDepressionWarning) {
+            text += `• Methyldopa Warning: ${htnPreg.methyldopaDepressionWarning.titleEn} - ${htnPreg.methyldopaDepressionWarning.actionEn}\n`;
+          }
+          if (htnPreg.isSevereEmergency) {
+            text += `• 🚨 Severe Obstetric HTN Emergency (≥160/110): Immediate IV lowering and Magnesium Sulfate required.\n`;
+          }
+          text += `• Teratogens Stopped: ${htnPreg.stoppedDrugs.join(', ')}\n`;
+        }
+
+        if (dmPreg) {
+          text += `\n🩸 *Diabetes in Pregnancy & Switching Strategy:*\n`;
+          text += `• Obstetric Glycemic Targets: ${dmPreg.obstetricTargets.fastingLabelEn} | ${dmPreg.obstetricTargets.pp1hrLabelEn} | ${dmPreg.obstetricTargets.pp2hrLabelEn}\n`;
+          text += `• Calculated Weight-Based Insulin: TDD ${dmPreg.insulinDosing.tdd} U/day (${dmPreg.insulinDosing.multiplier} U/kg/day)\n`;
+          text += `  - ${dmPreg.insulinDosing.basalRegimenEn}\n`;
+          text += `  - ${dmPreg.insulinDosing.prandialRegimenEn}\n`;
+          if (dmPreg.folicAcid && dmPreg.folicAcid.indicated) {
+            text += `• Folic Acid: High-dose 5 mg/day orally through week 12 of pregnancy.\n`;
+          }
+          if (dmPreg.postpartumManagement && dmPreg.postpartumManagement.isPostpartum) {
+            text += `• Postpartum Management: Reduce insulin dose by 50% immediately; order 75g OGTT at 4–12 weeks postpartum.\n`;
+          }
+          text += `• Non-Insulin Agents: Discontinue all oral and non-insulin agents; switch exclusively to insulin.\n`;
+        }
+        text += `\n`;
       }
 
       // 4. Safety Guardrails

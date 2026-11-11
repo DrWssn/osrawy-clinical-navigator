@@ -1,677 +1,417 @@
 // ==============================================================
-// Clinical Knowledge Base & Formulary (Saudi Arabia SFDA & Egypt)
+// Clinical Knowledge Base & Bilingual Formulary (Saudi & Regional)
+// Osrawy Clinical Navigator - Comprehensive Primary Care Formulary
 // ==============================================================
 
-const DRUG_DATABASE = {
-  // --- DIABETES ---
-  met: {
-    id: "met", category: "diabetes", cls: "Biguanide", name: "Metformin",
-    ar: ["ميتفورمين", "جلوكوفاج", "ديلون", "فورميت", "ميتفور", "سيدوفاج"],
-    saudi: {
-      brands: ["Dialon (SPIMACO)", "Glucophage / XR", "Formit", "Metfor"],
-      orig: 1, tier: 1, tierDesc: "● Low cost (< 30 SAR)",
-      priceEst: "14 – 28 SAR / mo"
+(function (global) {
+  const FORMULARY_DATA = [
+    // Diabetes Mellitus (DM)
+    {
+      id: 'metformin',
+      category: 'dm',
+      classEn: 'Biguanide',
+      classAr: 'بيجوانيد',
+      genericEn: 'Metformin',
+      genericAr: 'ميتفورمين',
+      tradeNamesEn: ['Glucophage', 'Glucophage XR', 'Formit', 'Diaphage'],
+      tradeNamesAr: ['جلوكوفاج', 'فورميت', 'ديافاج'],
+      strengths: ['500 mg', '850 mg', '1000 mg'],
+      doseEn: '500–1000 mg PO BID with meals (or XR 500–2000 mg once daily)',
+      doseAr: '٥٠٠-١٠٠٠ ملغ مرتين يومياً مع الوجبات (أو الممتد المفعول مرة يومياً)',
+      renal: {
+        stopBelowEgfr: 30,
+        cautionBelowEgfr: 45,
+        ruleEn: 'eGFR <30: Contraindicated. eGFR 30–44: Max 1000 mg/day; do not initiate.',
+        ruleAr: 'يُمنع عند eGFR <30. وعند 30–44 الحد الأقصى ١٠٠٠ ملغ يومياً.'
+      }
     },
-    egypt: {
-      brands: ["Cidophage", "Glucophage / XR", "Metfor"],
-      orig: 1, tier: 1, tierDesc: "● Low cost (< 50 EGP)",
-      priceEst: "20 – 60 EGP / mo"
+    {
+      id: 'empagliflozin',
+      category: 'dm',
+      classEn: 'SGLT2 Inhibitor',
+      classAr: 'مثبط SGLT2',
+      genericEn: 'Empagliflozin',
+      genericAr: 'إمباغليفلوزين',
+      tradeNamesEn: ['Jardiance', 'Synjardy (with Metformin)'],
+      tradeNamesAr: ['جاردينس', 'سينجاردي'],
+      strengths: ['10 mg', '25 mg'],
+      doseEn: '10–25 mg PO once daily in the morning',
+      doseAr: '١٠-٢٥ ملغ فموياً مرة واحدة صباحاً',
+      renal: {
+        stopBelowEgfr: 20,
+        cautionBelowEgfr: 45,
+        ruleEn: 'Safe down to eGFR ≥20 for CKD/HF protection; less glucose lowering if eGFR <45.',
+        ruleAr: 'آمن حتى eGFR ≥20 لحماية القلب والكلى؛ يقل مفعول خفض السكر تحت 45.'
+      }
     },
-    dose: "500 mg once–twice daily with meals; +500 mg weekly → 2000 mg/day (XR max 2000 mg)",
-    renal: e => e < 30 ? "Contraindicated (eGFR <30)" : e < 45 ? "eGFR 30–44: max 1000 mg/day; do not start new" : "No adjustment",
-    caut: "GI upset (use XR), B12 deficiency; hold for contrast if eGFR <60 or acute illness / dehydration",
-    rx: (p, b) => p.egfr < 45 ? {
-      b: `${b} 500 mg tab`, s: "1 tab twice daily after meals (max 1000 mg/day)",
-      a: "قرص بعد الفطار وقرص بعد العشاء مع الأكل (الحد الأقصى قرصين يومياً)"
-    } : {
-      b: `${b} 500 mg tab`, s: "1 tab twice daily after meals; after 2 weeks 1000 mg twice daily",
-      a: "قرص بعد الفطار وقرص بعد العشاء، وبعد أسبوعين تزاد الجرعة حسب تعليمات الطبيب"
+    {
+      id: 'dapagliflozin',
+      category: 'dm',
+      classEn: 'SGLT2 Inhibitor',
+      classAr: 'مثبط SGLT2',
+      genericEn: 'Dapagliflozin',
+      genericAr: 'داباغليفلوزين',
+      tradeNamesEn: ['Forxiga', 'Xigduo XR (with Metformin)'],
+      tradeNamesAr: ['فورسيجا', 'زيجدو'],
+      strengths: ['5 mg', '10 mg'],
+      doseEn: '10 mg PO once daily',
+      doseAr: '١٠ ملغ فموياً مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 25,
+        cautionBelowEgfr: 45,
+        ruleEn: 'Initiate down to eGFR ≥25 for CKD/HF protection.',
+        ruleAr: 'يُستخدم حتى eGFR ≥25 لحماية الكلى والقلب.'
+      }
+    },
+    {
+      id: 'semaglutide',
+      category: 'dm',
+      classEn: 'GLP-1 Receptor Agonist',
+      classAr: 'ناهض مستقبلات GLP-1',
+      genericEn: 'Semaglutide',
+      genericAr: 'سيماغلوتايد',
+      tradeNamesEn: ['Ozempic', 'Rybelsus (Oral)', 'Wegovy'],
+      tradeNamesAr: ['أوزمبيك', 'ريبلسس', 'ويغوفي'],
+      strengths: ['0.25 mg', '0.5 mg', '1 mg', '2 mg'],
+      doseEn: '0.25 mg SC weekly x4 wks, then 0.5–1 mg weekly',
+      doseAr: '٠.٢٥ ملغ تحت الجلد أسبوعياً لمدة ٤ أسابيع ثم ترفع إلى ٠.٥-١ ملغ',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 15,
+        ruleEn: 'No renal dose adjustment required; monitor hydration if GI side effects occur.',
+        ruleAr: 'لا يحتاج لتعديل الجرعة كلوياً؛ راقب الجفاف في حال حدوث قيء.'
+      }
+    },
+    {
+      id: 'tirzepatide',
+      category: 'dm',
+      classEn: 'Dual GIP/GLP-1 Agonist',
+      classAr: 'ناهض مزدوج GIP/GLP-1',
+      genericEn: 'Tirzepatide',
+      genericAr: 'تيرزيباتايد',
+      tradeNamesEn: ['Mounjaro', 'Zepbound'],
+      tradeNamesAr: ['مونجارو'],
+      strengths: ['2.5 mg', '5 mg', '7.5 mg', '10 mg', '12.5 mg', '15 mg'],
+      doseEn: 'Start 2.5 mg SC weekly x4 wks; increase by 2.5 mg every 4 wks',
+      doseAr: '٢.٥ ملغ تحت الجلد أسبوعياً لمدة ٤ أسابيع ثم ترفع تدريجياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 15,
+        ruleEn: 'No renal dose adjustment required across CKD stages.',
+        ruleAr: 'لا يتطلب تعديل الجرعة في القصور الكلوي.'
+      }
+    },
+    {
+      id: 'sitagliptin',
+      category: 'dm',
+      classEn: 'DPP-4 Inhibitor',
+      classAr: 'مثبط DPP-4',
+      genericEn: 'Sitagliptin',
+      genericAr: 'سيتاغليبتين',
+      tradeNamesEn: ['Januvia', 'Janumet (with Metformin)', 'Sitavia'],
+      tradeNamesAr: ['جانوفيا', 'جانوميت'],
+      strengths: ['25 mg', '50 mg', '100 mg'],
+      doseEn: '100 mg PO once daily (adjust for eGFR)',
+      doseAr: '١٠٠ ملغ مرة يومياً (تعدل حسب وظائف الكلى)',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 45,
+        ruleEn: 'eGFR 30–44: 50 mg once daily. eGFR <30: 25 mg once daily.',
+        ruleAr: 'عند eGFR 30–44: ٥٠ ملغ يومياً. وعند eGFR <30: ٢٥ ملغ يومياً.'
+      }
+    },
+
+    // Hypertension (HTN)
+    {
+      id: 'perindopril',
+      category: 'htn',
+      classEn: 'ACE Inhibitor',
+      classAr: 'مثبط الإنزيم المحول للأنجيوتنسين (ACEi)',
+      genericEn: 'Perindopril',
+      genericAr: 'بيريندوبريل',
+      tradeNamesEn: ['Coversyl', 'Coveram (with Amlodipine)', 'Preterax'],
+      tradeNamesAr: ['كوفرسيل', 'كوفرام'],
+      strengths: ['5 mg', '10 mg'],
+      doseEn: '5–10 mg PO once daily',
+      doseAr: '٥-١٠ ملغ مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 30,
+        ruleEn: 'eGFR <30: Start 2.5 mg daily; monitor Cr & K+ within 1–2 weeks.',
+        ruleAr: 'عند eGFR <30: ابدأ بجرعة ٢.٥ ملغ وراقب الكرياتينين والبوتاسيوم.'
+      }
+    },
+    {
+      id: 'valsartan',
+      category: 'htn',
+      classEn: 'Angiotensin Receptor Blocker (ARB)',
+      classAr: 'حاصر مستقبلات الأنجيوتنسين (ARB)',
+      genericEn: 'Valsartan',
+      genericAr: 'فالسارتان',
+      tradeNamesEn: ['Diovan', 'Co-Diovan (with HCTZ)', 'Exforge (with Amlodipine)'],
+      tradeNamesAr: ['ديوفان', 'كو-ديوفان', 'إكسفورج'],
+      strengths: ['80 mg', '160 mg', '320 mg'],
+      doseEn: '80–320 mg PO once daily',
+      doseAr: '٨٠-٣٢٠ ملغ مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 30,
+        ruleEn: 'Use caution in severe CKD; hold if K+ ≥5.5 mmol/L or pregnancy.',
+        ruleAr: 'حذر في القصور الكلوي الشديد؛ أوقفه إذا كان البوتاسيوم ≥5.5 أو في الحمل.'
+      }
+    },
+    {
+      id: 'amlodipine',
+      category: 'htn',
+      classEn: 'Dihydropyridine CCB',
+      classAr: 'حاصر قنوات الكالسيوم',
+      genericEn: 'Amlodipine',
+      genericAr: 'أملوديبين',
+      tradeNamesEn: ['Norvasc', 'Amlor', 'Vascopin'],
+      tradeNamesAr: ['نورفاسك', 'أملور'],
+      strengths: ['5 mg', '10 mg'],
+      doseEn: '5–10 mg PO once daily',
+      doseAr: '٥-١٠ ملغ مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 0,
+        ruleEn: 'No renal dose adjustment required; watch for ankle edema at 10 mg.',
+        ruleAr: 'لا يتطلب تعديلاً كلوياً؛ قد يسبب تورم الكاحلين بجرعة ١٠ ملغ.'
+      }
+    },
+    {
+      id: 'indapamide',
+      category: 'htn',
+      classEn: 'Thiazide-Like Diuretic',
+      classAr: 'مدر بول شبيه الثيازيد',
+      genericEn: 'Indapamide',
+      genericAr: 'إندابامايد',
+      tradeNamesEn: ['Natrilix SR', 'Fludex'],
+      tradeNamesAr: ['ناتريليكس'],
+      strengths: ['1.5 mg SR', '2.5 mg'],
+      doseEn: '1.5 mg SR or 2.5 mg PO once daily in the morning',
+      doseAr: '١.٥ ملغ ممتد المفعول مرة واحدة صباحاً',
+      renal: {
+        stopBelowEgfr: 30,
+        cautionBelowEgfr: 45,
+        ruleEn: 'Less effective when eGFR <30; switch to a loop diuretic if volume overloaded.',
+        ruleAr: 'يفقد فعاليته عند eGFR <30؛ استبدله بمدر عروي (لازكس) عند الاحتقان.'
+      }
+    },
+    {
+      id: 'bisoprolol',
+      category: 'htn',
+      classEn: 'Cardioselective Beta-Blocker',
+      classAr: 'حاصر بيتا انتقائي للقلب',
+      genericEn: 'Bisoprolol',
+      genericAr: 'بيسوبرولول',
+      tradeNamesEn: ['Concor', 'BisoCard'],
+      tradeNamesAr: ['كونكور', 'بيزوكارد'],
+      strengths: ['2.5 mg', '5 mg', '10 mg'],
+      doseEn: '2.5–10 mg PO once daily',
+      doseAr: '٢.٥-١٠ ملغ مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 20,
+        ruleEn: 'eGFR <20: Do not exceed 10 mg once daily.',
+        ruleAr: 'عند eGFR <20: لا تتجاوز ١٠ ملغ يومياً.'
+      }
+    },
+    {
+      id: 'spironolactone',
+      category: 'htn',
+      classEn: 'Mineralocorticoid Receptor Antagonist (MRA)',
+      classAr: 'مضاد الألدوستيرون',
+      genericEn: 'Spironolactone',
+      genericAr: 'سبيرونولاكتون',
+      tradeNamesEn: ['Aldactone', 'Spirotone'],
+      tradeNamesAr: ['ألداكتون'],
+      strengths: ['25 mg', '50 mg', '100 mg'],
+      doseEn: '25–50 mg PO once daily for resistant HTN or HFrEF',
+      doseAr: '٢٥-٥٠ ملغ مرة يومياً للضغط المقاوم أو قصور القلب',
+      renal: {
+        stopBelowEgfr: 30,
+        cautionBelowEgfr: 45,
+        ruleEn: 'Avoid if eGFR <30 or baseline K+ >5.0 mmol/L.',
+        ruleAr: 'يُمنع عند eGFR <30 أو إذا كان البوتاسيوم >5.0.'
+      }
+    },
+
+    // Dyslipidemia (DLP)
+    {
+      id: 'atorvastatin',
+      category: 'dlp',
+      classEn: 'HMG-CoA Reductase Inhibitor (Statin)',
+      classAr: 'ستاتين خافض للكوليسترول',
+      genericEn: 'Atorvastatin',
+      genericAr: 'أتورفاستاتين',
+      tradeNamesEn: ['Lipitor', 'Lorvast', 'Ator', 'Tulip'],
+      tradeNamesAr: ['ليبيتور', 'لورفاست', 'أتور'],
+      strengths: ['10 mg', '20 mg', '40 mg', '80 mg'],
+      doseEn: 'High-intensity: 40–80 mg daily | Moderate: 10–20 mg daily',
+      doseAr: 'عالي الشدة: ٤٠-٨٠ ملغ يومياً | متوسط الشدة: ١٠-٢٠ ملغ يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 0,
+        ruleEn: 'Preferred statin in severe CKD: no renal dose adjustment needed at any eGFR.',
+        ruleAr: 'الستاتين المفضل في القصور الكلوي: لا يحتاج لتعديل الجرعة مهما بلغ eGFR.'
+      }
+    },
+    {
+      id: 'rosuvastatin',
+      category: 'dlp',
+      classEn: 'HMG-CoA Reductase Inhibitor (Statin)',
+      classAr: 'ستاتين خافض للكوليسترول',
+      genericEn: 'Rosuvastatin',
+      genericAr: 'روسوفاستاتين',
+      tradeNamesEn: ['Crestor', 'Rosavi', 'Rovista'],
+      tradeNamesAr: ['كريستور', 'روزافي'],
+      strengths: ['5 mg', '10 mg', '20 mg', '40 mg'],
+      doseEn: 'High-intensity: 20–40 mg daily | Moderate: 5–10 mg daily',
+      doseAr: 'عالي الشدة: ٢٠-٤٠ ملغ يومياً | متوسط الشدة: ٥-١٠ ملغ يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 30,
+        ruleEn: 'eGFR <30: Start at 5 mg and do not exceed 10 mg once daily.',
+        ruleAr: 'عند eGFR <30: ابدأ بجرعة ٥ ملغ ولا تتجاوز ١٠ ملغ يومياً.'
+      }
+    },
+    {
+      id: 'ezetimibe',
+      category: 'dlp',
+      classEn: 'Cholesterol Absorption Inhibitor',
+      classAr: 'مثبط امتصاص الكوليسترول',
+      genericEn: 'Ezetimibe',
+      genericAr: 'إيزيتيميب',
+      tradeNamesEn: ['Ezetrol', 'Inegy (with Simvastatin)', 'Rosuzet (with Rosuvastatin)'],
+      tradeNamesAr: ['إيزيترول', 'إينيجي', 'روزوزيت'],
+      strengths: ['10 mg'],
+      doseEn: '10 mg PO once daily',
+      doseAr: '١٠ ملغ مرة واحدة يومياً',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 0,
+        ruleEn: 'No renal dose adjustment required.',
+        ruleAr: 'لا يتطلب تعديلاً للجرعة الكلوية.'
+      }
+    },
+    {
+      id: 'fenofibrate',
+      category: 'dlp',
+      classEn: 'Fibrate (PPAR-α Agonist)',
+      classAr: 'فايبرات خافض للدهون الثلاثية',
+      genericEn: 'Fenofibrate',
+      genericAr: 'فينوفايبرات',
+      tradeNamesEn: ['Lipanthyl', 'Lipanthyl Supra'],
+      tradeNamesAr: ['ليبانثيل'],
+      strengths: ['145 mg', '160 mg', '48 mg'],
+      doseEn: '145–160 mg PO once daily (adjust in CKD)',
+      doseAr: '١٤٥-١٦٠ ملغ مرة يومياً',
+      renal: {
+        stopBelowEgfr: 30,
+        cautionBelowEgfr: 60,
+        ruleEn: 'eGFR <30: Contraindicated. eGFR 30–59: Max 48–54 mg daily.',
+        ruleAr: 'يُمنع عند eGFR <30. وعند 30–59 تخفض الجرعة إلى ٤٨-٥٤ ملغ.'
+      }
+    },
+
+    // Primary Care Expansion: Asthma/COPD & Thyroid
+    {
+      id: 'budesonide_formoterol',
+      category: 'resp',
+      classEn: 'ICS + Fast-Onset LABA (MART)',
+      classAr: 'كورتيزون مستنشق + موسع شعب سريع وطويل المفعول',
+      genericEn: 'Budesonide / Formoterol',
+      genericAr: 'بيوديسونيد / فورموتيرول',
+      tradeNamesEn: ['Symbicort Turbuhaler', 'Pulmoton'],
+      tradeNamesAr: ['سيمبيكورت', 'بلموتون'],
+      strengths: ['160/4.5 mcg', '320/9 mcg'],
+      doseEn: 'GINA Track 1: 160/4.5 mcg 1–2 puffs BD + 1 puff PRN reliever',
+      doseAr: 'مسار GINA ١: بخة إلى بختين مرتين يومياً + بخة عند اللزوم',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 0,
+        ruleEn: 'No renal adjustment; rinse mouth after maintenance puffs.',
+        ruleAr: 'لا يحتاج لتعديل كلوي؛ يجب المضمضة بالماء بعد الاستخدام.'
+      }
+    },
+    {
+      id: 'levothyroxine',
+      category: 'thyroid',
+      classEn: 'Thyroid Hormone Replacement',
+      classAr: 'هرمون الغدة الدرقية التعويضي',
+      genericEn: 'Levothyroxine',
+      genericAr: 'ليفوثيروكسين',
+      tradeNamesEn: ['Euthyrox', 'Eltroxin', 'Thyroxin'],
+      tradeNamesAr: ['إيوثيروكس', 'إلتروكسين'],
+      strengths: ['25 mcg', '50 mcg', '75 mcg', '100 mcg', '125 mcg', '150 mcg'],
+      doseEn: '1.6 mcg/kg/day PO 30–60 min before breakfast (start 25–50 mcg in ASCVD/elderly)',
+      doseAr: '١.٦ مكغ/كغ صباحاً على الريق (ابدأ بـ ٢٥-٥٠ مكغ لمرضى القلب وكبار السن)',
+      renal: {
+        stopBelowEgfr: 0,
+        cautionBelowEgfr: 0,
+        ruleEn: 'No renal adjustment; separate by 4 hours from calcium and iron.',
+        ruleAr: 'افصل الجرعة ٤ ساعات عن حبوب الكالسيوم والحديد.'
+      }
     }
-  },
+  ];
 
-  gliclazide: {
-    id: "gliclazide", category: "diabetes", cls: "Sulfonylurea", name: "Gliclazide MR",
-    ar: ["جليكلازيد", "دايامكرون", "ديامكرون", "جليزيد"],
-    saudi: {
-      brands: ["Diamicron MR 30 / 60", "Glizid MR", "Gliclazide SPIMACO"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (30 – 50 SAR)",
-      priceEst: "32 – 48 SAR / mo"
-    },
-    egypt: {
-      brands: ["Diamicron MR 30 / 60", "Gliclazide local generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 70 EGP)",
-      priceEst: "40 – 80 EGP / mo"
-    },
-    dose: "30 mg with breakfast → max 120 mg/day",
-    renal: e => e < 30 ? "Avoid (eGFR <30)" : "Lowest dose; watch hypoglycemia",
-    caut: "Hypoglycemia, weight gain. Lowest hypo risk among SUs. Reduce/stop when adding insulin",
-    rx: (p, b) => ({
-      b: `${b} 30 mg tab`, s: "1 tab once daily with breakfast",
-      a: "قرص واحد مع وجبة الإفطار — تجنب تفويت الوجبات"
-    })
-  },
+  // Expose on global
+  global.OsrawyFormularyData = FORMULARY_DATA;
+  global.FORMULARY_DATA = FORMULARY_DATA;
 
-  glimepiride: {
-    id: "glimepiride", category: "diabetes", cls: "Sulfonylurea", name: "Glimepiride",
-    ar: ["جليمبيريد", "اماريل", "أماريل", "جليماكس", "دولسيل", "جليمريل"],
-    saudi: {
-      brands: ["Amaryl", "Glemax", "Glipid", "Glimepiride Tab"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (25 – 45 SAR)",
-      priceEst: "24 – 42 SAR / mo"
-    },
-    egypt: {
-      brands: ["Dolcyl", "Glimaryl", "Amaryl"],
-      orig: 2, tier: 1, tierDesc: "● Low cost (< 60 EGP)",
-      priceEst: "25 – 65 EGP / mo"
-    },
-    dose: "1 mg with breakfast → 4 mg (max 8 mg)",
-    renal: e => e < 30 ? "Avoid (eGFR <30)" : "Start 1 mg",
-    caut: "Hypoglycemia (especially in elderly / renal impairment), weight gain",
-    rx: (p, b) => ({
-      b: `${b} 1 mg tab`, s: "1 tab once daily before breakfast",
-      a: "قرص قبل الفطار — لا تفوت الوجبة"
-    })
-  },
+  // Compatibility mapping for legacy DRUG_DATABASE lookups
+  const DRUG_DATABASE = {};
+  FORMULARY_DATA.forEach(d => {
+    DRUG_DATABASE[d.id] = {
+      id: d.id,
+      category: d.category,
+      cls: d.classEn,
+      name: d.genericEn,
+      ar: [d.genericAr, ...(d.tradeNamesAr || [])],
+      saudi: {
+        brands: d.tradeNamesEn || [d.genericEn],
+        orig: 0,
+        tier: 1,
+        tierDesc: '● Formulary',
+        priceEst: ''
+      },
+      egypt: {
+        brands: d.tradeNamesEn || [d.genericEn],
+        orig: 0,
+        tier: 1,
+        tierDesc: '● Formulary',
+        priceEst: ''
+      },
+      dose: d.doseEn,
+      renal: (egfr) => {
+        if (d.renal && d.renal.stopBelowEgfr && egfr < d.renal.stopBelowEgfr) {
+          return d.renal.ruleEn;
+        }
+        if (d.renal && d.renal.cautionBelowEgfr && egfr < d.renal.cautionBelowEgfr) {
+          return d.renal.ruleEn;
+        }
+        return d.renal ? d.renal.ruleEn : 'No adjustment';
+      },
+      caut: d.renal ? d.renal.ruleEn : ''
+    };
+  });
+  DRUG_DATABASE['met'] = DRUG_DATABASE['metformin'];
+  DRUG_DATABASE['empa'] = DRUG_DATABASE['empagliflozin'];
+  DRUG_DATABASE['dapa'] = DRUG_DATABASE['dapagliflozin'];
+  DRUG_DATABASE['sema'] = DRUG_DATABASE['semaglutide'];
+  DRUG_DATABASE['tirz'] = DRUG_DATABASE['tirzepatide'];
+  DRUG_DATABASE['sita'] = DRUG_DATABASE['sitagliptin'];
+  DRUG_DATABASE['atorva'] = DRUG_DATABASE['atorvastatin'];
+  DRUG_DATABASE['rosuva'] = DRUG_DATABASE['rosuvastatin'];
 
-  pio: {
-    id: "pio", category: "diabetes", cls: "Thiazolidinedione", name: "Pioglitazone",
-    ar: ["بيوجليتازون", "اكتوس", "أكتوس", "جليتيسول"],
-    saudi: {
-      brands: ["Actos", "Pioglit", "Glitisol"],
-      orig: 0, tier: 1, tierDesc: "● Low-to-Moderate (40 – 65 SAR)",
-      priceEst: "45 – 65 SAR / mo"
-    },
-    egypt: {
-      brands: ["Pioglitazone local generics", "Actos"],
-      orig: 1, tier: 1, tierDesc: "● Low cost (< 80 EGP)",
-      priceEst: "45 – 90 EGP / mo"
-    },
-    dose: "15 mg daily → 30 mg (max 45 mg)",
-    renal: () => "No adjustment needed",
-    caut: "Contraindicated in Heart Failure (NYHA I-IV). Watch edema, weight gain, fracture risk. Proven benefit in MASLD/fatty liver.",
-    rx: (p, b) => ({
-      b: `${b} 15 mg tab`, s: "1 tab once daily",
-      a: "قرص مرة واحدة يومياً مع أو بدون أكل"
-    })
-  },
+  global.DRUG_DATABASE = DRUG_DATABASE;
 
-  dapa: {
-    id: "dapa", category: "diabetes", cls: "SGLT2 inhibitor", name: "Dapagliflozin",
-    ar: ["داباجليفلوزين", "فورسيجا", "فوركسيجا", "زيجدو", "داباجلوزنال"],
-    saudi: {
-      brands: ["Forxiga (AstraZeneca)", "Dapagliflozin generics", "Xigduo XR (combo)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (150 – 190 SAR)",
-      priceEst: "155 – 185 SAR / mo"
-    },
-    egypt: {
-      brands: ["Dapagloznal", "Dapaglif", "Dapagliflozin-EVA", "Forflozin", "Forxiga"],
-      orig: 4, tier: 2, tierDesc: "●● Moderate (300 – 450 EGP)",
-      priceEst: "320 – 450 EGP / mo"
-    },
-    dose: "10 mg once daily in the morning",
-    renal: e => e < 25 ? "Do not initiate (eGFR <25); continue for organ protection until dialysis" : e < 45 ? "Start for CV & CKD protection (glycemic effect reduced)" : "No adjustment",
-    caut: "Genital mycotic infections, dehydration/hypotension, euglycemic DKA. Hold 3 days before major surgery, severe illness, or prolonged fasting (Ramadan).",
-    rx: (p, b) => ({
-      b: `${b} 10 mg tab`, s: "1 tab once daily in the morning with a full glass of water",
-      a: "قرص صباحاً مع شرب كميات كافية من الماء يومياً والاهتمام بالنظافة الشخصية"
-    })
-  },
-
-  empa: {
-    id: "empa", category: "diabetes", cls: "SGLT2 inhibitor", name: "Empagliflozin",
-    ar: ["امباجليفلوزين", "إمباجليفلوزين", "جارديانس", "سينجاردي"],
-    saudi: {
-      brands: ["Jardiance (Boehringer)", "Synjardy (combo with Metformin)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (150 – 195 SAR)",
-      priceEst: "160 – 195 SAR / mo"
-    },
-    egypt: {
-      brands: ["Jardiance", "Empagliflozin local generics"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (350 – 550 EGP)",
-      priceEst: "380 – 580 EGP / mo"
-    },
-    dose: "10 mg once daily → 25 mg for additional glycemia",
-    renal: e => e < 20 ? "Do not initiate (eGFR <20); continue until dialysis" : e < 45 ? "10 mg for CV/kidney protection" : "No adjustment",
-    caut: "Genital infections, dehydration, DKA risk. Hold during acute illness/fasting.",
-    rx: (p, b) => ({
-      b: `${b} 10 mg tab`, s: "1 tab once daily in the morning",
-      a: "قرص صباحاً — حافظ على شرب الماء بانتظام"
-    })
-  },
-
-  sita: {
-    id: "sita", category: "diabetes", cls: "DPP-4 inhibitor", name: "Sitagliptin",
-    ar: ["سيتاجليبتين", "جانوفيا", "جانوميت"],
-    saudi: {
-      brands: ["Januvia (MSD)", "Janumet (combo)", "Sitagliptin generic"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (110 – 145 SAR)",
-      priceEst: "115 – 145 SAR / mo"
-    },
-    egypt: {
-      brands: ["Januvia", "Sitagliptin local generics"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (250 – 400 EGP)",
-      priceEst: "280 – 420 EGP / mo"
-    },
-    dose: "100 mg once daily",
-    renal: e => e < 30 ? "25 mg once daily (eGFR <30)" : e < 45 ? "50 mg once daily (eGFR 30–44)" : "100 mg once daily",
-    caut: "Weight-neutral, minimal hypo risk. Rare pancreatitis. Do not combine with GLP-1 RA.",
-    rx: (p, b) => {
-      const doseMg = p.egfr < 30 ? 25 : p.egfr < 45 ? 50 : 100;
-      return {
-        b: `${b} ${doseMg} mg tab`, s: "1 tab once daily",
-        a: "قرص مرة واحدة يومياً مع أو بدون طعام"
-      };
-    }
-  },
-
-  vilda: {
-    id: "vilda", category: "diabetes", cls: "DPP-4 inhibitor", name: "Vildagliptin",
-    ar: ["فيلداجليبتين", "جالفوس", "جالفوميت", "جليبتوس"],
-    saudi: {
-      brands: ["Galvus (Novartis)", "Galvumet (combo)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (95 – 130 SAR)",
-      priceEst: "95 – 130 SAR / mo"
-    },
-    egypt: {
-      brands: ["Gliptus", "Veldaglose", "Galvus"],
-      orig: 2, tier: 2, tierDesc: "●● Moderate (200 – 320 EGP)",
-      priceEst: "220 – 350 EGP / mo"
-    },
-    dose: "50 mg twice daily (once daily if combined with SU)",
-    renal: e => e < 50 ? "50 mg once daily (eGFR <50)" : "50 mg twice daily",
-    caut: "Monitor ALT/AST; avoid in severe liver impairment. Weight neutral.",
-    rx: (p, b) => p.egfr < 50 ? {
-      b: `${b} 50 mg tab`, s: "1 tab once daily", a: "قرص مرة واحدة يومياً"
-    } : {
-      b: `${b} 50 mg tab`, s: "1 tab twice daily", a: "قرص صباحاً وقرص مساءً"
-    }
-  },
-
-  lina: {
-    id: "lina", category: "diabetes", cls: "DPP-4 inhibitor", name: "Linagliptin",
-    ar: ["ليناجليبتين", "تراجينتا", "جينتادويتو"],
-    saudi: {
-      brands: ["Trajenta (Boehringer)", "Jentadueto (combo)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (125 – 155 SAR)",
-      priceEst: "128 – 155 SAR / mo"
-    },
-    egypt: {
-      brands: ["Trajenta"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (350 – 480 EGP)",
-      priceEst: "360 – 480 EGP / mo"
-    },
-    dose: "5 mg once daily",
-    renal: () => "No renal adjustment at ANY eGFR (safest DPP-4i in CKD/dialysis)",
-    caut: "Well tolerated. Do not combine with GLP-1 RA.",
-    rx: (p, b) => ({
-      b: `${b} 5 mg tab`, s: "1 tab once daily", a: "قرص مرة واحدة يومياً (آمن للكلى)"
-    })
-  },
-
-  sema: {
-    id: "sema", category: "diabetes", cls: "GLP-1 RA", name: "Semaglutide (SC Weekly)",
-    ar: ["سيماجلوتيد", "اوزمبيك", "أوزمبيك"],
-    saudi: {
-      brands: ["Ozempic 0.25 / 0.5 / 1 mg Pen (Novo Nordisk)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (380 – 450 SAR)",
-      priceEst: "380 – 440 SAR / mo"
-    },
-    egypt: {
-      brands: ["Ozempic"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (3,500 – 4,800 EGP)",
-      priceEst: "3,800 – 4,800 EGP / mo"
-    },
-    dose: "0.25 mg weekly × 4 wk → 0.5 mg weekly → 1 mg (step up ≥4 wk)",
-    renal: () => "No renal dose adjustment needed (proven CKD benefit - FLOW trial)",
-    caut: "Nausea, vomiting, gallstones. Retinopathy progression with very rapid A1c drop. Contraindicated in MTC, MEN2, acute pancreatitis.",
-    rx: () => ({
-      b: "Ozempic 0.25 mg prefilled pen",
-      s: "0.25 mg subcutaneous once weekly for 4 weeks, then increase to 0.5 mg weekly",
-      a: "حقنة تحت الجلد مرة واحدة أسبوعياً في نفس اليوم من كل أسبوع"
-    })
-  },
-
-  osema: {
-    id: "osema", category: "diabetes", cls: "GLP-1 RA", name: "Semaglutide (Oral Daily)",
-    ar: ["سيماجلوتيد", "ريبيلسوس", "ريبلسوس"],
-    saudi: {
-      brands: ["Rybelsus 3 / 7 / 14 mg (Novo Nordisk)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (380 – 460 SAR)",
-      priceEst: "390 – 450 SAR / mo"
-    },
-    egypt: {
-      brands: ["Rybelsus 3 / 7 / 14 mg"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (3,500 – 4,500 EGP)",
-      priceEst: "3,700 – 4,600 EGP / mo"
-    },
-    dose: "3 mg daily × 30 days → 7 mg daily → 14 mg daily; take on empty stomach",
-    renal: () => "No renal adjustment needed",
-    caut: "Must take upon waking with max 120 mL plain water; wait at least 30 min before food/drinks/other meds.",
-    rx: () => ({
-      b: "Rybelsus 3 mg tab",
-      s: "1 tab daily in morning on empty stomach with plain water × 30 days, then 7 mg daily",
-      a: "قرص صباحاً على الريق بنصف كوب ماء فقط، والانتظار 30 دقيقة على الأقل قبل الأكل أو الشرب"
-    })
-  },
-
-  tirz: {
-    id: "tirz", category: "diabetes", cls: "Dual GIP/GLP-1 RA", name: "Tirzepatide",
-    ar: ["تيرزيباتيد", "مونجارو", "مانجارو"],
-    saudi: {
-      brands: ["Mounjaro 2.5 / 5 / 7.5 / 10 / 12.5 / 15 mg (Eli Lilly)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (580 – 850 SAR)",
-      priceEst: "590 – 850 SAR / mo"
-    },
-    egypt: {
-      brands: ["Mounjaro (imported / private formulary)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (6,000 – 9,000 EGP)",
-      priceEst: "6,500 – 9,000 EGP / mo"
-    },
-    dose: "2.5 mg weekly × 4 wk → +2.5 mg every 4 wk → maintenance 5–15 mg weekly",
-    renal: () => "No renal adjustment needed",
-    caut: "Potent A1c and weight reduction (SURPASS/SURMOUNT). Same GI precautions and MTC/MEN2 contraindications as GLP-1 RAs.",
-    rx: () => ({
-      b: "Mounjaro 2.5 mg KwikPen / Auto-injector",
-      s: "2.5 mg SC once weekly × 4 weeks, then step up to 5 mg weekly",
-      a: "حقنة تحت الجلد مرة أسبوعياً في نفس اليوم المحدد"
-    })
-  },
-
-  dula: {
-    id: "dula", category: "diabetes", cls: "GLP-1 RA", name: "Dulaglutide",
-    ar: ["دولاجلوتيد", "تروليسيتي"],
-    saudi: {
-      brands: ["Trulicity 0.75 / 1.5 / 3 / 4.5 mg (Eli Lilly)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (380 – 440 SAR)",
-      priceEst: "385 – 430 SAR / mo"
-    },
-    egypt: {
-      brands: ["Trulicity"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (3,200 – 4,200 EGP)",
-      priceEst: "3,300 – 4,200 EGP / mo"
-    },
-    dose: "0.75 mg weekly → 1.5 mg weekly → 3 → 4.5 mg",
-    renal: () => "No adjustment needed",
-    caut: "Proven CV reduction (REWIND). Pre-attached single-dose auto-injector pen.",
-    rx: () => ({
-      b: "Trulicity 0.75 mg pen",
-      s: "0.75 mg SC once weekly",
-      a: "حقنة تحت الجلد مرة واحدة أسبوعياً"
-    })
-  },
-
-  lira: {
-    id: "lira", category: "diabetes", cls: "GLP-1 RA", name: "Liraglutide",
-    ar: ["ليراجلوتيد", "فيكتوزا", "ساكسندا"],
-    saudi: {
-      brands: ["Victoza (Novo Nordisk)", "Saxenda (weight)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (360 – 420 SAR)",
-      priceEst: "360 – 420 SAR / mo"
-    },
-    egypt: {
-      brands: ["Victoza"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (3,200 – 4,000 EGP)",
-      priceEst: "3,200 – 4,000 EGP / mo"
-    },
-    dose: "0.6 mg daily × 1 wk → 1.2 mg → 1.8 mg",
-    renal: () => "No renal dose adjustment needed",
-    caut: "GLP-1 RA class; CV benefit (LEADER). Daily subcutaneous injection.",
-    rx: () => ({
-      b: "Victoza 6 mg/mL pen",
-      s: "0.6 mg SC daily × 1 week, then 1.2 mg daily",
-      a: "حقنة تحت الجلد مرة واحدة يومياً"
-    })
-  },
-
-  nph: {
-    id: "nph", category: "diabetes", cls: "Insulin", name: "NPH human insulin",
-    ar: ["انسولين", "إنسولين", "انسولاتارد", "هيومولين"],
-    saudi: {
-      brands: ["Insulatard (Novo Nordisk)", "Humulin N (Lilly)"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (40 – 65 SAR)",
-      priceEst: "42 – 65 SAR / mo"
-    },
-    egypt: {
-      brands: ["Insulatard", "Humulin N"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 150 EGP)",
-      priceEst: "90 – 160 EGP / mo"
-    },
-    dose: "10 U or 0.1–0.2 U/kg at bedtime; see Insulin calculator",
-    renal: e => e < 30 ? "Start conservatively (0.1 U/kg)" : "Standard",
-    caut: "Nocturnal hypoglycemia more than analogues; inject at bedtime",
-    rx: (p, b) => p.curIns ? {
-      b: "Basal insulin (current product)",
-      s: "Continue current dose; adjust 2 IU every 3 days to fasting 80–130 mg/dL",
-      a: "استمر على نفس الجرعة وعدّلها حسب سكر الصائم"
-    } : {
-      b: `${b} 100 IU/mL pen`,
-      s: `${p.basalDose || 10} IU SC at bedtime; +2 IU every 3 days until fasting 80–130 mg/dL; −4 IU if <70`,
-      a: `${p.basalDose || 10} وحدة تحت الجلد قبل النوم، وزوّد وحدتين كل 3 أيام حتى يصبح الصائم بين 80 و130`
-    }
-  },
-
-  glarg: {
-    id: "glarg", category: "diabetes", cls: "Insulin", name: "Basal Insulin Analogue",
-    ar: ["لانتوس", "توجيو", "تريسيبا", "ديجلوديك", "جلارجين"],
-    saudi: {
-      brands: ["Lantus SoloStar (Sanofi)", "Toujeo (Glargine 300 U/mL)", "Tresiba (Degludec)"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (180 – 260 SAR)",
-      priceEst: "180 – 260 SAR / mo"
-    },
-    egypt: {
-      brands: ["Lantus", "Toujeo", "Tresiba"],
-      orig: 0, tier: 3, tierDesc: "●●● High cost (800 – 1,400 EGP)",
-      priceEst: "850 – 1,400 EGP / mo"
-    },
-    dose: "10 U or 0.1–0.2 U/kg once daily at the same time",
-    renal: e => e < 30 ? "Start conservatively (0.1 U/kg) - reduced insulin clearance" : "Standard titration",
-    caut: "Hypoglycemia risk lower than NPH. Titrate every 3 days by fasting glucose.",
-    rx: (p, b) => ({
-      b: `${b} 100 IU/mL SoloStar pen`,
-      s: `${p.basalDose || 10} IU SC once daily at the same time each day; +2 IU every 3 days until fasting 80–130 mg/dL`,
-      a: `${p.basalDose || 10} وحدة تحت الجلد يومياً في نفس الموعد؛ وتزاد وحدتين كل 3 أيام حتى يصبح سكر الصائم بين 80 و130`
-    })
-  },
-
-  atorva: {
-    id: "atorva", category: "diabetes", cls: "Statin", name: "Atorvastatin",
-    ar: ["اتورفاستاتين", "أتورفاستاتين", "ليبيتور", "اتورفا", "ستورفاس"],
-    saudi: {
-      brands: ["Atorva (SPIMACO)", "Lipitor (Viatris/Pfizer)", "Storvas", "Lorvast"],
-      orig: 1, tier: 1, tierDesc: "● Low cost (30 – 75 SAR)",
-      priceEst: "32 – 75 SAR / mo"
-    },
-    egypt: {
-      brands: ["Ator", "Lipitor", "Lipona"],
-      orig: 1, tier: 1, tierDesc: "● Low cost (< 120 EGP)",
-      priceEst: "40 – 110 EGP / mo"
-    },
-    dose: "20 mg (moderate) or 40–80 mg (high intensity) at bedtime",
-    renal: () => "No renal adjustment needed",
-    caut: "Baseline liver function, muscle symptoms/myopathy. Goal LDL <70 mg/dL in DM, <55 mg/dL if established ASCVD.",
-    rx: (p, b) => ({
-      b: `${b} ${p.ascvd ? 40 : 20} mg tab`,
-      s: "1 tab once daily at bedtime",
-      a: "قرص واحد مساءً قبل النوم"
-    })
-  },
-
-  rosuva: {
-    id: "rosuva", category: "diabetes", cls: "Statin", name: "Rosuvastatin",
-    ar: ["روستاتين", "روزوفاستاتين", "كريستور", "روستور", "جستور", "أديتور"],
-    saudi: {
-      brands: ["Crestor (AstraZeneca)", "Rosuvast (SPIMACO)", "Justor", "Aditor"],
-      orig: 0, tier: 2, tierDesc: "●● Medium cost (40 – 160 SAR)",
-      priceEst: "42 – 160 SAR / mo"
-    },
-    egypt: {
-      brands: ["Crestor (AstraZeneca)", "Rosutor (Eva Pharma)", "Aditor", "Rosuvast"],
-      orig: 0, tier: 2, tierDesc: "●● Medium cost (65 – 350 EGP)",
-      priceEst: "65 – 320 EGP / mo"
-    },
-    dose: "5–10 mg (moderate) or 20–40 mg (high intensity) once daily",
-    renal: (egfr) => (egfr < 30 ? "Start 5 mg, max 10 mg/day in severe CKD" : "No dose adjustment for eGFR ≥30"),
-    caut: "Start with 5-10 mg in severe renal impairment (eGFR <30). Monitor for muscle symptoms. ADA 2025 goal <55 mg/dL in ASCVD, <70 in DM.",
-    rx: (p, b) => ({
-      b: `${b} ${p.ascvd ? 20 : 10} mg tab`,
-      s: "1 tab once daily",
-      a: "قرص واحد يومياً"
-    })
-  },
-
-  // --- HYPERTENSION MEDICATIONS & SPCs (Saudi & Egyptian Formularies) ---
-  amlodipine: {
-    id: "amlodipine", category: "htn", cls: "DHP CCB", name: "Amlodipine",
-    ar: ["املوديبين", "أملوديبين", "نورفاسك", "املور", "لوراك"],
-    saudi: {
-      brands: ["Norvasc (Pfizer)", "Amlor", "Lowrac (SPIMACO)"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (25 – 45 SAR)",
-      priceEst: "28 – 45 SAR / mo"
-    },
-    egypt: {
-      brands: ["Norvasc", "Amlodipine generics", "Vasonorm"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 60 EGP)",
-      priceEst: "30 – 60 EGP / mo"
-    },
-    dose: "2.5 – 10 mg once daily",
-    renal: () => "No adjustment needed",
-    caut: "Peripheral ankle edema (dose-dependent, not fluid overload), flushing. Adding ACEi/ARB reduces edema.",
-    rx: (p, b) => ({ b: `${b} 5 mg tab`, s: "1 tab once daily", a: "قرص مرة واحدة يومياً صباحاً" })
-  },
-
-  valsartan: {
-    id: "valsartan", category: "htn", cls: "ARB", name: "Valsartan",
-    ar: ["فالسارتان", "ديوفان", "تاريج"],
-    saudi: {
-      brands: ["Diovan (Novartis)", "Tareg (SPIMACO)", "Valsartan generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (40 – 75 SAR)",
-      priceEst: "42 – 75 SAR / mo"
-    },
-    egypt: {
-      brands: ["Diovan", "Tareg", "Valsartan local"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 120 EGP)",
-      priceEst: "60 – 120 EGP / mo"
-    },
-    dose: "80 – 320 mg once daily",
-    renal: () => "Monitor serum Cr and K+ 2–4 wk after start/titration; acceptable Cr rise up to 30%",
-    caut: "Teratogenic (contraindicated in pregnancy). Hyperkalemia. Never combine with ACE inhibitor.",
-    rx: (p, b) => ({ b: `${b} 80 mg tab`, s: "1 tab once daily", a: "قرص مرة واحدة يومياً" })
-  },
-
-  perindopril: {
-    id: "perindopril", category: "htn", cls: "ACE inhibitor", name: "Perindopril",
-    ar: ["بيريندوبريل", "كوفرسيل", "كوفيرسيل"],
-    saudi: {
-      brands: ["Coversyl (Servier)", "Perindopril generic"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (38 – 65 SAR)",
-      priceEst: "40 – 65 SAR / mo"
-    },
-    egypt: {
-      brands: ["Coversyl"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 130 EGP)",
-      priceEst: "70 – 130 EGP / mo"
-    },
-    dose: "4 – 8 mg once daily (erbumine) or 5 – 10 mg (arginine)",
-    renal: e => e < 30 ? "Start 2 mg erbumine / 2.5 mg arginine" : "Standard dose",
-    caut: "Dry cough, angioedema risk, hyperkalemia. Teratogenic.",
-    rx: (p, b) => ({ b: `${b} 5 mg tab`, s: "1 tab once daily in the morning before food", a: "قرص صباحاً قبل الإفطار" })
-  },
-
-  exforge: {
-    id: "exforge", category: "htn", cls: "SPC (ARB + CCB)", name: "Amlodipine / Valsartan",
-    ar: ["اكسفورج", "إكسفورج", "املوفال"],
-    saudi: {
-      brands: ["Exforge 5/80, 5/160, 10/160 mg (Novartis)", "Amloval (Generic)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (85 – 135 SAR)",
-      priceEst: "88 – 135 SAR / mo"
-    },
-    egypt: {
-      brands: ["Exforge", "Amlodipine/Valsartan generics"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (250 – 400 EGP)",
-      priceEst: "260 – 400 EGP / mo"
-    },
-    dose: "5/80 mg → 5/160 mg → 10/160 mg once daily",
-    renal: () => "First-line preferred single-pill combination for stage 2 HTN",
-    caut: "Watch edema at 10 mg CCB dose; check Cr/K+",
-    rx: (p, b) => ({ b: `${b} 5/160 mg tab`, s: "1 tab once daily in morning", a: "قرص حبة واحدة يومياً في الصباح" })
-  },
-
-  twynsta: {
-    id: "twynsta", category: "htn", cls: "SPC (ARB + CCB)", name: "Telmisartan / Amlodipine",
-    ar: ["توينستا"],
-    saudi: {
-      brands: ["Twynsta 40/5, 80/5, 80/10 mg (Boehringer)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (90 – 140 SAR)",
-      priceEst: "92 – 140 SAR / mo"
-    },
-    egypt: {
-      brands: ["Twynsta"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (280 – 420 EGP)",
-      priceEst: "290 – 420 EGP / mo"
-    },
-    dose: "40/5 mg → 80/5 mg → 80/10 mg once daily",
-    renal: () => "Telmisartan has long half-life (24h) and PPAR-gamma activity",
-    caut: "Cr and K+ monitoring",
-    rx: (p, b) => ({ b: `${b} 80/5 mg tab`, s: "1 tab once daily", a: "قرص حبة واحدة يومياً صباحاً" })
-  },
-
-  coveram: {
-    id: "coveram", category: "htn", cls: "SPC (ACEi + CCB)", name: "Perindopril / Amlodipine",
-    ar: ["كوفرام"],
-    saudi: {
-      brands: ["Coveram 5/5, 10/5, 10/10 mg (Servier)"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (80 – 125 SAR)",
-      priceEst: "82 – 125 SAR / mo"
-    },
-    egypt: {
-      brands: ["Coveram 5/5, 10/5 mg"],
-      orig: 0, tier: 2, tierDesc: "●● Moderate (240 – 380 EGP)",
-      priceEst: "250 – 380 EGP / mo"
-    },
-    dose: "5/5 mg → 10/5 mg → 10/10 mg once daily",
-    renal: () => "First-line SPC supported by ASCOT trial",
-    caut: "Cough from ACEi, ankle edema from CCB",
-    rx: (p, b) => ({ b: `${b} 5/5 mg tab`, s: "1 tab once daily in morning", a: "قرص حبة واحدة صباحاً" })
-  },
-
-  indapamide: {
-    id: "indapamide", category: "htn", cls: "Thiazide-like Diuretic", name: "Indapamide SR",
-    ar: ["انداباميد", "إنداباميد", "ناتريليكس"],
-    saudi: {
-      brands: ["Natrilix SR 1.5 mg (Servier)", "Indapamide generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (18 – 30 SAR)",
-      priceEst: "20 – 30 SAR / mo"
-    },
-    egypt: {
-      brands: ["Natrilix SR 1.5 mg"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 50 EGP)",
-      priceEst: "25 – 45 EGP / mo"
-    },
-    dose: "1.5 mg sustained release once daily in morning",
-    renal: e => e < 30 ? "Thiazides lose efficacy when eGFR <30; switch to loop diuretic" : "Standard dose",
-    caut: "Hypokalemia, hyponatremia, hyperuricemia (gout). Check electrolytes 2-4 wk after starting.",
-    rx: (p, b) => ({ b: `${b} 1.5 mg SR tab`, s: "1 tab once daily in morning", a: "قرص واحد صباحاً" })
-  },
-
-  bisoprolol: {
-    id: "bisoprolol", category: "htn", cls: "Beta-blocker (B1-selective)", name: "Bisoprolol",
-    ar: ["بيسوبرولول", "كونكور", "بيسوكور"],
-    saudi: {
-      brands: ["Concor (Merck)", "Bisocor", "Bisoprolol SPIMACO"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (25 – 50 SAR)",
-      priceEst: "25 – 48 SAR / mo"
-    },
-    egypt: {
-      brands: ["Concor 2.5 / 5 / 10 mg", "Bisocard"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 80 EGP)",
-      priceEst: "35 – 75 EGP / mo"
-    },
-    dose: "2.5 – 10 mg once daily",
-    renal: () => "Compelling indication in CAD, post-MI, HFrEF, or heart rate control in AF",
-    caut: "Bradycardia (target resting HR 55-65 in angina), fatigue, avoid in severe asthma/AV block",
-    rx: (p, b) => ({ b: `${b} 5 mg tab`, s: "1 tab once daily in morning", a: "قرص حبة واحدة صباحاً" })
-  },
-
-  losartan: {
-    id: "losartan", category: "htn", cls: "ARB", name: "Losartan",
-    ar: ["لوسارتان", "كوزار", "سورتيفا"],
-    saudi: {
-      brands: ["Cozaar (Organon)", "Losartan SPIMACO", "Sortiva"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (25 – 45 SAR)",
-      priceEst: "28 – 45 SAR / mo"
-    },
-    egypt: {
-      brands: ["Cozaar", "Amoclan", "Losartan generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 90 EGP)",
-      priceEst: "40 – 90 EGP / mo"
-    },
-    dose: "50 – 100 mg once daily (start 25 mg in elderly/frail or volume depleted)",
-    renal: e => e < 30 ? "No dose adjustment needed; monitor K+ and creatinine" : "No adjustment",
-    caut: "Teratogenic (contraindicated in pregnancy). Hyperkalemia risk. Modestly lowers uric acid (favored in gout).",
-    rx: (p, b) => ({ b: `${b} 50 mg tab`, s: "1 tab once daily in morning", a: "قرص واحد يومياً صباحاً" })
-  },
-
-  telmisartan: {
-    id: "telmisartan", category: "htn", cls: "ARB", name: "Telmisartan",
-    ar: ["تيلميسارتان", "ميكارديس"],
-    saudi: {
-      brands: ["Micardis (Boehringer)", "Telmisartan generic"],
-      orig: 0, tier: 1, tierDesc: "● Low-to-Moderate (45 – 75 SAR)",
-      priceEst: "48 – 75 SAR / mo"
-    },
-    egypt: {
-      brands: ["Micardis", "Telma", "Telmisartan local"],
-      orig: 0, tier: 1, tierDesc: "● Moderate (< 160 EGP)",
-      priceEst: "70 – 160 EGP / mo"
-    },
-    dose: "40 – 80 mg once daily",
-    renal: () => "Long half-life (>24 h); safe in renal impairment with K+ monitoring",
-    caut: "Contraindicated in pregnancy. Partial PPAR-gamma activity (metabolic benefit).",
-    rx: (p, b) => ({ b: `${b} 40 mg tab`, s: "1 tab once daily in morning", a: "قرص واحد يومياً صباحاً" })
-  },
-
-  ramipril: {
-    id: "ramipril", category: "htn", cls: "ACE inhibitor", name: "Ramipril",
-    ar: ["راميبريل", "تريتيس"],
-    saudi: {
-      brands: ["Tritace (Sanofi)", "Ramipril generic"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (25 – 42 SAR)",
-      priceEst: "26 – 42 SAR / mo"
-    },
-    egypt: {
-      brands: ["Tritace", "Ramipril local generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 90 EGP)",
-      priceEst: "40 – 90 EGP / mo"
-    },
-    dose: "2.5 – 10 mg once daily (start 1.25–2.5 mg in elderly or eGFR <30)",
-    renal: e => e < 30 ? "Start 1.25 mg daily; max 5 mg/day" : "Standard starting dose",
-    caut: "Dry cough, angioedema risk, hyperkalemia. Teratogenic.",
-    rx: (p, b) => ({ b: `${b} 5 mg tab`, s: "1 tab once daily in morning", a: "قرص واحد يومياً صباحاً" })
-  },
-
-  spironolactone: {
-    id: "spironolactone", category: "htn", cls: "MRA", name: "Spironolactone",
-    ar: ["سبيرونولاكتون", "الداكتون", "ألداكتون"],
-    saudi: {
-      brands: ["Aldactone (Pfizer)", "Spironolactone generic"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (20 – 35 SAR)",
-      priceEst: "22 – 35 SAR / mo"
-    },
-    egypt: {
-      brands: ["Aldactone", "Spironolactone local generics"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 60 EGP)",
-      priceEst: "25 – 60 EGP / mo"
-    },
-    dose: "25 – 50 mg once daily (preferred 4th-line drug in resistant hypertension · PATHWAY-2)",
-    renal: e => e < 30 ? "Contraindicated (eGFR <30 or K+ >5.0)" : e < 45 ? "Caution: check K+ at 1, 4 weeks" : "Check K+ and Cr at 1 and 4 weeks",
-    caut: "Hyperkalemia (do not start if K+ >5.0), gynecomastia. Switch to eplerenone if breast tenderness occurs.",
-    rx: (p, b) => ({ b: `${b} 25 mg tab`, s: "1 tab once daily in morning with food", a: "قرص واحد يومياً صباحاً مع الطعام" })
-  },
-
-  labetalol: {
-    id: "labetalol", category: "htn", cls: "Alpha/Beta-blocker", name: "Labetalol",
-    ar: ["لابيتالول", "تراندات"],
-    saudi: {
-      brands: ["Trandate (Aspen/GSK)", "Labetalol generic"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (30 – 55 SAR)",
-      priceEst: "32 – 55 SAR / mo"
-    },
-    egypt: {
-      brands: ["Trandate"],
-      orig: 0, tier: 1, tierDesc: "● Low cost (< 120 EGP)",
-      priceEst: "60 – 120 EGP / mo"
-    },
-    dose: "100 – 400 mg twice daily (first-line in pregnancy hypertension · CHAP trial)",
-    renal: () => "No renal dose adjustment needed",
-    caut: "First-line safe in pregnancy & breastfeeding. Caution with asthma, severe bradycardia.",
-    rx: (p, b) => ({ b: `${b} 100 mg tab`, s: "1 tab twice daily with meals", a: "قرص مرتين يومياً مع وجبات الطعام" })
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      FORMULARY_DATA,
+      OsrawyFormularyData: FORMULARY_DATA,
+      DRUG_DATABASE
+    };
   }
-};
-
-if (typeof window !== 'undefined') {
-  window.DRUG_DATABASE = DRUG_DATABASE;
-}
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = DRUG_DATABASE;
-}
-
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

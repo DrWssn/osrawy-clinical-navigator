@@ -59,9 +59,17 @@ const PatientSync = (function() {
     dm: true,
     statinIntolerant: false,
     pregnancy: false,
+    trimester: 2,
+    gestationalWeeks: 16,
+    comorbidities: {
+      postpartum: false,
+      asthma: false
+    },
+    postpartum: false,
     asthma: false,
     copd: false,
     medsCount: '0',
+    medications: [],
     activeMeds: ['met'],
     currentMeds: []
   };
@@ -499,6 +507,36 @@ const PatientSync = (function() {
     return num;
   }
 
+  function resetPatient() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(ACTIVE_KEY);
+      }
+    } catch(e) {}
+    currentPatient = JSON.parse(JSON.stringify(defaultState));
+    currentPatient.medications = [];
+    currentPatient.activeMeds = [];
+    currentPatient.currentMeds = [];
+    try {
+      updatePatientBar();
+      notifyUpdated();
+    } catch(e) {}
+    return currentPatient;
+  }
+
+  function updatePatient(patch) {
+    if (patch && typeof patch === 'object') {
+      Object.assign(currentPatient, patch);
+      if (patch.medications && !patch.activeMeds) {
+        currentPatient.activeMeds = patch.medications.slice();
+      }
+      saveActive();
+      updatePatientBar();
+      notifyUpdated();
+    }
+    return currentPatient;
+  }
+
   function setField(field, value) {
     currentPatient[field] = value;
     saveActive();
@@ -513,7 +551,10 @@ const PatientSync = (function() {
     evaluateSafetyGuardrails,
     notifyUpdated,
     setField,
+    resetPatient,
+    updatePatient,
     get: () => currentPatient,
+    getState: () => currentPatient,
     setEGFR,
     loadActive,
     saveActive,
@@ -532,6 +573,11 @@ const PatientSync = (function() {
 if (typeof window !== 'undefined') {
   window.PatientSync = PatientSync;
   window.OsrawyPatientSync = PatientSync;
+}
+
+if (typeof global !== 'undefined') {
+  global.PatientSync = PatientSync;
+  global.OsrawyPatientSync = PatientSync;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
