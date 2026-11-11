@@ -1407,4 +1407,281 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 }
 
+/* ==============================================================
+   Smartphone-Specific Mobile Optimization (< 680px)
+   ============================================================== */
+
+@media (max-width: 680px) {
+  /* 1. Top App Bar: Compact single-row native header */
+  .top-nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .top-nav-content {
+    padding: 6px 10px !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+  }
+
+  .app-brand {
+    gap: 6px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .app-logo-badge {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    flex: none !important;
+  }
+
+  .app-title-group {
+    min-width: 0 !important;
+  }
+
+  .app-title-group h1 {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .app-title-group span {
+    display: none !important; /* Hide subtitle on phone to maintain 1 line */
+  }
+
+  .top-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex: none !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .lang-pill-btn,
+  .market-pill-btn,
+  .ldl-pill-btn {
+    padding: 4px 7px !important;
+    font-size: 11px !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+  }
+
+  .ldl-pill-btn span {
+    display: none !important; /* Show only 🎯 icon on smartphone */
+  }
+
+  .icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+    flex: none !important;
+  }
+
+  /* 2. Patient Summary Bar: Single-row horizontal scrollable strip */
+  .patient-summary-bar {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    background: var(--surface2) !important;
+  }
+
+  .patient-summary-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .pt-bar-item {
+    flex: none !important;
+    font-size: 11.5px !important;
+    padding: 3px 8px !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 3. Sub-tabs (Treatment & prescription, Screening, etc.) */
+  .tabbar {
+    position: sticky !important;
+    top: 44px !important;
+    z-index: 90 !important;
+  }
+
+  nav.tabs {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    scrollbar-width: none !important;
+  }
+
+  nav.tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  nav.tabs button {
+    padding: 6px 11px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    gap: 5px !important;
+  }
+
+  /* 4. Panels & Page margins on phone */
+  main.wrap, 
+  #tab-htn .wrap, 
+  #tab-drugs, 
+  #tab-recent {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 10px !important;
+  }
+
+  .panel {
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .panel h2 {
+    font-size: 16px !important;
+  }
+
+  .panel h3 {
+    font-size: 11.5px !important;
+    margin: 14px 0 6px !important;
+  }
+
+  /* 5. Inputs & Fields: comfortable touch size */
+  .fields {
+    gap: 8px !important;
+  }
+
+  .field label {
+    font-size: 11.5px !important;
+  }
+
+  .field input, 
+  .field select {
+    font-size: 15px !important;
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+    min-height: 42px !important;
+  }
+
+  /* 6. Comorbidity check items: 1-column touch cards */
+  .checks {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .checks label {
+    padding: 8px 10px !important;
+    background: var(--surface2) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .checks input {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 6px 0 0 !important;
+    flex: none !important;
+  }
+
+  html[dir="rtl"] .checks input {
+    margin: 0 0 0 6px !important;
+  }
+
+  /* 7. HTN Blood Pressure inputs */
+  #tab-htn .bp input {
+    font-size: 22px !important;
+    padding: 6px !important;
+    min-height: 46px !important;
+  }
+
+  #tab-htn .chips {
+    gap: 6px !important;
+  }
+
+  #tab-htn .chip span {
+    padding: 6px 10px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* 8. Table horizontal containment */
+  .tbl {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* 9. Modals: native Android Bottom-Sheet style */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+  }
+
+  .modal-card, 
+  .modal-card.modal-medium, 
+  .modal-card.modal-wide {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 85vh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    padding: 16px 14px !important;
+    animation: slideUpBottomSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @keyframes slideUpBottomSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* 10. Bottom Navigation Bar */
+  .bottom-nav-bar {
+    height: 56px !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .main-nav-btn {
+    padding: 4px 0 !important;
+    font-size: 11px !important;
+  }
+
+  .main-nav-btn .nav-icon {
+    font-size: 18px !important;
+  }
+
+  /* 11. Prescription card toolbar buttons */
+  .rx-action-toolbar {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  .rx-action-toolbar .btn {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 8px 6px !important;
+    font-size: 12px !important;
+  }
+}
+
+
 
