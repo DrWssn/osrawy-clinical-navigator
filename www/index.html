@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Osrawy Clinical Navigator</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+
+  <link rel="stylesheet" href="css/diabetes.css">
+  <link rel="stylesheet" href="css/htn.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="top-nav-bar">
+    <div class="top-nav-content">
+      <div class="app-brand">
+        <div class="app-logo-badge">Rx</div>
+        <div class="app-title-group">
+          <h1 data-i18n="app_title">Osrawy Clinical Navigator</h1>
+          <span data-i18n="app_subtitle">Dr Hossam Yousuf · Family Practice</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="lang-toggle-btn" class="lang-pill-btn" title="Switch interface to English / التبديل للإنجليزية">🌐 English</button>
+        <button id="market-toggle-btn" class="market-pill-btn" title="تبديل السوق (سعودي / مصري)">🇸🇦 السوق السعودي (SAR)</button>
+        <button id="save-pt-btn" class="icon-btn" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">💾</button>
+        <button id="theme-toggle-btn" class="icon-btn" title="تبديل الوضع الليلي" aria-label="الوضع الليلي" data-i18n-title="btn_theme" data-i18n-aria-label="btn_theme">🌓</button>
+        <button id="open-settings-btn" class="icon-btn" title="إعدادات الطبيب والعيادة" aria-label="الإعدادات" data-i18n-title="btn_settings" data-i18n-aria-label="btn_settings">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Shared Patient Bar -->
+  <div class="patient-summary-bar" id="patient-summary-bar">
+    <!-- Populated dynamically by PatientSync -->
+  </div>
+
+  <!-- MAIN TAB 1: DIABETES NAVIGATOR -->
+  <section id="tab-diabetes" class="main-view-section">
+    <header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow" data-i18n="dia_eyebrow">Type 2 diabetes · adults · family practice</div>
+      <h1 data-i18n="dia_hero_title">Osrawy <em>Diabetes</em><br>Treatment Navigator</h1>
+    </div>
+    <div class="byline"><span class="av">HY</span><span data-i18n="dia_hero_byline">by <b>Dr Hossam Yousuf</b></span></div>
+  </div>
+</header>
+<div class="tabbar"><div class="wrap">
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="t-plan" aria-selected="true" data-tab="plan" style="--c:var(--teal)" data-i18n="tab_plan">Treatment &amp; prescription</button>
+    <button role="tab" id="t-scr" aria-selected="false" data-tab="scr" style="--c:var(--sky)" data-i18n="tab_scr">Screening</button>
+    <button role="tab" id="t-ins" aria-selected="false" data-tab="ins" style="--c:var(--grape)" data-i18n="tab_ins">Insulin calculator</button>
+    <button role="tab" id="t-ref" aria-selected="false" data-tab="ref" style="--c:var(--sun)" data-i18n="tab_ref">Drugs &amp; prices</button>
+  </nav>
+</div></div>
+
+<main class="wrap">
+
+<!-- ============ PLAN ============ -->
+<section id="plan" class="tab">
+  <div class="grid">
+    <form class="panel" id="pform" autocomplete="off">
+      <div class="ph"><span class="ic">1</span><h2 data-i18n="dia_h2_pt_data">Patient data</h2></div>
+      <p class="sub" data-i18n="dia_sub_pt_data">Example patient pre-filled. Replace with your patient's values.</p>
+      <label class="costmode" for="cheap"><input type="checkbox" id="cheap" checked><span data-i18n="dia_cheap_desc"><b>Cheapest effective treatment first</b><br>Ranks low-cost options and local generics first, keeping heart and kidney protection.</span></label>
+      <h3 data-i18n="dia_h3_basics">Basics</h3>
+      <div class="fields">
+        <div class="field full"><label for="pname" data-i18n="lbl_pname">Patient name</label><input id="pname" type="text" placeholder="e.g. Ahmed Mahmoud" data-i18n-placeholder="ph_pname"></div>
+        <div class="field"><label for="age" data-i18n="lbl_age">Age (y)</label><input id="age" type="number" value="52"></div>
+        <div class="field"><label for="sex" data-i18n="lbl_sex">Sex</label><select id="sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></div>
+        <div class="field"><label for="wt" data-i18n="lbl_wt">Weight (kg)</label><input id="wt" type="number" value="96"></div>
+        <div class="field"><label for="ht" data-i18n="lbl_ht">Height (cm)</label><input id="ht" type="number" value="170"></div>
+        <div class="field"><label for="dur" data-i18n="lbl_dur">Diabetes duration (y)</label><input id="dur" type="number" value="4"></div>
+        <div class="field"><label for="hf" data-i18n="lbl_hf">Heart failure</label>
+          <select id="hf"><option value="none" data-i18n="opt_hf_none">None</option><option value="hfref" data-i18n="opt_hf_ref">HFrEF</option><option value="hfpef" data-i18n="opt_hf_pef">HFpEF / HFmrEF</option></select></div>
+      </div>
+      <h3 data-i18n="dia_h3_labs">Labs</h3>
+      <div class="fields">
+        <div class="field"><label for="a1c" data-i18n="lbl_a1c">HbA1c (%)</label><input id="a1c" type="number" step="0.1" value="8.9"></div>
+        <div class="field"><label for="fpg" data-i18n="lbl_fpg">Fasting glucose (mg/dL)</label><input id="fpg" type="number" value="190"></div>
+        <div class="field"><label for="egfr" data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</label><input id="egfr" type="number" value="68"></div>
+        <div class="field"><label for="uacr" data-i18n="lbl_uacr">UACR (mg/g)</label><input id="uacr" type="number" value="45"></div>
+      </div>
+      <h3 data-i18n="dia_h3_comorb">Comorbidities &amp; risk</h3>
+      <div class="checks">
+        <label><input type="checkbox" id="ascvd"><span data-i18n="chk_ascvd">Established ASCVD (MI, stroke, PAD)</span></label>
+        <label><input type="checkbox" id="hrisk"><span data-i18n="chk_hrisk">High CV risk (age ≥55 + ≥2 risk factors / LVH)</span></label>
+        <label><input type="checkbox" id="masld"><span data-i18n="chk_masld">MASLD / fatty liver</span></label>
+        <label><input type="checkbox" id="smoker"><span data-i18n="chk_smoker">Current or ex-smoker</span></label>
+        <label><input type="checkbox" id="hypo"><span data-i18n="chk_hypo">High hypoglycemia risk</span></label>
+        <label><input type="checkbox" id="frail"><span data-i18n="chk_frail">Frail / limited life expectancy</span></label>
+        <label><input type="checkbox" id="catab"><span data-i18n="chk_catab">Catabolic: weight loss, polyuria, ketosis</span></label>
+        <label><input type="checkbox" id="pancr"><span data-i18n="chk_pancr">Pancreatitis / MTC / MEN2 history</span></label>
+        <label><input type="checkbox" id="geni"><span data-i18n="chk_geni">Recurrent genital infections / UTI</span></label>
+        <label><input type="checkbox" id="preg"><span data-i18n="chk_preg">Pregnant or planning pregnancy</span></label>
+      </div>
+      <h3 data-i18n="dia_h3_therapy">Current therapy</h3>
+      <div class="checks">
+        <label><input type="checkbox" id="c-met" checked><span data-i18n="chk_met">Metformin</span></label>
+        <label><input type="checkbox" id="c-su"><span data-i18n="chk_su">Sulfonylurea</span></label>
+        <label><input type="checkbox" id="c-dpp"><span data-i18n="chk_dpp">DPP-4 inhibitor</span></label>
+        <label><input type="checkbox" id="c-sglt"><span data-i18n="chk_sglt">SGLT2 inhibitor</span></label>
+        <label><input type="checkbox" id="c-glp"><span data-i18n="chk_glp">GLP-1 RA / tirzepatide</span></label>
+        <label><input type="checkbox" id="c-pio"><span data-i18n="chk_pio">Pioglitazone</span></label>
+        <label><input type="checkbox" id="c-ins"><span data-i18n="chk_ins">Basal insulin</span></label>
+      </div>
+    </form>
+    <div class="panel" id="result" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ SCREENING ============ -->
+<section id="scr" class="tab" hidden>
+  <div class="panel" style="margin-bottom:20px">
+    <div class="ph" style="--c:var(--sky);--cs:var(--sky-soft)"><span class="ic">S</span><h2 data-i18n="scr_title_needed">Screening needed for this patient</h2></div>
+    <p class="sub" id="scrwho"></p>
+    <div id="scrPersonal"></div>
+  </div>
+  <div class="two">
+    <div class="panel">
+      <div class="ph" style="--c:var(--sky);--cs:var(--sky-soft)"><span class="ic">?</span><h2 data-i18n="scr_title_who">Who to screen for type 2 diabetes</h2></div>
+      <p class="sub" data-i18n="scr_sub_ada">ADA criteria for asymptomatic adults.</p>
+      <ul>
+        <li data-i18n="scr_item_1"><b>All adults ≥35 years</b>; repeat every 3 years if normal.</li>
+        <li data-i18n="scr_item_2"><b>Any age, BMI ≥25 kg/m²</b> (≥23 Asian ancestry) <b>plus ≥1 risk factor</b>: first-degree relative with diabetes, CVD, hypertension, HDL &lt;35 or TG &gt;250 mg/dL, PCOS, inactivity, acanthosis nigricans, MASLD.</li>
+        <li data-i18n="scr_item_3"><b>Prediabetes</b>: yearly. <b>Previous GDM</b>: at least every 3 years for life.</li>
+        <li data-i18n="scr_item_4"><b>HIV</b>, <b>antipsychotics</b>, long-term <b>glucocorticoids</b>.</li>
+        <li data-i18n="scr_item_5"><b>Youth</b>: overweight, after puberty or age ≥10, plus ≥1 risk factor.</li>
+      </ul>
+      <h3 data-i18n="scr_h3_diag">Diagnostic thresholds</h3>
+      <div class="tbl"><table style="min-width:420px">
+        <thead><tr><th data-i18n="th_test">Test</th><th data-i18n="th_normal">Normal</th><th data-i18n="th_prediabetes">Prediabetes</th><th data-i18n="th_diabetes">Diabetes</th></tr></thead>
+        <tbody>
+          <tr><td data-i18n="td_a1c">HbA1c</td><td class="mono">&lt;5.7%</td><td class="mono">5.7–6.4%</td><td class="mono">≥6.5%</td></tr>
+          <tr><td data-i18n="td_fpg">Fasting plasma glucose</td><td class="mono">&lt;100</td><td class="mono">100–125</td><td class="mono">≥126 mg/dL</td></tr>
+          <tr><td data-i18n="td_ogtt">2-h OGTT (75 g)</td><td class="mono">&lt;140</td><td class="mono">140–199</td><td class="mono">≥200 mg/dL</td></tr>
+          <tr><td data-i18n="td_rpg">Random glucose + symptoms</td><td colspan="2" class="mono">—</td><td class="mono">≥200 mg/dL</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note" data-i18n="scr_note">Without clear symptoms, confirm with a second abnormal result. Use plasma glucose instead of HbA1c in anemia, hemoglobinopathy, pregnancy, recent transfusion or advanced CKD.</p>
+    </div>
+    <div class="panel">
+      <div class="ph" style="--c:var(--leaf);--cs:var(--leaf-soft)"><span class="ic">✓</span><h2 data-i18n="scr_h2_checklist">Visit checklist</h2></div>
+      <p class="sub"><span data-i18n="scr_sub_checklist">Tick items done this visit.</span> <span class="progress" id="ckprog"></span></p>
+      <div id="cklist"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSULIN ============ -->
+<section id="ins" class="tab" hidden>
+  <div class="grid">
+    <div class="panel">
+      <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)"><span class="ic">U</span><h2 data-i18n="ins_h2_calc">Insulin dose calculator</h2></div>
+      <p class="sub" data-i18n="ins_sub_calc">Starting doses. Titrate on home glucose readings.</p>
+      <div class="fields">
+        <div class="field"><label for="iwt" data-i18n="lbl_wt">Weight (kg)</label><input id="iwt" type="number" value="96"></div>
+        <div class="field"><label for="ifpg" data-i18n="lbl_ifpg">Mean fasting glucose (mg/dL)</label><input id="ifpg" type="number" value="190"></div>
+        <div class="field"><label for="icur" data-i18n="lbl_icur">Current basal dose (U/day)</label><input id="icur" type="number" value="0"></div>
+        <div class="field"><label for="itdd" data-i18n="lbl_itdd">Current total daily dose (U)</label><input id="itdd" type="number" value="0"></div>
+        <div class="field full"><label for="isens" data-i18n="lbl_isens">Insulin sensitivity</label>
+          <select id="isens">
+            <option value="low" data-i18n="opt_sens_low">Sensitive: elderly, lean, eGFR &lt;30, hypo risk</option>
+            <option value="mid" selected data-i18n="opt_sens_mid">Usual</option>
+            <option value="high" data-i18n="opt_sens_high">Resistant: obese, steroids, HbA1c &gt;10</option>
+          </select></div>
+      </div>
+      <h3 data-i18n="ins_h3_regimen">Regimen</h3>
+      <div class="seg" id="iseg">
+        <button type="button" data-r="basal" aria-pressed="true" data-i18n="btn_reg_basal">Start basal</button>
+        <button type="button" data-r="titrate" aria-pressed="false" data-i18n="btn_reg_titrate">Titrate basal</button>
+        <button type="button" data-r="bb" aria-pressed="false" data-i18n="btn_reg_bb">Basal-bolus</button>
+        <button type="button" data-r="premix" aria-pressed="false" data-i18n="btn_reg_premix">Premixed</button>
+        <button type="button" data-r="switch" aria-pressed="false" data-i18n="btn_reg_switch">Switch insulin</button>
+      </div>
+      <div id="iswitch" hidden>
+        <div class="field full"><label for="ifrom" data-i18n="lbl_switch_from">Switch</label>
+          <select id="ifrom">
+            <option value="nph2" data-i18n="opt_sw_nph2">NPH twice daily → glargine U100 once daily</option>
+            <option value="nph1" data-i18n="opt_sw_nph1">NPH once daily → glargine U100</option>
+            <option value="g100g300" data-i18n="opt_sw_g100g300">Glargine U100 → glargine U300 (Toujeo)</option>
+            <option value="g300g100" data-i18n="opt_sw_g300g100">Glargine U300 → glargine U100</option>
+            <option value="gdeg" data-i18n="opt_sw_gdeg">Glargine U100 → degludec (Tresiba)</option>
+            <option value="premixbb" data-i18n="opt_sw_premixbb">Premixed twice daily → basal-bolus</option>
+          </select></div>
+      </div>
+    </div>
+    <div class="panel" id="iresult" aria-live="polite"></div>
+  </div>
+  <div class="panel" style="margin-top:20px">
+    <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)"><span class="ic">i</span><h2 id="ins-sec-title" data-i18n="ins_sec_title">Insulin products &amp; pharmacology</h2></div>
+    <p class="sub" id="ins-sec-sub" data-i18n="ins_sec_sub">Human insulins are the lowest-cost choice. Availability and prices change; confirm with the pharmacy.</p>
+    <div class="tbl"><table>
+      <thead><tr><th data-i18n="th_type">Type</th><th data-i18n="th_generic">Generic</th><th id="th-ins-brand" data-i18n="th_brand">Brand(s)</th><th data-i18n="th_cost">Cost</th><th data-i18n="th_onset">Onset</th><th data-i18n="th_peak">Peak</th><th data-i18n="th_duration">Duration</th><th data-i18n="th_timing">Timing</th></tr></thead>
+      <tbody id="instbl"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ REFERENCE ============ -->
+<section id="ref" class="tab" hidden>
+  <div class="panel">
+    <div class="ph" style="--c:var(--sun);--cs:var(--sun-soft)"><span class="ic">℞</span><h2 id="ref-sec-title" data-i18n="ref_sec_title">Non-insulin drugs: dose, kidney, brands, cost</h2></div>
+    <p class="sub" id="ref-sec-sub" data-i18n="ref_sec_sub">Brands listed lowest cost first. Available in Saudi Arabia (SFDA) and Egypt. Prices change; confirm locally.</p>
+    <div class="tbl"><table id="reftbl" style="min-width:900px">
+      <thead><tr><th data-i18n="th_drug">Drug</th><th id="th-ref-brand" data-i18n="th_ref_brand">Brand(s), lowest cost first</th><th data-i18n="th_cost">Cost</th><th data-i18n="th_dose_range">Start → max dose</th><th data-i18n="th_kidney_egfr">Kidney (eGFR)</th><th data-i18n="th_cautions">Key cautions</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+
+<footer>
+  <p data-i18n="dia_footer">Based on ADA Standards of Care in Diabetes, ADA/EASD consensus, KDIGO, and Saudi SFDA formularies. A decision aid for clinicians; it does not replace clinical judgement or the product label. · Osrawy Clinical Navigator — Dr Hossam Yousuf</p>
+</footer>
+</main>
+
+
+  </section>
+
+  <!-- MAIN TAB 2: HYPERTENSION NAVIGATOR -->
+  <section id="tab-htn" class="main-view-section" style="display: none;">
+    <div class="wrap">
+<header>
+  <div>
+    <h1 data-i18n="htn_title">Osrawya HTN Treatment <span>Navigator</span></h1>
+    <p class="byline" data-i18n="htn_byline">by Dr Hossam Yousuf</p>
+    <p class="sub" data-i18n="htn_sub">For family physicians. Enter the confirmed average BP and the patient's comorbidities; the sheet updates the stage, target and next drug step. Pre-filled with an example patient.</p>
+  </div>
+  <div class="lens" role="group" aria-label="Guideline">
+    <button id="lens-acc" type="button" aria-pressed="true">ACC/AHA 2025</button>
+    <button id="lens-esc" type="button" aria-pressed="false">ESC 2024</button>
+  </div>
+</header>
+
+<div class="grid">
+<form class="panel" id="f" autocomplete="off">
+  <fieldset>
+    <legend data-i18n="htn_legend_bp">Blood pressure (confirmed average, mmHg)</legend>
+    <div class="bp">
+      <input type="number" id="sbp" value="148" min="70" max="260" aria-label="Systolic" data-i18n-aria-label="aria_systolic">
+      <b>/</b>
+      <input type="number" id="dbp" value="94" min="40" max="160" aria-label="Diastolic" data-i18n-aria-label="aria_diastolic">
+    </div>
+    <div class="row">
+      <label class="f"><span data-i18n="lbl_age_years">Age (years)</span><input type="number" id="htn-age" value="56" min="18" max="110"></label>
+      <label class="f"><span data-i18n="lbl_sex">Sex</span><select id="htn-sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></label>
+      <label class="f"><span data-i18n="lbl_cur_bp_drugs">Current BP drugs</span><select id="meds">
+        <option value="0" selected data-i18n="opt_meds_none">None (new)</option><option value="1" data-i18n="opt_meds_1">1 class</option><option value="2" data-i18n="opt_meds_2">2 classes</option><option value="3" data-i18n="opt_meds_3">3+ incl. diuretic</option></select></label>
+    </div>
+    <label class="f"><span id="risk-l" data-i18n="lbl_cvd_risk">10-year CVD risk % (PREVENT)</span><input type="number" id="risk" placeholder="leave blank if not calculated" data-i18n-placeholder="ph_risk" min="0" max="100" step="0.1"></label>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="oob" checked><span data-i18n="chk_oob">Confirmed by home/ambulatory BP</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend data-i18n="htn_legend_comorb">Comorbidities &amp; compelling indications</legend>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="dm" checked><span data-i18n="chk_htn_dm">Diabetes</span></label>
+      <label class="chip"><input type="checkbox" id="cad"><span data-i18n="chk_cad">CAD / post-MI</span></label>
+      <label class="chip"><input type="checkbox" id="hf-htn"><span data-i18n="chk_htn_hf">HFrEF</span></label>
+      <label class="chip"><input type="checkbox" id="stroke"><span data-i18n="chk_stroke">Prior stroke / TIA</span></label>
+      <label class="chip"><input type="checkbox" id="af"><span data-i18n="chk_af">Atrial fibrillation</span></label>
+      <label class="chip"><input type="checkbox" id="gout"><span data-i18n="chk_gout">Gout</span></label>
+      <label class="chip"><input type="checkbox" id="asthma"><span data-i18n="chk_asthma">Asthma</span></label>
+      <label class="chip"><input type="checkbox" id="bph"><span data-i18n="chk_bph">BPH</span></label>
+      <label class="chip"><input type="checkbox" id="frail-htn"><span data-i18n="chk_frail">Frail / limited life expectancy</span></label>
+      <label class="chip"><input type="checkbox" id="ortho"><span data-i18n="chk_ortho">Orthostatic hypotension</span></label>
+      <label class="chip" id="preg-c"><input type="checkbox" id="preg-htn"><span data-i18n="chk_preg_htn">Pregnant / planning pregnancy</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend data-i18n="htn_legend_labs">Labs</legend>
+    <div class="row">
+      <label class="f"><span data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</span><input type="number" id="htn-egfr" value="72" min="3" max="150"></label>
+      <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="120" min="0" max="10000"></label>
+      <label class="f"><span data-i18n="lbl_k">K⁺ (mmol/L)</span><input type="number" id="k" value="4.6" min="2" max="8" step="0.1"></label>
+    </div>
+    <p class="hint" data-i18n="hint_htn_labs">UACR ≥30 mg/g counts as albuminuria; eGFR &lt;60 or UACR ≥30 counts as CKD.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend data-i18n="htn_legend_prevent">10-year CVD risk calculator · AHA PREVENT</legend>
+    <div class="row">
+      <label class="f"><span data-i18n="lbl_tc">Total cholesterol</span><input type="number" id="tc" value="210" step="0.1"></label>
+      <label class="f"><span data-i18n="lbl_hdl">HDL cholesterol</span><input type="number" id="hdl" value="42" step="0.1"></label>
+      <label class="f"><span data-i18n="lbl_unit">Units</span><select id="lunit"><option value="mg">mg/dL</option><option value="mmol">mmol/L</option></select></label>
+    </div>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="smk"><span data-i18n="chk_smoker">Current smoker</span></label>
+      <label class="chip"><input type="checkbox" id="statin"><span data-i18n="chk_statin">On statin</span></label>
+    </div>
+    <div class="riskbox" id="riskbox"></div>
+    <p class="hint" data-i18n="hint_prevent">Uses age, sex, SBP, diabetes, eGFR and BP-drug use from above. Base model, total CVD (ASCVD + heart failure). Valid for ages 30–79 without known CVD. The result fills the risk field automatically; type in that field to override it.</p>
+  </fieldset>
+</form>
+
+<section class="panel sheet" aria-live="polite">
+  <div class="sheet-h"><h2 data-i18n="htn_sec_rec">Recommendation</h2><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn-whatsapp" id="btn-share-htn-whatsapp" type="button" onclick="RxShare.shareHtnWhatsApp()" data-i18n="btn_whatsapp">📲 واتساب</button><button class="btn btn-print" id="btn-print-htn" type="button" onclick="RxShare.printPrescription()" data-i18n="btn_print">🖨️ طباعة</button><button class="btn" id="copy" type="button" onclick="RxShare.copyHtnToClipboard()" data-i18n="btn_copy">📋 نسخ</button><span class="toast" id="toast" hidden data-i18n="toast_copied">Copied</span></div></div>
+  <div id="out"></div>
+  <details>
+    <summary data-i18n="htn_details_summary">Drug reference: usual adult daily doses</summary>
+    <div class="tbl"><table>
+      <thead><tr><th data-i18n="htn_th_class">Class</th><th data-i18n="htn_th_drug">Drug</th><th data-i18n="htn_th_dose">Dose/day</th><th data-i18n="htn_th_watch">Watch for</th></tr></thead>
+      <tbody>
+        <tr><td>ACE inhibitor</td><td>Perindopril<br>Ramipril<br>Lisinopril</td><td class="n">4–8 mg<br>2.5–10 mg<br>10–40 mg</td><td data-i18n="htn_td_ace">Cough, angioedema, ↑K⁺, ↑creatinine. Teratogenic.</td></tr>
+        <tr><td>ARB</td><td>Losartan<br>Valsartan<br>Telmisartan<br>Olmesartan<br>Candesartan</td><td class="n">50–100 mg<br>80–320 mg<br>40–80 mg<br>20–40 mg<br>8–32 mg</td><td data-i18n="htn_td_arb">↑K⁺, ↑creatinine. Teratogenic. Never with ACE inhibitor.</td></tr>
+        <tr><td>DHP CCB</td><td>Amlodipine<br>Nifedipine ER</td><td class="n">2.5–10 mg<br>30–90 mg</td><td data-i18n="htn_td_ccb">Ankle oedema, flushing.</td></tr>
+        <tr><td>Thiazide-like</td><td>Indapamide SR<br>Chlorthalidone<br>HCTZ</td><td class="n">1.5 mg<br>12.5–25 mg<br>25–50 mg</td><td data-i18n="htn_td_thia">↓Na⁺, ↓K⁺, ↑uric acid, ↑glucose.</td></tr>
+        <tr><td>MRA</td><td>Spironolactone<br>Eplerenone</td><td class="n">25–50 mg<br>50–100 mg</td><td data-i18n="htn_td_mra">↑K⁺, gynaecomastia (spironolactone).</td></tr>
+        <tr><td>Beta-blocker</td><td>Bisoprolol<br>Metoprolol succinate<br>Carvedilol</td><td class="n">2.5–10 mg<br>50–200 mg<br>12.5–50 mg (bd)</td><td data-i18n="htn_td_bb">Bradycardia, fatigue. Cardioselective in asthma.</td></tr>
+        <tr><td data-i18n="htn_td_preg">Pregnancy</td><td>Labetalol<br>Nifedipine ER<br>Methyldopa</td><td class="n">200–2400 mg (bd–tds)<br>30–120 mg<br>500–3000 mg (bd–qid)</td><td data-i18n="htn_td_preg_c">Co-manage with obstetrics.</td></tr>
+      </tbody>
+    </table></div>
+  </details>
+</section>
+</div>
+
+<section class="tools" aria-labelledby="tools-h">
+  <h2 id="tools-h" data-i18n="htn_tools_h">Switch &amp; titrate</h2>
+  <p data-i18n="htn_tools_desc">Convert a dose to an approximately equipotent dose of another drug, and plan dose increases. Equivalences are approximate BP-lowering equivalents from standard conversion tables; always reassess BP 2–4 weeks after a change.</p>
+  <div class="tgrid">
+    <div class="panel">
+      <h3 data-i18n="htn_switch_h3">Switch drug</h3>
+      <div class="conv">
+        <div class="row">
+          <label class="f"><span data-i18n="lbl_from">From</span><select id="sw-from"></select></label>
+          <label class="f"><span data-i18n="lbl_cur_dose">Current dose</span><select id="sw-dose"></select></label>
+        </div>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <label class="f"><span data-i18n="lbl_to">To</span><select id="sw-to"></select></label>
+      </div>
+      <div id="sw-out"></div>
+    </div>
+    <div class="panel">
+      <h3 data-i18n="htn_titrate_h3">Titration plan</h3>
+      <div class="row">
+        <label class="f"><span data-i18n="lbl_drug">Drug</span><select id="ti-drug"></select></label>
+        <label class="f"><span data-i18n="lbl_cur_dose">Current dose</span><select id="ti-dose"></select></label>
+      </div>
+      <div id="ti-out"></div>
+    </div>
+  </div>
+</section>
+
+<p class="foot" data-i18n="htn_foot">Decision support only, based on the 2025 AHA/ACC High Blood Pressure Guideline and the 2024 ESC Guidelines on Elevated BP and Hypertension. It does not replace clinical judgement, local formulary or the Saudi national hypertension guideline. Rule out secondary hypertension in patients under 40, with resistant hypertension, or with suggestive features.</p>
+</div>
+
+
+  </section>
+
+  <!-- MAIN TAB 3: DRUG DIRECTORY & SAUDI MARKET FORMULARY -->
+  <section id="tab-drugs" class="main-view-section wrap" style="display: none; padding-top: 20px;">
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+        <div>
+          <h2 data-i18n="drugs_dir_title">دليل الأدوية والأسعار البديلة</h2>
+          <p class="sub" data-i18n="drugs_dir_sub">ابحث في دليل الأدوية حسب المادة الفعالة أو الاسم التجاري وفئات الأسعار</p>
+        </div>
+        <div class="market-selector-box">
+          <button id="market-btn-sa" class="active" data-i18n="drugs_btn_sa">السوق السعودي 🇸🇦 (SAR)</button>
+          <button id="market-btn-eg" data-i18n="drugs_btn_eg">السوق المصري 🇪🇬 (EGP)</button>
+        </div>
+      </div>
+
+      <div class="drug-search-bar">
+        <input type="text" id="drug-search-input" placeholder="🔍 ابحث عن دواء... (مثال: Januvia, Forxiga, Metformin, Concor, Exforge)" data-i18n-placeholder="drugs_ph_search">
+      </div>
+
+      <div class="drug-filters-row">
+        <span style="font-size: 12px; color: var(--muted); align-self: center;" data-i18n="drugs_lbl_cat">التصنيف:</span>
+        <button class="filter-chip active" data-drug-filter="all" data-i18n="drugs_filter_all">الكل</button>
+        <button class="filter-chip" data-drug-filter="diabetes" data-i18n="drugs_filter_diabetes">أدوية السكر</button>
+        <button class="filter-chip" data-drug-filter="htn" data-i18n="drugs_filter_htn">أدوية الضغط</button>
+      </div>
+
+      <div class="drug-filters-row">
+        <span style="font-size: 12px; color: var(--muted); align-self: center;" data-i18n="drugs_lbl_tier">فئة السعر:</span>
+        <button class="filter-chip active" data-drug-tier="all" data-i18n="drugs_tier_all">جميع الفئات</button>
+        <button class="filter-chip" data-drug-tier="1" data-i18n="drugs_tier_1">● اقتصادي / منخفض</button>
+        <button class="filter-chip" data-drug-tier="2" data-i18n="drugs_tier_2">●● متوسط</button>
+        <button class="filter-chip" data-drug-tier="3" data-i18n="drugs_tier_3">●●● عالي التكلفة</button>
+      </div>
+
+      <div id="drug-directory-list">
+        <!-- Injected by DrugDirectory.render() -->
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN TAB 4: RECENT PATIENTS DRAFTS -->
+  <section id="tab-recent" class="main-view-section wrap" style="display: none; padding-top: 20px;">
+    <div class="panel">
+      <h2 data-i18n="recent_title">مسودات المرضى المحفوظة (أوفلاين)</h2>
+      <p class="sub" data-i18n="recent_sub">يمكنك استرجاع أو استئناف بيانات أي مريض تم حفظه خلال جلسات العيادة</p>
+      <div id="recent-patients-list">
+        <!-- Injected by renderRecentPatients() -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav-bar">
+    <button class="main-nav-btn active" data-tab="tab-diabetes">
+      <span class="nav-icon">🩺</span>
+      <span class="nav-text" data-i18n="nav_diabetes">السكر</span>
+    </button>
+    <button class="main-nav-btn" data-tab="tab-htn">
+      <span class="nav-icon">💓</span>
+      <span class="nav-text" data-i18n="nav_htn">الضغط</span>
+    </button>
+    <button class="main-nav-btn" data-tab="tab-drugs">
+      <span class="nav-icon">💊</span>
+      <span class="nav-text" data-i18n="nav_drugs">الأدوية والأسعار</span>
+    </button>
+    <button class="main-nav-btn" data-tab="tab-recent">
+      <span class="nav-icon">📋</span>
+      <span class="nav-text" data-i18n="nav_drafts">المسودات</span>
+    </button>
+  </nav>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="margin:0" data-i18n="settings_title">⚙️ بيانات الطبيب والعيادة (للروشتة والطباعة)</h3>
+        <button class="icon-btn" id="close-settings-btn" style="color:var(--ink)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field" style="margin-bottom:10px">
+          <label data-i18n="settings_lbl_name">اسم الطبيب:</label>
+          <input type="text" id="set-dr-name">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label data-i18n="settings_lbl_title">التخصص والدرجة العلمية:</label>
+          <input type="text" id="set-dr-title">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label data-i18n="settings_lbl_clinic">اسم العيادة / المركز الطبي:</label>
+          <input type="text" id="set-clinic-name">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label data-i18n="settings_lbl_phone">رقم هاتف العيادة / الواتساب:</label>
+          <input type="text" id="set-clinic-phone">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label data-i18n="settings_lbl_addr">العنوان والمدينة:</label>
+          <input type="text" id="set-clinic-addr">
+        </div>
+
+        <!-- In-App GitHub Updates -->
+        <div class="update-section">
+          <div class="update-header">
+            <div>
+              <b data-i18n="update_sec_title">🔄 تحديثات التطبيق (GitHub)</b>
+              <div style="font-size:11.5px;color:var(--muted);" data-i18n="update_sec_sub">فحص وتحميل أحدث الإصدارات من GitHub</div>
+            </div>
+            <span class="update-version-tag" id="current-app-version">v1.0.0</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-check-updates" style="margin-top:6px;width:100%;" data-i18n="btn_check_updates">
+            🔍 التحقق من وجود تحديثات الآن
+          </button>
+          <span class="update-status" id="update-status-text"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="save-settings-btn" data-i18n="settings_btn_save">حفظ الإعدادات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/drugs_data.js"></script>
+  <script src="js/patient_sync.js"></script>
+  <script src="js/prescription_share.js"></script>
+  <script src="js/drugs_directory.js"></script>
+  <script src="js/diabetes_engine.js"></script>
+  <script src="js/htn_engine.js"></script>
+  <script src="js/updater.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

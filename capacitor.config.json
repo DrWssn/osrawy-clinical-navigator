@@ -1,0 +1,12 @@
+{
+  "appId": "com.osrawy.clinicalnavigator",
+  "appName": "Osrawy Navigator",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0F2B2A"
+  }
+}

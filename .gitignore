@@ -1,0 +1,29 @@
+# Node & NPM
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Android & Gradle
+.gradle/
+build/
+android/.gradle/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+android/.idea/
+android/*.iml
+android/local.properties
+android_sdk/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs & Scratch
+*.log
+scratch/

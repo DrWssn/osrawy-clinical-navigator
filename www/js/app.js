@@ -1,0 +1,266 @@
+// ==============================================================
+// Main Application Controller & Navigation
+// ==============================================================
+
+(function() {
+  function triggerHaptic() {
+    try {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(15);
+      }
+    } catch(e) {}
+  }
+
+  function switchMainTab(tabId) {
+    triggerHaptic();
+    document.querySelectorAll('.main-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+    });
+
+    document.querySelectorAll('.main-view-section').forEach(sec => {
+      sec.style.display = (sec.id === tabId) ? 'block' : 'none';
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (tabId === 'tab-drugs') {
+      DrugDirectory.render();
+    } else if (tabId === 'tab-recent') {
+      renderRecentPatients();
+    }
+  }
+
+  function renderRecentPatients() {
+    const list = PatientSync.getRecentList();
+    const container = document.getElementById('recent-patients-list');
+    if (!container) return;
+
+    const t = (k, def) => (typeof window.I18n !== 'undefined' ? window.I18n.t(k, def) : def);
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>${t('recent_empty_title', 'لا توجد مسودات مرضى محفوظة حالياً.')}</p>
+          <small>${t('recent_empty_sub', 'عند إدخال بيانات مريض، انقر على "حفظ في المسودات" للرجوع إليها لاحقاً بدون إنترنت.')}</small>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(item => `
+      <div class="recent-card">
+        <div class="recent-header">
+          <div>
+            <b>${item.label}</b>
+            <div class="recent-time">${item.timestamp}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteRecentPatient('${item.id}')">${t('btn_delete', 'حذف')}</button>
+        </div>
+        <div class="recent-details">
+          <span>${t('bar_age', 'العمر:')} ${item.data.age}</span>
+          <span>A1c: ${item.data.a1c}%</span>
+          <span>eGFR: ${item.data.egfr}</span>
+          <span>UACR: ${item.data.uacr}</span>
+          <span>${t('bar_bp', 'الضغط:')} ${item.data.sbp}/${item.data.dbp}</span>
+        </div>
+        <button class="btn btn-block btn-primary mt-2" onclick="loadRecentPatient('${item.id}')">
+          ${t('btn_load_patient', 'تحميل بيانات المريض ➔')}
+        </button>
+      </div>
+    `).join('');
+  }
+
+  window.loadRecentPatient = function(id) {
+    const list = PatientSync.getRecentList();
+    const item = list.find(x => x.id === id);
+    if (item) {
+      PatientSync.applyPatient(item.data);
+      switchMainTab('tab-diabetes');
+      RxShare.showToast(`تم تحميل بيانات: ${item.label}`);
+    }
+  };
+
+  window.deleteRecentPatient = function(id) {
+    PatientSync.removeRecent(id);
+    renderRecentPatients();
+    RxShare.showToast('تم حذف المسودة');
+  };
+
+  window.handleAndroidBack = function() {
+    const modal = document.getElementById('settings-modal');
+    if (modal && modal.classList.contains('open')) {
+      modal.classList.remove('open');
+      return true;
+    }
+    const activeBtn = document.querySelector('.main-nav-btn.active');
+    const activeTab = activeBtn ? activeBtn.getAttribute('data-tab') : 'tab-diabetes';
+    if (activeTab !== 'tab-diabetes') {
+      switchMainTab('tab-diabetes');
+      return true;
+    }
+    return false;
+  };
+
+  function setupTheme() {
+    const saved = localStorage.getItem('osrawy_theme') || 'auto';
+    const htmlEl = document.documentElement;
+
+    function apply(theme) {
+      if (theme === 'dark') {
+        htmlEl.setAttribute('data-theme', 'dark');
+      } else if (theme === 'light') {
+        htmlEl.setAttribute('data-theme', 'light');
+      } else {
+        htmlEl.removeAttribute('data-theme');
+      }
+      localStorage.setItem('osrawy_theme', theme);
+    }
+
+    apply(saved);
+
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const current = htmlEl.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        apply(next);
+        triggerHaptic();
+      });
+    }
+  }
+
+  // Expose renderRecentPatients globally
+  window.renderRecentPatients = renderRecentPatients;
+
+  // Initialization
+  document.addEventListener('DOMContentLoaded', () => {
+    setupTheme();
+    if (typeof I18n !== 'undefined') {
+      I18n.init();
+      I18n.onChange(() => {
+        PatientSync.updatePatientBar();
+        DrugDirectory.render();
+        renderRecentPatients();
+        if (typeof window.plan === 'function') window.plan();
+        if (typeof window.htnRender === 'function') window.htnRender();
+        if (typeof window.htnRenderTitrate === 'function') window.htnRenderTitrate();
+      });
+    }
+    RxShare.loadSettings();
+    PatientSync.loadActive();
+    PatientSync.updatePatientBar();
+    DrugDirectory.init();
+    if (typeof AppUpdater !== 'undefined') {
+      AppUpdater.init();
+    }
+
+    // Language Switcher Button in Header
+    const langBtn = document.getElementById('lang-toggle-btn');
+    if (langBtn && typeof I18n !== 'undefined') {
+      langBtn.addEventListener('click', () => {
+        triggerHaptic();
+        I18n.toggleLang();
+        const cur = I18n.getLang();
+        RxShare.showToast(cur === 'ar' ? '🇸🇦 تم تفعيل الواجهة العربية' : '🌐 Switched to English interface');
+      });
+    }
+
+    // Bottom Navigation Buttons
+    document.querySelectorAll('.main-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        switchMainTab(tab);
+      });
+    });
+
+    // Save Patient Draft button
+    const savePtBtn = document.getElementById('save-pt-btn');
+    if (savePtBtn) {
+      savePtBtn.addEventListener('click', () => {
+        const isAr = (typeof I18n !== 'undefined' && I18n.getLang() === 'ar');
+        const nameInput = document.getElementById('pname');
+        const defaultName = (isAr ? 'مريض ' : 'Patient ') + new Date().toLocaleTimeString(isAr ? 'ar-SA' : 'en-US');
+        const name = (nameInput && nameInput.value) ? nameInput.value : defaultName;
+        PatientSync.saveToRecent(name);
+        RxShare.showToast(isAr ? '✅ تم حفظ بيانات المريض في المسودات' : '✅ Patient draft saved to local storage');
+      });
+    }
+
+    // Modal triggers for Doctor profile
+    const settingsBtn = document.getElementById('open-settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+
+    if (settingsBtn && settingsModal) {
+      settingsBtn.addEventListener('click', () => {
+        const cfg = RxShare.loadSettings();
+        document.getElementById('set-dr-name').value = cfg.doctorName || '';
+        document.getElementById('set-dr-title').value = cfg.doctorTitle || '';
+        document.getElementById('set-clinic-name').value = cfg.clinicName || '';
+        document.getElementById('set-clinic-phone').value = cfg.clinicPhone || '';
+        document.getElementById('set-clinic-addr').value = cfg.clinicAddress || '';
+        settingsModal.classList.add('open');
+      });
+    }
+
+    if (closeSettingsBtn && settingsModal) {
+      closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+    }
+
+    if (saveSettingsBtn && settingsModal) {
+      saveSettingsBtn.addEventListener('click', () => {
+        RxShare.saveSettings({
+          doctorName: document.getElementById('set-dr-name').value,
+          doctorTitle: document.getElementById('set-dr-title').value,
+          clinicName: document.getElementById('set-clinic-name').value,
+          clinicPhone: document.getElementById('set-clinic-phone').value,
+          clinicAddress: document.getElementById('set-clinic-addr').value
+        });
+        settingsModal.classList.remove('open');
+        RxShare.showToast('✅ تم حفظ إعدادات الطبيب والعيادة');
+        if (window.plan) window.plan();
+      });
+    }
+
+    // WhatsApp and Print buttons
+    const waBtn = document.getElementById('btn-share-whatsapp');
+    if (waBtn) waBtn.addEventListener('click', RxShare.shareToWhatsApp);
+
+    const printBtn = document.getElementById('btn-print-rx');
+    if (printBtn) printBtn.addEventListener('click', RxShare.printPrescription);
+
+    const copyBtn = document.getElementById('rxcopy');
+    if (copyBtn) copyBtn.addEventListener('click', RxShare.copySummaryToClipboard);
+
+    const copyHtnBtn = document.getElementById('copy');
+    if (copyHtnBtn) copyHtnBtn.addEventListener('click', RxShare.copyHtnToClipboard);
+
+    // Market Switcher Buttons (Saudi vs Egypt)
+    const btnSa = document.getElementById('market-btn-sa');
+    const btnEg = document.getElementById('market-btn-eg');
+    if (btnSa) btnSa.addEventListener('click', () => DrugDirectory.setMarket('saudi'));
+    if (btnEg) btnEg.addEventListener('click', () => DrugDirectory.setMarket('egypt'));
+
+    const headerMktBtn = document.getElementById('market-toggle-btn');
+    if (headerMktBtn) {
+      headerMktBtn.addEventListener('click', () => {
+        const next = (DrugDirectory.getMarket() === 'saudi') ? 'egypt' : 'saudi';
+        DrugDirectory.setMarket(next);
+        RxShare.showToast(next === 'saudi' ? '🇸🇦 تم تفعيل السوق السعودي (SAR)' : '🇪🇬 تم تفعيل السوق المصري (EGP)');
+      });
+    }
+
+    // Attach Patient Sync Listeners
+    const pform = document.getElementById('pform');
+    if (pform) {
+      pform.addEventListener('input', () => PatientSync.syncFromDiabetes());
+      pform.addEventListener('change', () => PatientSync.syncFromDiabetes());
+    }
+
+    const htnForm = document.getElementById('f');
+    if (htnForm) {
+      htnForm.addEventListener('input', () => PatientSync.syncFromHTN());
+      htnForm.addEventListener('change', () => PatientSync.syncFromHTN());
+    }
+  });
+})();

@@ -1,0 +1,17 @@
+{
+  "name": "osrawy-clinical-navigator",
+  "version": "1.0.0",
+  "description": "Osrawy Diabetes and Hypertension Clinical Treatment Navigator",
+  "main": "www/index.html",
+  "scripts": {
+    "build": "cap sync",
+    "cap:android": "cap open android"
+  },
+  "author": "Dr Hossam Yousuf",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}

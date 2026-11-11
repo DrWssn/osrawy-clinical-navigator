@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer subtle circle ring -->
+    <path
+        android:strokeColor="#33FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M 54,20 A 34,34 0 1,1 53.99,20 Z" />
+
+    <!-- Medical Cross (White) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 47,26 L 61,26 A 4,4 0 0,1 65,30 L 65,47 L 82,47 A 4,4 0 0,1 86,51 L 86,57 A 4,4 0 0,1 82,61 L 65,61 L 65,78 A 4,4 0 0,1 61,82 L 47,82 A 4,4 0 0,1 43,78 L 43,61 L 26,61 A 4,4 0 0,1 22,57 L 22,51 A 4,4 0 0,1 26,47 L 43,47 L 43,30 A 4,4 0 0,1 47,26 Z" />
+
+    <!-- ECG Heartbeat Pulse Line (Golden Yellow) -->
+    <path
+        android:strokeColor="#FFC24F"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M 28,54 L 38,54 L 43,44 L 49,66 L 55,36 L 61,60 L 66,54 L 80,54" />
+</vector>
