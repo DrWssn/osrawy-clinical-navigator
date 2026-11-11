@@ -41,11 +41,15 @@ jobs:
         run: node run_full_simulation.js
 
       - name: Sync Capacitor Web Assets
-        run: npx cap copy android
+        run: npx cap sync android
 
       - name: Configure Android SDK Location & Permissions
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+          mkdir -p android/capacitor-cordova-android-plugins
+          if [ ! -f "android/capacitor-cordova-android-plugins/cordova.variables.gradle" ]; then
+            echo "// Fallback variables" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
+          fi
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
