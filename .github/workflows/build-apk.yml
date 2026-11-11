@@ -79,58 +79,21 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Sign APK with Keystore (With Fallback Auto-Generation)
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.SIGNING_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'osrawy_release_pass' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'osrawy' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || 'osrawy_release_pass' }}
-          ANDROID_HOME: /usr/local/lib/android/sdk
+      - name: Prepare Signed Release APK
         run: |
           VERSION=$(node -p "require('./package.json').version")
           APK_NAME="Osrawy_Clinical_Navigator_v${VERSION}.apk"
           echo "Target Release APK: $APK_NAME"
 
-          mkdir -p keystore
-          KEYSTORE_FILE="keystore/release.keystore"
-
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Decoding provided release keystore secret..."
-            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+          if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            cp -f "android/app/build/outputs/apk/release/app-release.apk" "$APK_NAME"
           else
-            echo "No keystore secret detected. Auto-generating fallback release keystore..."
-            keytool -genkeypair -v \
-              -keystore "$KEYSTORE_FILE" \
-              -alias "$KEY_ALIAS" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storepass "$KEYSTORE_PASSWORD" \
-              -keypass "$KEY_PASSWORD" \
-              -dname "CN=Osrawy Clinical Navigator, OU=Clinical IT, O=Osrawy, L=Riyadh, C=SA"
+            BUILT_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+            cp -f "$BUILT_APK" "$APK_NAME"
           fi
 
           BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/* | sort -V | tail -n 1)
-          echo "Using Android build-tools from: $BUILD_TOOLS_DIR"
-
-          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
-          if [ ! -f "$UNSIGNED_APK" ]; then
-            UNSIGNED_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-          fi
-          echo "Source unsigned APK: $UNSIGNED_APK"
-
-          ALIGNED_APK="aligned-release.apk"
-          $BUILD_TOOLS_DIR/zipalign -f -p 4 "$UNSIGNED_APK" "$ALIGNED_APK" || cp -f "$UNSIGNED_APK" "$ALIGNED_APK"
-
-          $BUILD_TOOLS_DIR/apksigner sign \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --key-pass "pass:$KEY_PASSWORD" \
-            --out "$APK_NAME" \
-            "$ALIGNED_APK"
-
-          echo "Verifying signed APK signature:"
+          echo "Verifying permanent APK signature:"
           $BUILD_TOOLS_DIR/apksigner verify --verbose "$APK_NAME"
 
           ls -lh "$APK_NAME"
