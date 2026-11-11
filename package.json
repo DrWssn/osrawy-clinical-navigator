@@ -1,6 +1,6 @@
 {
   "name": "osrawy-clinical-navigator",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "description": "Osrawy Diabetes and Hypertension Clinical Treatment Navigator",
   "main": "www/index.html",
   "scripts": {
