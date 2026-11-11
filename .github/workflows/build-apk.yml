@@ -61,22 +61,30 @@ jobs:
 
       - name: Prepare APK For Release
         run: |
+          VERSION=$(node -p "require('./package.json').version")
+          APK_NAME="Osrawy_Clinical_Navigator_v${VERSION}.apk"
+          echo "Target APK name: $APK_NAME"
           if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp -f "android/app/build/outputs/apk/debug/app-debug.apk" "$APK_NAME"
             cp -f "android/app/build/outputs/apk/debug/app-debug.apk" Osrawy_Clinical_Navigator.apk
           fi
-          ls -lh Osrawy_Clinical_Navigator.apk
+          ls -lh *.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Osrawy_Clinical_Navigator_APK
-          path: Osrawy_Clinical_Navigator.apk
+          path: |
+            Osrawy_Clinical_Navigator_*.apk
+            Osrawy_Clinical_Navigator.apk
 
       - name: Create GitHub Release (On Tag Push)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Osrawy_Clinical_Navigator.apk
+          files: |
+            Osrawy_Clinical_Navigator_*.apk
+            Osrawy_Clinical_Navigator.apk
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false

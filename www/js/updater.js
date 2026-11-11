@@ -4,7 +4,7 @@
 
 const AppUpdater = (function() {
   const CONFIG = {
-    currentVersion: '1.2.3',
+    currentVersion: '1.2.4',
     repoOwner: 'DrWssn',
     repoName: 'osrawy-clinical-navigator',
     apiUrl: 'https://api.github.com/repos/DrWssn/osrawy-clinical-navigator/releases/latest',
@@ -59,7 +59,8 @@ const AppUpdater = (function() {
         releaseNotes = release.body || '';
         publishedAt = release.published_at || Date.now();
         if (release.assets && release.assets.length > 0) {
-          const apk = release.assets.find(a => a.name.endsWith('.apk'));
+          const apk = release.assets.find(a => a.name.endsWith('.apk') && a.name.includes(latestTag))
+                   || release.assets.find(a => a.name.endsWith('.apk'));
           if (apk && apk.browser_download_url) {
             downloadUrl = apk.browser_download_url;
           }
@@ -158,7 +159,8 @@ const AppUpdater = (function() {
     const releaseNotes = release.body || 'New clinical updates and improvements.';
     let apkUrl = release.downloadUrl || CONFIG.releasesUrl;
     if (release.assets && release.assets.length > 0) {
-      const apkAsset = release.assets.find(a => a.name.endsWith('.apk'));
+      const apkAsset = release.assets.find(a => a.name.endsWith('.apk') && a.name.includes(tag))
+                    || release.assets.find(a => a.name.endsWith('.apk'));
       if (apkAsset && apkAsset.browser_download_url) {
         apkUrl = apkAsset.browser_download_url;
       }
