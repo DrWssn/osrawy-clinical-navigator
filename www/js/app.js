@@ -14,7 +14,8 @@
   function switchMainTab(tabId) {
     triggerHaptic();
     document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+      const bTab = btn.getAttribute('data-tab') || btn.getAttribute('data-tab-target');
+      btn.classList.toggle('active', bTab === tabId);
     });
 
     document.querySelectorAll('.main-view-section, .tab-panel').forEach(sec => {
@@ -42,6 +43,10 @@
     } else if (tabId === 'tab-dlp') {
       if (window.LipidsEngine && typeof window.LipidsEngine.renderLipidsSummary === 'function') {
         window.LipidsEngine.renderLipidsSummary('lipids-container');
+      }
+    } else if (tabId === 'tab-tools') {
+      if (window.ClinicalTools && typeof window.ClinicalTools.renderToolsTab === 'function') {
+        window.ClinicalTools.renderToolsTab('clinical-tools-container');
       }
     } else if (tabId === 'tab-drugs') {
       DrugDirectory.render();
@@ -248,7 +253,7 @@
     // Bottom Navigation Buttons
     document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const tab = btn.getAttribute('data-tab');
+        const tab = btn.getAttribute('data-tab') || btn.getAttribute('data-tab-target');
         switchMainTab(tab);
       });
     });

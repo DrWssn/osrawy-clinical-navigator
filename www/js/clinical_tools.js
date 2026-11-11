@@ -1338,6 +1338,312 @@ const ClinicalTools = (function() {
     }
   }
 
+  // --- 7. Interactive Clinical Tools Tab Renderer ---
+
+  function renderToolsTab(containerId) {
+    if (typeof document === 'undefined') return;
+    const cid = containerId || 'clinical-tools-container';
+    const container = document.getElementById(cid);
+    if (!container) return;
+
+    const pt = (typeof window.PatientSync !== 'undefined' && typeof window.PatientSync.get === 'function') ? window.PatientSync.get() : {};
+    const isAr = (typeof window.I18n !== 'undefined' && typeof window.I18n.getLang === 'function')
+      ? window.I18n.getLang() === 'ar'
+      : true;
+
+    const initialAge = pt.age || 58;
+    const initialSex = pt.sex || 'm';
+    const initialWt = pt.wt || 82;
+    const initialScr = 1.1;
+    const initialUacr = 30;
+
+    container.innerHTML = `
+      <div class="clinical-tools-dashboard" style="margin-bottom:24px;">
+        <!-- Header -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h2 style="margin:0 0 4px 0;">🧮 ${isAr ? 'الأدوات الإكلينيكية والحاسبات المتقدمة' : 'Advanced Clinical Calculators & Tools'}</h2>
+              <p class="sub" style="margin:0;">${isAr ? 'حاسبات وظائف الكلى، تصفية الكرياتينين، زلال البول KDIGO، جرعات DOAC، ومؤشر تليف الكبد FIB-4' : 'Kidney functions, CrCl, KDIGO albuminuria matrix, DOAC renal dosing, and FIB-4 liver fibrosis'}</p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn" id="btn-tools-open-drugs" style="background:var(--teal); color:#fff; font-size:12px; padding:6px 12px;">
+                💊 ${isAr ? 'دليل الأدوية والأسعار' : 'Drugs Directory'}
+              </button>
+              <button type="button" class="btn" id="btn-tools-open-recent" style="font-size:12px; padding:6px 12px;">
+                💾 ${isAr ? 'مسودات المرضى' : 'Saved Drafts'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Cardiorenal Calculator Card (eGFR + CrCl) -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="ph" style="--c:var(--teal);--cs:var(--teal-soft)">
+            <span class="ic">🫘</span>
+            <h2>${isAr ? 'حاسبة وظائف الكلى وتصفية الكرياتينين (CKD-EPI 2021 & CrCl)' : 'Kidney Function & Creatinine Clearance (CKD-EPI & CrCl)'}</h2>
+          </div>
+          <p class="sub">${isAr ? 'معادلة CKD-EPI 2021 دون عرق مع معادلة Cockcroft-Gault لضبط جرعات الأدوية ومضادات التخثر' : 'Race-free CKD-EPI 2021 alongside Cockcroft-Gault for precise drug & DOAC adjustments'}</p>
+          
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:14px;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الكرياتينين (Scr):' : 'Serum Cr:'}</label>
+              <input type="number" id="tab-scr" step="0.01" value="${initialScr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوحدة:' : 'Unit:'}</label>
+              <select id="tab-scr-unit" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+                <option value="mg">mg/dL</option>
+                <option value="umol">µmol/L</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'العمر (سنة):' : 'Age (yrs):'}</label>
+              <input type="number" id="tab-age" value="${initialAge}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الجنس:' : 'Sex:'}</label>
+              <select id="tab-sex" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+                <option value="m" ${initialSex === 'm' ? 'selected' : ''}>${isAr ? 'ذكر' : 'Male'}</option>
+                <option value="f" ${initialSex === 'f' ? 'selected' : ''}>${isAr ? 'أنثى' : 'Female'}</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
+              <input type="number" id="tab-wt" value="${initialWt}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+          </div>
+
+          <div id="tab-egfr-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px;">
+            <!-- Output dynamically computed -->
+          </div>
+
+          <button type="button" class="btn" id="btn-sync-tools-egfr" style="background:var(--teal); color:#fff; font-size:13px;">
+            🔄 ${isAr ? 'مزامنة معدل الترشيح المحسوب مع المريض والروشتة' : 'Sync Calculated eGFR with Active Patient & Rx'}
+          </button>
+        </div>
+
+        <!-- 2. KDIGO 2024 CKD Risk Matrix & Albuminuria -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="ph" style="--c:var(--sun);--cs:var(--sun-soft)">
+            <span class="ic">📊</span>
+            <h2>${isAr ? 'مصفوفة KDIGO 2024 لزلال البول وتصنيف مخاطر الكلى' : 'KDIGO 2024 Heatmap & Albuminuria Staging'}</h2>
+          </div>
+          <p class="sub">${isAr ? 'تقاطع معدل الترشيح eGFR مع نسبة زلال البول إلى الكرياتينين (UACR) لتحديد خطورة التدهور وتكرار المتابعة' : 'Risk stratification combining eGFR and urine albumin-creatinine ratio (UACR)'}</p>
+          
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'معدل الترشيح (eGFR mL/min):' : 'eGFR (mL/min):'}</label>
+              <input type="number" id="tab-kdigo-egfr" value="${pt.egfr || 68}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'زلال البول UACR (mg/g):' : 'UACR (mg/g):'}</label>
+              <input type="number" id="tab-kdigo-uacr" value="${initialUacr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+          </div>
+
+          <div id="tab-kdigo-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
+            <!-- Dynamic KDIGO results -->
+          </div>
+        </div>
+
+        <!-- 3. DOAC Renal Dosing (Apixaban & Rivaroxaban) -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="ph" style="--c:var(--sky);--cs:var(--sky-soft)">
+            <span class="ic">🩸</span>
+            <h2>${isAr ? 'حاسبة جرعات مضادات التخثر الحديثة (DOAC Renal Dosing)' : 'DOAC Renal Dosing (Apixaban & Rivaroxaban)'}</h2>
+          </div>
+          <p class="sub">${isAr ? 'قاعدة استيفاء شرطين من 3 لـ Apixaban (العمر ≥80، الوزن ≤60 كجم، الكرياتينين ≥1.5) وتعديل جرعة Rivaroxaban بحسب CrCl' : 'Apixaban 2-of-3 criteria (Age ≥80, Wt ≤60kg, Scr ≥1.5mg/dL) & Rivaroxaban CrCl dosing'}</p>
+          
+          <div id="tab-doac-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
+            <!-- Dynamic DOAC results -->
+          </div>
+        </div>
+
+        <!-- 4. FIB-4 Liver Fibrosis Index -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)">
+            <span class="ic">🫁</span>
+            <h2>${isAr ? 'مؤشر تليف الكبد الدهني (FIB-4 Index for MASLD)' : 'FIB-4 Liver Fibrosis Index for MASLD'}</h2>
+          </div>
+          <p class="sub">${isAr ? 'مسح تليف الكبد لمرضى السكري والسمنة باستخدام العمر، إنزيمات الكبد AST و ALT، والصفائح الدموية' : 'Screening advanced liver fibrosis in T2DM and metabolic syndrome using Age, AST, ALT, and Platelets'}</p>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:12px;">
+            <div>
+              <label style="font-size:12px; color:var(--muted);">AST (U/L):</label>
+              <input type="number" id="tab-fib4-ast" value="38" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">ALT (U/L):</label>
+              <input type="number" id="tab-fib4-alt" value="42" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الصفائح الدموية (PLT 10⁹/L):' : 'Platelets (10⁹/L):'}</label>
+              <input type="number" id="tab-fib4-plt" value="210" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+            </div>
+          </div>
+
+          <div id="tab-fib4-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
+            <!-- Dynamic FIB-4 results -->
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Calculation helper
+    function recalculateToolsTab() {
+      const scr = parseFloat(document.getElementById('tab-scr')?.value) || 1.0;
+      const unit = document.getElementById('tab-scr-unit')?.value || 'mg';
+      const age = parseFloat(document.getElementById('tab-age')?.value) || 58;
+      const sex = document.getElementById('tab-sex')?.value || 'm';
+      const wt = parseFloat(document.getElementById('tab-wt')?.value) || 80;
+
+      // 1. eGFR & CrCl
+      const egfrRes = calculateCKDEPI(scr, age, (sex === 'f'), unit);
+      const crclRes = calculateCrCl(scr, unit, age, sex, wt);
+      const outBox = document.getElementById('tab-egfr-results');
+      if (outBox) {
+        outBox.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-size:18px; font-weight:700; color:var(--teal);">eGFR: ${egfrRes.egfr} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min/1.73m²</span></div>
+              <div style="font-size:13px; font-weight:600; color:var(--muted);">${isAr ? egfrRes.stage.nameAr : egfrRes.stage.nameEn}</div>
+            </div>
+            <div style="text-align:${isAr ? 'left' : 'right'};">
+              <div style="font-size:16px; font-weight:700; color:var(--grape);">CrCl: ${crclRes.crcl} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min</span></div>
+              <div style="font-size:11px; color:var(--muted);">(Cockcroft-Gault)</div>
+            </div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
+            <b>${isAr ? 'أمان الميتفورمين:' : 'Metformin:'}</b> ${isAr ? egfrRes.stage.metforminAr : egfrRes.stage.metforminEn} | 
+            <b>${isAr ? 'مثبطات SGLT2:' : 'SGLT2i:'}</b> ${isAr ? egfrRes.stage.sglt2iAr : egfrRes.stage.sglt2iEn}
+          </div>
+        `;
+      }
+
+      // Sync button
+      const syncBtn = document.getElementById('btn-sync-tools-egfr');
+      if (syncBtn) {
+        syncBtn.onclick = function() {
+          if (window.PatientSync && typeof window.PatientSync.update === 'function') {
+            window.PatientSync.update({
+              egfr: egfrRes.egfr,
+              age: age,
+              sex: sex,
+              wt: wt
+            });
+            if (window.RxShare && typeof window.RxShare.showToast === 'function') {
+              window.RxShare.showToast(isAr ? `✅ تم تحديث معدل الترشيح إلى ${egfrRes.egfr} mL/min ومزامنته` : `✅ eGFR updated to ${egfrRes.egfr} mL/min and synced`);
+            }
+          }
+        };
+      }
+
+      // 2. KDIGO
+      const kEgfr = parseFloat(document.getElementById('tab-kdigo-egfr')?.value) || egfrRes.egfr;
+      const kUacr = parseFloat(document.getElementById('tab-kdigo-uacr')?.value) || 30;
+      const kdigoRes = evaluateKdigoMatrix(kEgfr, kUacr);
+      const kBox = document.getElementById('tab-kdigo-results');
+      if (kBox) {
+        const riskColor = (kdigoRes.riskTier === 'VERY_HIGH') ? '#DC2626' : (kdigoRes.riskTier === 'HIGH' ? '#EA580C' : (kdigoRes.riskTier === 'MODERATE' ? '#D97706' : '#16A34A'));
+        kBox.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span style="display:inline-block; padding:3px 8px; border-radius:4px; font-weight:700; color:#fff; background:${riskColor}; font-size:12px;">
+                ${kdigoRes.composite} (${isAr ? kdigoRes.riskLabelAr : kdigoRes.riskLabelEn})
+              </span>
+            </div>
+            <div style="font-size:12px; color:var(--muted);">
+              <b>${isAr ? 'تكرار المتابعة:' : 'Surveillance:'}</b> ${isAr ? kdigoRes.monitoringAr : kdigoRes.monitoringEn}
+            </div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
+            <b>${isAr ? 'الإجراء والتوجيه:' : 'Action:'}</b> ${isAr ? kdigoRes.recommendationAr : kdigoRes.recommendationEn}
+          </div>
+        `;
+      }
+
+      // 3. DOAC
+      const doacRes = evaluateDoacDosing('apixaban', {
+        age: age,
+        weight: wt,
+        scr: scr,
+        crcl: crclRes.crcl,
+        egfr: egfrRes.egfr
+      });
+      const dBox = document.getElementById('tab-doac-results');
+      if (dBox) {
+        dBox.innerHTML = `
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">
+            💊 <b>Apixaban (Eliquis):</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}
+          </div>
+          <div style="font-size:13px; font-weight:600; border-top:1px solid var(--border); padding-top:6px; margin-top:4px;">
+            💊 <b>Rivaroxaban (Xarelto):</b> ${isAr ? doacRes.rivaroxabanAr : doacRes.rivaroxabanEn}
+          </div>
+        `;
+      }
+
+      // 4. FIB-4
+      const ast = parseFloat(document.getElementById('tab-fib4-ast')?.value) || 38;
+      const alt = parseFloat(document.getElementById('tab-fib4-alt')?.value) || 42;
+      const pltVal = parseFloat(document.getElementById('tab-fib4-plt')?.value) || 210;
+      const fib4Res = calculateFib4(age, ast, alt, pltVal);
+      const fBox = document.getElementById('tab-fib4-results');
+      if (fBox) {
+        const fibColor = (fib4Res.riskTier === 'HIGH') ? '#DC2626' : (fib4Res.riskTier === 'INTERMEDIATE' ? '#D97706' : '#16A34A');
+        fBox.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:15px; font-weight:700;">
+              FIB-4: <span style="color:${fibColor};">${fib4Res.score}</span> 
+              <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; color:#fff; background:${fibColor}; margin-right:4px;">
+                ${isAr ? fib4Res.riskLabelAr : fib4Res.riskLabelEn}
+              </span>
+            </div>
+          </div>
+          <div style="margin-top:6px; font-size:12px; border-top:1px solid var(--border); padding-top:4px;">
+            <b>${isAr ? 'التوصية السريرية:' : 'Recommendation:'}</b> ${isAr ? fib4Res.actionAr : fib4Res.actionEn}
+          </div>
+        `;
+      }
+    }
+
+    // Attach listeners
+    ['tab-scr', 'tab-scr-unit', 'tab-age', 'tab-sex', 'tab-wt', 'tab-kdigo-egfr', 'tab-kdigo-uacr', 'tab-fib4-ast', 'tab-fib4-alt', 'tab-fib4-plt'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', recalculateToolsTab);
+        el.addEventListener('change', recalculateToolsTab);
+      }
+    });
+
+    const openDrugsBtn = document.getElementById('btn-tools-open-drugs');
+    if (openDrugsBtn) {
+      openDrugsBtn.onclick = function() {
+        if (typeof window.switchMainTab === 'function') window.switchMainTab('tab-drugs');
+        else {
+          document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === 'tab-drugs'));
+          document.querySelectorAll('.main-view-section, .tab-panel').forEach(s => s.style.display = (s.id === 'tab-drugs') ? 'block' : 'none');
+          if (window.DrugDirectory && typeof window.DrugDirectory.render === 'function') window.DrugDirectory.render();
+        }
+      };
+    }
+
+    const openRecentBtn = document.getElementById('btn-tools-open-recent');
+    if (openRecentBtn) {
+      openRecentBtn.onclick = function() {
+        if (typeof window.switchMainTab === 'function') window.switchMainTab('tab-recent');
+        else {
+          document.querySelectorAll('.osrawy-nav-btn, .main-nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === 'tab-recent'));
+          document.querySelectorAll('.main-view-section, .tab-panel').forEach(s => s.style.display = (s.id === 'tab-recent') ? 'block' : 'none');
+          if (typeof window.renderRecentPatients === 'function') window.renderRecentPatients();
+        }
+      };
+    }
+
+    // Initial calculation
+    recalculateToolsTab();
+  }
+
   return {
     calculateCKDEPI,
     calculateCrCl,
@@ -1353,6 +1659,7 @@ const ClinicalTools = (function() {
     closeLdlModal,
     renderLdlMatrix,
     setMatrixMarket,
+    renderToolsTab,
     init,
     LDL_GOALS,
     STATIN_REGIMENS,

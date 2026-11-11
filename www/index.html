@@ -403,8 +403,10 @@
         <button class="filter-chip" data-drug-tier="3" data-i18n="drugs_tier_3">●●● عالي التكلفة</button>
       </div>
 
-      <div id="drug-directory-list">
-        <!-- Injected by DrugDirectory.render() -->
+      <div id="drugs-directory-container">
+        <div id="drug-directory-list">
+          <!-- Injected by DrugDirectory.render() -->
+        </div>
       </div>
     </div>
   </section>
@@ -422,6 +424,7 @@
 
   <!-- MAIN TAB: LIPIDS & DYSLIPIDEMIA (DLP) -->
   <section id="tab-dlp" class="tab-panel main-view-section wrap" hidden style="display: none; padding-top: 14px;">
+    <div id="lipid-engine-summary"></div>
     <div id="lipids-container"></div>
     <div id="dlp-container"></div>
   </section>
@@ -503,7 +506,7 @@
               <b data-i18n="update_sec_title">🔄 تحديثات التطبيق (GitHub)</b>
               <div style="font-size:11.5px;color:var(--muted);" data-i18n="update_sec_sub">فحص وتحميل أحدث الإصدارات من GitHub</div>
             </div>
-            <span class="update-version-tag" id="current-app-version">v1.2.7</span>
+            <span class="update-version-tag" id="current-app-version">v1.2.8</span>
           </div>
           <button type="button" class="btn btn-sm btn-primary" id="btn-check-updates" style="margin-top:6px;width:100%;" data-i18n="btn_check_updates">
             🔍 التحقق من وجود تحديثات الآن
