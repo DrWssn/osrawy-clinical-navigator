@@ -66,6 +66,12 @@ jobs:
           cd android
           ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Auto-increment Android versionCode
+        run: |
+          NEW_CODE=$((100 + ${{ github.run_number }}))
+          echo "Setting Android versionCode to $NEW_CODE"
+          sed -i "s/versionCode [0-9]*/versionCode $NEW_CODE/" android/app/build.gradle
+
       - name: Assemble Release APK
         working-directory: ./android
         env:
@@ -105,7 +111,8 @@ jobs:
               K_ALIAS="osrawy"
               K_PASS="osrawy_clinical_pass"
             else
-              echo "WARNING: Generating ephemeral keystore (set KEYSTORE_BASE64 secret for seamless updates)"
+              echo "⚠️ WARNING: KEYSTORE_BASE64 secret is not set! Generating ephemeral keystore — add KEYSTORE_BASE64 secret for seamless OTA updates."
+              echo "⚠️ **Signing Warning:** \`KEYSTORE_BASE64\` GitHub Secret is not set, so an ephemeral keystore was used. Add your 4 keystore secrets so future OTA updates install without package conflicts." >> $GITHUB_STEP_SUMMARY
               keytool -genkey -v -keystore temp.keystore -alias osrawy \
                 -keyalg RSA -keysize 2048 -validity 10000 \
                 -storepass osrawy123 -keypass osrawy123 \
