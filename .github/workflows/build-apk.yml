@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     name: Build, Validate & Release APK
@@ -40,7 +44,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+
+      - name: Set up Gradle Cache
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Configure Android SDK & Restore Keystore Secret
         env:
@@ -66,11 +72,29 @@ jobs:
           cd android
           ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Auto-increment Android versionCode
+      - name: Sync & Verify App Versioning
         run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          UPD_VER=$(node -e "const fs=require('fs'); const m=fs.readFileSync('www/js/updater.js','utf8').match(/currentVersion:\s*'([^']+)'/); console.log(m?m[1]:'');")
+          if [ "$PKG_VER" != "$UPD_VER" ]; then
+            echo "❌ Version mismatch: package.json ($PKG_VER) != updater.js ($UPD_VER)"
+            exit 1
+          fi
           NEW_CODE=$((100 + ${{ github.run_number }}))
-          echo "Setting Android versionCode to $NEW_CODE"
-          sed -i "s/versionCode [0-9]*/versionCode $NEW_CODE/" android/app/build.gradle
+          echo "Setting versionCode=$NEW_CODE and versionName=$PKG_VER"
+          sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode $NEW_CODE/" android/app/build.gradle
+          sed -i -E "s/versionName[[:space:]]+\"[^\"]+\"/versionName \"$PKG_VER\"/" android/app/build.gradle
+          grep -E "versionCode|versionName" android/app/build.gradle
+
+      - name: Require Release Keystore on Version Tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "❌ Refusing to publish a v* GitHub Release without KEYSTORE_BASE64 secret!"
+            exit 1
+          fi
 
       - name: Assemble Release APK
         working-directory: ./android
