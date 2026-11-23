@@ -170,6 +170,10 @@ input, select, textarea, [contenteditable="true"] {
   background: rgba(255, 255, 255, 0.3);
 }
 
+.market-short {
+  display: none;
+}
+
 /* RTL Support */
 html[dir="rtl"] {
   --f-body: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif;
@@ -1399,8 +1403,6 @@ html[dir="rtl"] .ldl-clinical-notes ul {
     font-weight: 700;
     box-shadow: 0 4px 14px rgba(10, 79, 75, 0.45);
     cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: transform 0.15s ease, opacity 0.2s ease;
   }
 
@@ -1422,7 +1424,7 @@ html[dir="rtl"] .ldl-clinical-notes ul {
    ============================================================== */
 
 @media (max-width: 680px) {
-  /* 1. Top App Bar: Compact single-row native header */
+  /* 1. Top App Bar: Compact native header with dedicated slim action strip */
   .top-nav-bar {
     position: relative;
     z-index: 100;
@@ -1430,21 +1432,21 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .top-nav-content {
-    padding: 6px 10px !important;
-    gap: 8px !important;
-    flex-wrap: nowrap !important;
+    padding: 6px 10px 4px !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
     align-items: center !important;
   }
 
   .app-brand {
     gap: 6px !important;
-    flex: 1 !important;
+    flex: 1 1 auto !important;
     min-width: 0 !important;
   }
 
   .app-logo-badge {
-    width: 32px !important;
-    height: 32px !important;
+    width: 30px !important;
+    height: 30px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
     flex: none !important;
@@ -1455,7 +1457,7 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .app-title-group h1 {
-    font-size: 14px !important;
+    font-size: 13.5px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -1468,20 +1470,39 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .top-actions {
+    width: 100% !important;
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
-    flex: none !important;
+    gap: 5px !important;
+    flex: 1 0 100% !important;
     flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 2px !important;
+    justify-content: flex-start !important;
+  }
+
+  .top-actions::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .market-full {
+    display: none !important;
+  }
+
+  .market-short {
+    display: inline !important;
   }
 
   .lang-pill-btn,
   .market-pill-btn,
   .ldl-pill-btn {
-    padding: 4px 7px !important;
+    padding: 4px 8px !important;
     font-size: 11px !important;
     border-radius: 999px !important;
     white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .ldl-pill-btn span {
@@ -1493,12 +1514,13 @@ html[dir="rtl"] .ldl-clinical-notes ul {
     height: 32px !important;
     font-size: 14px !important;
     flex: none !important;
+    flex-shrink: 0 !important;
   }
 
-  /* 2. Patient Summary Bar: Single-row horizontal scrollable strip */
+  /* 2. Patient Summary Bar: Single-row horizontal strip with non-duplicated vitals */
   .patient-summary-bar {
-    padding: 6px 10px !important;
-    gap: 6px !important;
+    padding: 5px 10px !important;
+    gap: 8px !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     justify-content: flex-start !important;
@@ -1509,6 +1531,10 @@ html[dir="rtl"] .ldl-clinical-notes ul {
 
   .patient-summary-bar::-webkit-scrollbar {
     display: none !important;
+  }
+
+  .patient-summary-bar .pt-bar-item:nth-child(n+4) {
+    display: none !important; /* Hide duplicate eGFR, UACR, and BP on mobile phones */
   }
 
   .pt-bar-item {

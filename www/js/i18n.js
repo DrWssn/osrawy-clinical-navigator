@@ -681,10 +681,14 @@ const I18n = (function() {
     const mktBtn = document.getElementById('market-toggle-btn');
     if (mktBtn) {
       const activeMkt = (window.DrugDirectory && window.DrugDirectory.getMarket) ? window.DrugDirectory.getMarket() : 'saudi';
+      const saFull = isAr ? '🇸🇦 السوق السعودي (SAR)' : '🇸🇦 Saudi Market (SAR)';
+      const egFull = isAr ? '🇪🇬 السوق المصري (EGP)' : '🇪🇬 Egypt Market (EGP)';
+      const saShort = '🇸🇦 SAR';
+      const egShort = '🇪🇬 EGP';
       if (activeMkt === 'saudi') {
-        mktBtn.textContent = isAr ? '🇸🇦 السوق السعودي (SAR)' : '🇸🇦 Saudi Market (SAR)';
+        mktBtn.innerHTML = `<span class="market-full">${saFull}</span><span class="market-short">${saShort}</span>`;
       } else {
-        mktBtn.textContent = isAr ? '🇪🇬 السوق المصري (EGP)' : '🇪🇬 Egypt Market (EGP)';
+        mktBtn.innerHTML = `<span class="market-full">${egFull}</span><span class="market-short">${egShort}</span>`;
       }
     }
 

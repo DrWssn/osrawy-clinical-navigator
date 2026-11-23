@@ -138,6 +138,17 @@ main{padding-block:14px 40px}
 
 /* steps */
 .steps{display:flex;flex-direction:column;gap:12px}
+[dir="rtl"] #result .steps {
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+[dir="rtl"] #result .steps .ar,
+[dir="rtl"] #result .steps .rx-gen,
+[dir="rtl"] #result .steps [dir="rtl"] {
+  direction: rtl;
+  text-align: start;
+}
 .pri-h{display:flex;align-items:center;gap:10px;margin-top:10px;font:700 15px var(--f-display);color:var(--c)}
 .pri-h .n{width:28px;height:28px;border-radius:50%;background:var(--c);color:var(--surface);display:grid;place-items:center;font:800 14px var(--f-display)}
 .pri-h small{font:500 12.5px var(--f-body);color:var(--muted)}

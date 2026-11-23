@@ -1474,29 +1474,29 @@ const ClinicalTools = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:14px;">
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الكرياتينين (Scr):' : 'Serum Cr:'}</label>
-              <input type="number" id="tab-scr" step="0.01" value="${initialScr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-scr" class="clinical-input" inputmode="decimal" step="0.01" value="${initialScr}">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوحدة:' : 'Unit:'}</label>
-              <select id="tab-scr-unit" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <select id="tab-scr-unit" class="clinical-select">
                 <option value="mg" ${initialScrUnit === 'mg' ? 'selected' : ''}>mg/dL</option>
                 <option value="umol" ${initialScrUnit === 'umol' ? 'selected' : ''}>µmol/L</option>
               </select>
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'العمر (سنة):' : 'Age (yrs):'}</label>
-              <input type="number" id="tab-age" value="${initialAge}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-age" class="clinical-input" inputmode="numeric" value="${initialAge}">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الجنس:' : 'Sex:'}</label>
-              <select id="tab-sex" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <select id="tab-sex" class="clinical-select">
                 <option value="m" ${initialSex === 'm' ? 'selected' : ''}>${isAr ? 'ذكر' : 'Male'}</option>
                 <option value="f" ${initialSex === 'f' ? 'selected' : ''}>${isAr ? 'أنثى' : 'Female'}</option>
               </select>
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
-              <input type="number" id="tab-wt" value="${initialWt}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-wt" class="clinical-input" inputmode="decimal" value="${initialWt}">
             </div>
           </div>
 
@@ -1520,11 +1520,11 @@ const ClinicalTools = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px;">
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'معدل الترشيح (eGFR mL/min):' : 'eGFR (mL/min):'}</label>
-              <input type="number" id="tab-kdigo-egfr" value="${initialEgfr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-kdigo-egfr" class="clinical-input" inputmode="numeric" value="${initialEgfr}">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'زلال البول UACR (mg/g):' : 'UACR (mg/g):'}</label>
-              <input type="number" id="tab-kdigo-uacr" value="${initialUacr}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-kdigo-uacr" class="clinical-input" inputmode="numeric" value="${initialUacr}">
             </div>
           </div>
 
@@ -1557,15 +1557,15 @@ const ClinicalTools = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:12px;">
             <div>
               <label style="font-size:12px; color:var(--muted);">AST (U/L):</label>
-              <input type="number" id="tab-fib4-ast" value="38" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-fib4-ast" class="clinical-input" inputmode="numeric" value="38">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">ALT (U/L):</label>
-              <input type="number" id="tab-fib4-alt" value="42" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-fib4-alt" class="clinical-input" inputmode="numeric" value="42">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الصفائح الدموية (PLT 10⁹/L):' : 'Platelets (10⁹/L):'}</label>
-              <input type="number" id="tab-fib4-plt" value="210" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="tab-fib4-plt" class="clinical-input" inputmode="numeric" value="210">
             </div>
           </div>
 

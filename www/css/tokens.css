@@ -323,3 +323,22 @@
   font-family: inherit;
   box-sizing: border-box;
 }
+
+/* Pregnancy & Obstetric Protocol Cards */
+.pregnancy-protocol-card {
+  background: #FDF2F8;
+  border: 1px solid #F9A8D4;
+  border-inline-start: 4px solid #DB2777;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+  color: #831843;
+}
+
+[data-theme="dark"] .pregnancy-protocol-card,
+:root[data-theme="dark"] .pregnancy-protocol-card {
+  background: rgba(219, 39, 119, 0.15);
+  border: 1px solid rgba(219, 39, 119, 0.4);
+  border-inline-start: 4px solid #EC4899;
+  color: #F472B6;
+}

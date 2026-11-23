@@ -498,10 +498,14 @@
       const mktBtn = global.document.getElementById('market-toggle-btn');
       if (mktBtn && !(global.I18n && typeof global.I18n.applyTranslations === 'function')) {
         const isAr = global.document.documentElement && global.document.documentElement.lang === 'ar';
+        const saFull = isAr ? '🇸🇦 السوق السعودي (SAR)' : '🇸🇦 Saudi Market (SAR)';
+        const egFull = isAr ? '🇪🇬 السوق المصري (EGP)' : '🇪🇬 Egypt Market (EGP)';
+        const saShort = '🇸🇦 SAR';
+        const egShort = '🇪🇬 EGP';
         if (next === 'saudi') {
-          mktBtn.textContent = isAr ? '🇸🇦 السوق السعودي (SAR)' : '🇸🇦 Saudi Market (SAR)';
+          mktBtn.innerHTML = `<span class="market-full">${saFull}</span><span class="market-short">${saShort}</span>`;
         } else {
-          mktBtn.textContent = isAr ? '🇪🇬 السوق المصري (EGP)' : '🇪🇬 Egypt Market (EGP)';
+          mktBtn.innerHTML = `<span class="market-full">${egFull}</span><span class="market-short">${egShort}</span>`;
         }
       }
     }

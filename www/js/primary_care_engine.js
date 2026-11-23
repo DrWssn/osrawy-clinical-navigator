@@ -583,11 +583,11 @@ const OsrawyPrimaryCareEngine = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:12px 0;">
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'مرات الفنتولين أسبوعياً (SABA):' : 'SABA puffs/week:'}</label>
-              <input type="number" id="pc-asthma-saba" value="2" min="0" max="50" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-asthma-saba" class="clinical-input" inputmode="numeric" value="2" min="0" max="50">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الخطوة العلاجية الحالية:' : 'Current Step:'}</label>
-              <select id="pc-asthma-step" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <select id="pc-asthma-step" class="clinical-select">
                 <option value="1">Step 1</option>
                 <option value="2" selected>Step 2</option>
                 <option value="3">Step 3</option>
@@ -597,7 +597,7 @@ const OsrawyPrimaryCareEngine = (function() {
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'مسار العلاج:' : 'Treatment Track:'}</label>
-              <select id="pc-asthma-track" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <select id="pc-asthma-track" class="clinical-select">
                 <option value="1" selected>${isAr ? 'المسار 1 (MART - المفضل)' : 'Track 1 (MART Preferred)'}</option>
                 <option value="2">${isAr ? 'المسار 2 (البديل SABA)' : 'Track 2 (Alternative)'}</option>
               </select>
@@ -617,23 +617,23 @@ const OsrawyPrimaryCareEngine = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin:12px 0;">
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'النوبات المتوسطة آخر سنة:' : 'Exacerbations/yr:'}</label>
-              <input type="number" id="pc-copd-exac" value="1" min="0" max="20" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-copd-exac" class="clinical-input" inputmode="numeric" value="1" min="0" max="20">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'دخول المستشفى (آخر سنة):' : 'Hospitalizations/yr:'}</label>
-              <input type="number" id="pc-copd-hosp" value="0" min="0" max="10" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-copd-hosp" class="clinical-input" inputmode="numeric" value="0" min="0" max="10">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">mMRC Dyspnea (0–4):</label>
-              <input type="number" id="pc-copd-mmrc" value="2" min="0" max="4" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-copd-mmrc" class="clinical-input" inputmode="numeric" value="2" min="0" max="4">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">CAT Score (0–40):</label>
-              <input type="number" id="pc-copd-cat" value="14" min="0" max="40" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-copd-cat" class="clinical-input" inputmode="numeric" value="14" min="0" max="40">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الحمضات بالدم (Eosinophils/µL):' : 'Blood Eosinophils (/µL):'}</label>
-              <input type="number" id="pc-copd-eos" value="180" min="0" max="2000" step="10" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-copd-eos" class="clinical-input" inputmode="numeric" value="180" min="0" max="2000" step="10">
             </div>
           </div>
           <div id="pc-copd-output" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);"></div>
@@ -645,15 +645,15 @@ const OsrawyPrimaryCareEngine = (function() {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin:12px 0;">
             <div>
               <label style="font-size:12px; color:var(--muted);">TSH (mIU/L):</label>
-              <input type="number" id="pc-thy-tsh" value="6.8" step="0.1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-thy-tsh" class="clinical-input" inputmode="decimal" value="6.8" step="0.1">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">Free T4 (ng/dL):</label>
-              <input type="number" id="pc-thy-ft4" value="1.1" step="0.1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-thy-ft4" class="clinical-input" inputmode="decimal" value="1.1" step="0.1">
             </div>
             <div>
               <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
-              <input type="number" id="pc-thy-wt" value="${(pt.wt !== undefined && pt.wt !== null && pt.wt !== '') ? pt.wt : 75}" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+              <input type="number" id="pc-thy-wt" class="clinical-input" inputmode="decimal" value="${(pt.wt !== undefined && pt.wt !== null && pt.wt !== '') ? pt.wt : 75}">
             </div>
           </div>
           <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
@@ -709,7 +709,7 @@ const OsrawyPrimaryCareEngine = (function() {
       const aOut = document.getElementById('pc-asthma-output');
       if (aOut) {
         const aColor = aRes.controlLevel === 'uncontrolled' ? '#DC2626' : (aRes.controlLevel === 'partly_controlled' ? '#D97706' : '#16A34A');
-        const alertsHtml = (aRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FEF2F2; color:#991B1B; font-size:12px; border:1px solid #FCA5A5;">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        const alertsHtml = (aRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:var(--danger-bg); color:var(--danger-text); font-size:12px; border:1px solid var(--danger-border);">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
         const recName = isAr
           ? ((aRes.recommendationDetails && aRes.recommendationDetails.nameAr) || aRes.recommendation || '')
           : ((aRes.recommendationDetails && aRes.recommendationDetails.nameEn) || aRes.recommendation || '');
@@ -744,7 +744,7 @@ const OsrawyPrimaryCareEngine = (function() {
 
       const cOut = document.getElementById('pc-copd-output');
       if (cOut) {
-        const cAlerts = (cRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FFFBEB; color:#92400E; font-size:12px; border:1px solid #FDE68A;">⚠️ <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        const cAlerts = (cRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:var(--warn-bg); color:var(--warn-text); font-size:12px; border:1px solid var(--warn-border);">⚠️ <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
         cOut.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700; font-size:14px; color:var(--teal);">${isAr ? cRes.groupNameAr : cRes.groupNameEn}</span>
@@ -774,7 +774,7 @@ const OsrawyPrimaryCareEngine = (function() {
 
       const tOut = document.getElementById('pc-thy-output');
       if (tOut) {
-        const tAlerts = (tRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:#FEF2F2; color:#991B1B; font-size:12px; border:1px solid #FCA5A5;">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
+        const tAlerts = (tRes.alerts || []).map(al => `<div style="margin-top:8px; padding:8px; border-radius:6px; background:var(--danger-bg); color:var(--danger-text); font-size:12px; border:1px solid var(--danger-border);">🚨 <b>${isAr ? al.titleAr : al.titleEn}:</b> ${isAr ? al.messageAr : al.messageEn}</div>`).join('');
         tOut.innerHTML = `
           <div style="font-weight:700; font-size:14px; color:var(--grape);">${isAr ? tRes.statusNameAr : tRes.statusNameEn}</div>
           <div style="margin-top:8px; font-size:13px;"><b>${isAr ? 'الخطة العلاجية:' : 'Management:'}</b> ${isAr ? tRes.rxAr : tRes.rxEn}</div>
