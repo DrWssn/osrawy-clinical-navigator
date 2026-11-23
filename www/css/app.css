@@ -27,7 +27,7 @@ html, body {
 body {
   margin: 0;
   padding-top: 0;
-  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 16px) + 20px);
+  padding-bottom: calc(var(--nav-h, 60px) + 76px + env(safe-area-inset-bottom, 16px));
 }
 
 input, select, textarea, [contenteditable="true"] {
@@ -78,7 +78,7 @@ input, select, textarea, [contenteditable="true"] {
   background: linear-gradient(135deg, var(--hero1), var(--hero2));
   color: #FFFFFF;
   box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: 0;
 }
 
 .top-nav-content {
@@ -1654,8 +1654,20 @@ html[dir="rtl"] .ldl-clinical-notes ul {
     border-bottom-right-radius: 0 !important;
     border-top-left-radius: 20px !important;
     border-top-right-radius: 20px !important;
-    padding: 16px 14px !important;
+    padding: 0 !important;
     animation: slideUpBottomSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .modal-body {
+    padding: 14px 16px !important;
+  }
+
+  .modal-footer {
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   @keyframes slideUpBottomSheet {
@@ -1664,9 +1676,11 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   /* 10. Bottom Navigation Bar */
-  .bottom-nav-bar {
-    height: 56px !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  .bottom-nav-bar,
+  .osrawy-bottom-nav {
+    min-height: var(--nav-h, 60px) !important;
+    height: auto !important;
+    padding: 6px 4px calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
   }
 
   .main-nav-btn {
@@ -1719,14 +1733,12 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 14px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 14px 6px;
   gap: 8px;
   font-size: 12.5px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 :root[data-theme="dark"] .sticky-vitals-bar {
-  background: rgba(26, 32, 44, 0.95);
+  background: rgba(26, 32, 44, 0.98);
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 .sticky-vitals-bar .vitals-group {
@@ -1734,6 +1746,18 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+@media (max-width: 680px) {
+  .sticky-vitals-bar .vitals-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .sticky-vitals-bar .vitals-group::-webkit-scrollbar {
+    display: none;
+  }
 }
 .sticky-vitals-bar .vital-chip {
   display: inline-flex;
@@ -1746,6 +1770,7 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   font-weight: 600;
   font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
   font-size: 11.5px;
+  flex-shrink: 0;
 }
 :root[data-theme="dark"] .sticky-vitals-bar .vital-chip {
   background: rgba(60, 199, 184, 0.12);
@@ -1766,20 +1791,19 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  min-height: var(--nav-h, 60px);
+  height: auto;
   background: var(--surface, #FFFFFF);
   border-top: 1px solid var(--border, #E2E8F0);
   display: flex;
   align-items: center;
   justify-content: space-around;
   z-index: 1000;
-  padding: 0 4px calc(env(safe-area-inset-bottom, 0px) + 2px);
+  padding: 6px 4px calc(env(safe-area-inset-bottom, 0px) + 6px);
   box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 :root[data-theme="dark"] .osrawy-bottom-nav {
-  background: rgba(18, 24, 38, 0.96);
+  background: rgba(18, 24, 38, 0.98);
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 .osrawy-nav-btn {
@@ -2366,27 +2390,20 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   border-radius: 6px;
 }
 
-/* Guardrails Banner (Cross-Engine) */
+/* Guardrails Banner (Cross-Engine - Logical RTL-safe) */
 .clinical-guardrail-banner {
-  background: #FEF2F2;
-  border: 1px solid #FCA5A5;
-  border-left: 4px solid #DC2626;
+  background: var(--danger-bg, #FEF2F2);
+  border: 1px solid var(--danger-border, #FCA5A5);
+  border-inline-start: 4px solid var(--danger-accent, #DC2626);
   border-radius: 8px;
   padding: 10px 14px;
   margin: 10px 14px;
   font-size: 13px;
 }
-[dir="rtl"] .clinical-guardrail-banner {
-  border-left: 1px solid #FCA5A5;
-  border-right: 4px solid #DC2626;
-}
 :root[data-theme="dark"] .clinical-guardrail-banner {
-  background: rgba(220, 38, 38, 0.12);
+  background: rgba(220, 38, 38, 0.14);
   border-color: rgba(239, 68, 68, 0.35);
-  border-left-color: #EF4444;
-}
-[dir="rtl"] :root[data-theme="dark"] .clinical-guardrail-banner {
-  border-right-color: #EF4444;
+  border-inline-start-color: #EF4444;
 }
 .guardrail-item {
   display: flex;
@@ -2659,4 +2676,22 @@ body.osrawy-patient-mode .osrawy-handoff-exit-bar {
   .quick-jump-pill .jump-text {
     font-size: 11.5px !important;
   }
+}
+
+/* ==========================================================================
+   Keyboard Awareness & Pregnancy Protocol Dark Mode
+   ========================================================================== */
+body.osrawy-keyboard-open .osrawy-bottom-nav,
+body.osrawy-keyboard-open .bottom-nav-bar,
+body.osrawy-keyboard-open .quick-jump-pill,
+body.osrawy-keyboard-open .osrawy-soap-fab {
+  display: none !important;
+}
+
+:root[data-theme="dark"] .pregnancy-protocol-card,
+[data-theme="dark"] .pregnancy-protocol-card {
+  background: rgba(219, 39, 119, 0.14) !important;
+  border-color: rgba(244, 114, 182, 0.35) !important;
+  border-inline-start-color: #F472B6 !important;
+  color: #FBCFE8 !important;
 }

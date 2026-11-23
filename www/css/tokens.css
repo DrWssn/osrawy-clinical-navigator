@@ -1,0 +1,325 @@
+/* ==============================================================
+   Osrawy Clinical Navigator - Unified Design Tokens & Shared Components
+   ============================================================== */
+
+:root {
+  /* Surfaces */
+  --bg: #F2F7F6;
+  --surface: #FFFFFF;
+  --surface2: #E9F2F0;
+  --surface-secondary: #F1F5F9;
+  --card-bg: #FFFFFF;
+  --highlight-bg: #F8FAFC;
+
+  /* Typography & Ink */
+  --ink: #0F2B2A;
+  --muted: #55716E;
+  --text-color: #0F2B2A;
+  --text-muted: #55716E;
+
+  /* Borders & Lines */
+  --line: #D3E3DF;
+  --border: #CBD5E1;
+  --border-color: #CBD5E1;
+
+  /* Brand & Navigation */
+  --teal: #0E7C74;
+  --teal-soft: #DCF1EE;
+  --app-primary: #0A4F4B;
+  --hero1: #0A4F4B;
+  --hero2: #0E7C74;
+  --on-hero: #FFFFFF;
+
+  /* Clinical Semantics */
+  --coral: #DD4552;
+  --coral-soft: #FCE5E7;
+  --sun: #D98A07;
+  --sun-soft: #FDF0D6;
+  --sky: #2C6FDB;
+  --sky-soft: #E2ECFC;
+  --grape: #7550CF;
+  --grape-soft: #EDE7FB;
+  --leaf: #1F8B53;
+  --leaf-soft: #DFF3E7;
+
+  /* Semantic Alerts */
+  --danger-bg: #FEF2F2;
+  --danger-border: #FCA5A5;
+  --danger-text: #991B1B;
+  --danger-accent: #DC2626;
+
+  --warn-bg: #FFFBEB;
+  --warn-border: #FCD34D;
+  --warn-text: #92400E;
+  --warn-accent: #D97706;
+
+  --safe-bg: #ECFDF5;
+  --safe-border: #A7F3D0;
+  --safe-text: #065F46;
+  --safe-accent: #10B981;
+
+  --info-bg: #F0FDFA;
+  --info-border: #99F6E4;
+  --info-text: #134E4A;
+  --info-accent: #0D9488;
+
+  /* Dimensions & Ergonomics */
+  --nav-h: 60px;
+  --vitals-drawer-top: 44px;
+  --osrawy-touch-min: 48px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+  --shadow: 0 1px 2px rgba(15, 43, 42, 0.06), 0 6px 18px rgba(15, 43, 42, 0.06);
+
+  /* Fonts */
+  --f-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --f-ar: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1716;
+    --surface: #122220;
+    --surface2: #182D2B;
+    --surface-secondary: #1F2E2C;
+    --card-bg: #122220;
+    --highlight-bg: #182D2B;
+
+    --ink: #E2F0ED;
+    --muted: #8EAFAA;
+    --text-color: #E2F0ED;
+    --text-muted: #8EAFAA;
+
+    --line: #24403C;
+    --border: #2D4A45;
+    --border-color: #2D4A45;
+
+    --teal: #3CC7B8;
+    --teal-soft: #113431;
+    --app-primary: #3CC7B8;
+    --hero1: #08332F;
+    --hero2: #0D5650;
+    --on-hero: #F2FBF9;
+
+    --coral: #FF7C87;
+    --coral-soft: #3A1B1F;
+    --sun: #FFC24F;
+    --sun-soft: #3A2C0F;
+    --sky: #82B1FF;
+    --sky-soft: #15264A;
+    --grape: #B49CFF;
+    --grape-soft: #29204A;
+    --leaf: #5AD68E;
+    --leaf-soft: #11321E;
+
+    --danger-bg: rgba(220, 38, 38, 0.14);
+    --danger-border: rgba(239, 68, 68, 0.35);
+    --danger-text: #FCA5A5;
+    --danger-accent: #EF4444;
+
+    --warn-bg: rgba(217, 119, 6, 0.14);
+    --warn-border: rgba(252, 211, 77, 0.3);
+    --warn-text: #FDE68A;
+    --warn-accent: #F59E0B;
+
+    --safe-bg: rgba(16, 185, 129, 0.14);
+    --safe-border: rgba(52, 211, 153, 0.3);
+    --safe-text: #6EE7B7;
+    --safe-accent: #10B981;
+
+    --info-bg: rgba(13, 148, 136, 0.14);
+    --info-border: rgba(153, 246, 228, 0.3);
+    --info-text: #99F6E4;
+    --info-accent: #14B8A6;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --bg: #0B1716;
+  --surface: #122220;
+  --surface2: #182D2B;
+  --surface-secondary: #1F2E2C;
+  --card-bg: #122220;
+  --highlight-bg: #182D2B;
+
+  --ink: #E2F0ED;
+  --muted: #8EAFAA;
+  --text-color: #E2F0ED;
+  --text-muted: #8EAFAA;
+
+  --line: #24403C;
+  --border: #2D4A45;
+  --border-color: #2D4A45;
+
+  --teal: #3CC7B8;
+  --teal-soft: #113431;
+  --app-primary: #3CC7B8;
+  --hero1: #08332F;
+  --hero2: #0D5650;
+  --on-hero: #F2FBF9;
+
+  --coral: #FF7C87;
+  --coral-soft: #3A1B1F;
+  --sun: #FFC24F;
+  --sun-soft: #3A2C0F;
+  --sky: #82B1FF;
+  --sky-soft: #15264A;
+  --grape: #B49CFF;
+  --grape-soft: #29204A;
+  --leaf: #5AD68E;
+  --leaf-soft: #11321E;
+
+  --danger-bg: rgba(220, 38, 38, 0.14);
+  --danger-border: rgba(239, 68, 68, 0.35);
+  --danger-text: #FCA5A5;
+  --danger-accent: #EF4444;
+
+  --warn-bg: rgba(217, 119, 6, 0.14);
+  --warn-border: rgba(252, 211, 77, 0.3);
+  --warn-text: #FDE68A;
+  --warn-accent: #F59E0B;
+
+  --safe-bg: rgba(16, 185, 129, 0.14);
+  --safe-border: rgba(52, 211, 153, 0.3);
+  --safe-text: #6EE7B7;
+  --safe-accent: #10B981;
+
+  --info-bg: rgba(13, 148, 136, 0.14);
+  --info-border: rgba(153, 246, 228, 0.3);
+  --info-text: #99F6E4;
+  --info-accent: #14B8A6;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+/* ==============================================================
+   Shared Component Styling (Defect #7 Fixes)
+   ============================================================== */
+
+/* Action Chips (Drug Directory & Leaflets) */
+.action-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.action-chip:hover {
+  background: var(--surface);
+  border-color: var(--teal);
+}
+.action-chip.primary-chip {
+  background: var(--app-primary, var(--teal));
+  border-color: var(--app-primary, var(--teal));
+  color: #FFFFFF;
+}
+
+/* Renal Safety Card Accents */
+.drug-card-safe {
+  border-inline-start: 4px solid var(--leaf) !important;
+}
+.drug-card-caution {
+  border-inline-start: 4px solid var(--sun) !important;
+}
+.drug-card-contraindicated {
+  border-inline-start: 4px solid var(--coral) !important;
+}
+
+/* Pill Buttons & Topic Badges */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.leaflet-topic-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.leaflet-topic-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Utility Buttons */
+.btn-outline-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--app-primary, var(--teal));
+  background: transparent;
+  color: var(--app-primary, var(--teal));
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.btn-outline-primary:hover {
+  background: var(--app-primary, var(--teal));
+  color: #FFFFFF;
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.mt-3 {
+  margin-top: 12px !important;
+}
+.text-center {
+  text-align: center !important;
+}
+
+/* Clinical Inputs / Selects */
+.clinical-input,
+.clinical-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}

@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
 
+  <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/diabetes.css">
   <link rel="stylesheet" href="css/htn.css">
   <link rel="stylesheet" href="css/lipids.css">
@@ -72,6 +73,8 @@
         <button id="market-toggle-btn" class="market-pill-btn" title="تبديل السوق (سعودي / مصري)">🇸🇦 السوق السعودي (SAR)</button>
         <button id="btn-open-ldl-modal" class="ldl-pill-btn" title="أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)" data-i18n-title="title_ldl_matrix">🎯 <span data-i18n="btn_ldl_matrix_nav">أهداف LDL والستاتين</span></button>
         <button id="save-pt-btn" class="icon-btn" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">💾</button>
+        <button id="open-recent-btn" class="icon-btn" title="المسودات المحفوظة" aria-label="المسودات" data-i18n-title="btn_recent_drafts">📋</button>
+        <button id="open-drugs-btn" class="icon-btn" title="دليل الأدوية" aria-label="دليل الأدوية" data-i18n-title="btn_drugs_directory">💊</button>
         <button id="theme-toggle-btn" class="icon-btn" title="تبديل الوضع الليلي" aria-label="الوضع الليلي" data-i18n-title="btn_theme" data-i18n-aria-label="btn_theme">🌓</button>
         <button id="open-settings-btn" class="icon-btn" title="إعدادات الطبيب والعيادة" aria-label="الإعدادات" data-i18n-title="btn_settings" data-i18n-aria-label="btn_settings">⚙️</button>
       </div>
@@ -106,26 +109,26 @@
       <h3 data-i18n="dia_h3_basics">Basics</h3>
       <div class="fields">
         <div class="field full"><label for="pname" data-i18n="lbl_pname">Patient name</label><input id="pname" type="text" placeholder="e.g. Ahmed Mahmoud" data-i18n-placeholder="ph_pname"></div>
-        <div class="field"><label for="age" data-i18n="lbl_age">Age (y)</label><input id="age" type="number" value="52"></div>
+        <div class="field"><label for="age" data-i18n="lbl_age">Age (y)</label><input id="age" type="number" inputmode="numeric" value="52"></div>
         <div class="field"><label for="sex" data-i18n="lbl_sex">Sex</label><select id="sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></div>
-        <div class="field"><label for="wt" data-i18n="lbl_wt">Weight (kg)</label><input id="wt" type="number" value="96"></div>
-        <div class="field"><label for="ht" data-i18n="lbl_ht">Height (cm)</label><input id="ht" type="number" value="170"></div>
-        <div class="field"><label for="dur" data-i18n="lbl_dur">Diabetes duration (y)</label><input id="dur" type="number" value="4"></div>
+        <div class="field"><label for="wt" data-i18n="lbl_wt">Weight (kg)</label><input id="wt" type="number" step="0.1" inputmode="decimal" value="96"></div>
+        <div class="field"><label for="ht" data-i18n="lbl_ht">Height (cm)</label><input id="ht" type="number" inputmode="numeric" value="170"></div>
+        <div class="field"><label for="dur" data-i18n="lbl_dur">Diabetes duration (y)</label><input id="dur" type="number" inputmode="numeric" value="4"></div>
         <div class="field"><label for="hf" data-i18n="lbl_hf">Heart failure</label>
           <select id="hf"><option value="none" data-i18n="opt_hf_none">None</option><option value="hfref" data-i18n="opt_hf_ref">HFrEF</option><option value="hfpef" data-i18n="opt_hf_pef">HFpEF / HFmrEF</option></select></div>
       </div>
       <h3 data-i18n="dia_h3_labs">Labs</h3>
       <div class="fields">
-        <div class="field"><label for="a1c" data-i18n="lbl_a1c">HbA1c (%)</label><input id="a1c" type="number" step="0.1" value="8.9"></div>
-        <div class="field"><label for="fpg" data-i18n="lbl_fpg">Fasting glucose (mg/dL)</label><input id="fpg" type="number" value="190"></div>
+        <div class="field"><label for="a1c" data-i18n="lbl_a1c">HbA1c (%)</label><input id="a1c" type="number" step="0.1" inputmode="decimal" value="8.9"></div>
+        <div class="field"><label for="fpg" data-i18n="lbl_fpg">Fasting glucose (mg/dL)</label><input id="fpg" type="number" inputmode="numeric" value="190"></div>
         <div class="field">
           <div class="field-label-row">
             <label for="egfr" data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</label>
             <button type="button" class="btn-calc-pill btn-open-egfr-calc" title="حاسبة وظائف الكلى CKD-EPI 2021" data-i18n-title="calc_egfr_btn_title">🧮 <span data-i18n="btn_calc">حاسبة</span></button>
           </div>
-          <input id="egfr" type="number" value="68">
+          <input id="egfr" type="number" inputmode="numeric" value="68">
         </div>
-        <div class="field"><label for="uacr" data-i18n="lbl_uacr">UACR (mg/g)</label><input id="uacr" type="number" value="45"></div>
+        <div class="field"><label for="uacr" data-i18n="lbl_uacr">UACR (mg/g)</label><input id="uacr" type="number" inputmode="numeric" value="45"></div>
       </div>
       <h3 data-i18n="dia_h3_comorb">Comorbidities &amp; risk</h3>
       <div class="checks">
@@ -201,10 +204,10 @@
       <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)"><span class="ic">U</span><h2 data-i18n="ins_h2_calc">Insulin dose calculator</h2></div>
       <p class="sub" data-i18n="ins_sub_calc">Starting doses. Titrate on home glucose readings.</p>
       <div class="fields">
-        <div class="field"><label for="iwt" data-i18n="lbl_wt">Weight (kg)</label><input id="iwt" type="number" value="96"></div>
-        <div class="field"><label for="ifpg" data-i18n="lbl_ifpg">Mean fasting glucose (mg/dL)</label><input id="ifpg" type="number" value="190"></div>
-        <div class="field"><label for="icur" data-i18n="lbl_icur">Current basal dose (U/day)</label><input id="icur" type="number" value="0"></div>
-        <div class="field"><label for="itdd" data-i18n="lbl_itdd">Current total daily dose (U)</label><input id="itdd" type="number" value="0"></div>
+        <div class="field"><label for="iwt" data-i18n="lbl_wt">Weight (kg)</label><input id="iwt" type="number" step="0.1" inputmode="decimal" value="96"></div>
+        <div class="field"><label for="ifpg" data-i18n="lbl_ifpg">Mean fasting glucose (mg/dL)</label><input id="ifpg" type="number" inputmode="numeric" value="190"></div>
+        <div class="field"><label for="icur" data-i18n="lbl_icur">Current basal dose (U/day)</label><input id="icur" type="number" inputmode="numeric" value="0"></div>
+        <div class="field"><label for="itdd" data-i18n="lbl_itdd">Current total daily dose (U)</label><input id="itdd" type="number" inputmode="numeric" value="0"></div>
         <div class="field full"><label for="isens" data-i18n="lbl_isens">Insulin sensitivity</label>
           <select id="isens">
             <option value="low" data-i18n="opt_sens_low">Sensitive: elderly, lean, eGFR &lt;30, hypo risk</option>
@@ -279,17 +282,17 @@
   <fieldset>
     <legend data-i18n="htn_legend_bp">Blood pressure (confirmed average, mmHg)</legend>
     <div class="bp">
-      <input type="number" id="sbp" value="148" min="70" max="260" aria-label="Systolic" data-i18n-aria-label="aria_systolic">
+      <input type="number" id="sbp" value="148" min="70" max="260" inputmode="numeric" aria-label="Systolic" data-i18n-aria-label="aria_systolic">
       <b>/</b>
-      <input type="number" id="dbp" value="94" min="40" max="160" aria-label="Diastolic" data-i18n-aria-label="aria_diastolic">
+      <input type="number" id="dbp" value="94" min="40" max="160" inputmode="numeric" aria-label="Diastolic" data-i18n-aria-label="aria_diastolic">
     </div>
     <div class="row">
-      <label class="f"><span data-i18n="lbl_age_years">Age (years)</span><input type="number" id="htn-age" value="52" min="18" max="110"></label>
+      <label class="f"><span data-i18n="lbl_age_years">Age (years)</span><input type="number" id="htn-age" value="52" min="18" max="110" inputmode="numeric"></label>
       <label class="f"><span data-i18n="lbl_sex">Sex</span><select id="htn-sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></label>
       <label class="f"><span data-i18n="lbl_cur_bp_drugs">Current BP drugs</span><select id="meds">
         <option value="0" selected data-i18n="opt_meds_none">None (new)</option><option value="1" data-i18n="opt_meds_1">1 class</option><option value="2" data-i18n="opt_meds_2">2 classes</option><option value="3" data-i18n="opt_meds_3">3+ incl. diuretic</option></select></label>
     </div>
-    <label class="f"><span id="risk-l" data-i18n="lbl_cvd_risk">10-year CVD risk % (PREVENT)</span><input type="number" id="risk" placeholder="leave blank if not calculated" data-i18n-placeholder="ph_risk" min="0" max="100" step="0.1"></label>
+    <label class="f"><span id="risk-l" data-i18n="lbl_cvd_risk">10-year CVD risk % (PREVENT)</span><input type="number" id="risk" placeholder="leave blank if not calculated" data-i18n-placeholder="ph_risk" min="0" max="100" step="0.1" inputmode="decimal"></label>
     <div class="chips">
       <label class="chip"><input type="checkbox" id="oob" checked><span data-i18n="chk_oob">Confirmed by home/ambulatory BP</span></label>
     </div>
@@ -320,10 +323,10 @@
           <span data-i18n="lbl_egfr">eGFR (mL/min/1.73m²)</span>
           <button type="button" class="btn-calc-pill btn-open-egfr-calc" title="حاسبة وظائف الكلى CKD-EPI 2021" data-i18n-title="calc_egfr_btn_title">🧮 <span data-i18n="btn_calc">حاسبة</span></button>
         </div>
-        <input type="number" id="htn-egfr" value="68" min="3" max="150">
+        <input type="number" id="htn-egfr" value="68" min="3" max="150" inputmode="numeric">
       </label>
-      <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="45" min="0" max="10000"></label>
-      <label class="f"><span data-i18n="lbl_k">K⁺ (mmol/L)</span><input type="number" id="k" value="4.6" min="2" max="8" step="0.1"></label>
+      <label class="f"><span data-i18n="lbl_uacr">UACR (mg/g)</span><input type="number" id="htn-uacr" value="45" min="0" max="10000" inputmode="numeric"></label>
+      <label class="f"><span data-i18n="lbl_k">K⁺ (mmol/L)</span><input type="number" id="k" value="4.6" min="2" max="8" step="0.1" inputmode="decimal"></label>
     </div>
     <p class="hint" data-i18n="hint_htn_labs">UACR ≥30 mg/g counts as albuminuria; eGFR &lt;60 or UACR ≥30 counts as CKD.</p>
   </fieldset>
@@ -331,8 +334,8 @@
   <fieldset>
     <legend data-i18n="htn_legend_prevent">10-year CVD risk calculator · AHA PREVENT</legend>
     <div class="row">
-      <label class="f"><span data-i18n="lbl_tc">Total cholesterol</span><input type="number" id="tc" value="210" step="0.1"></label>
-      <label class="f"><span data-i18n="lbl_hdl">HDL cholesterol</span><input type="number" id="hdl" value="42" step="0.1"></label>
+      <label class="f"><span data-i18n="lbl_tc">Total cholesterol</span><input type="number" id="tc" value="210" step="0.1" inputmode="decimal"></label>
+      <label class="f"><span data-i18n="lbl_hdl">HDL cholesterol</span><input type="number" id="hdl" value="42" step="0.1" inputmode="decimal"></label>
       <label class="f"><span data-i18n="lbl_unit">Units</span><select id="lunit"><option value="mg">mg/dL</option><option value="mmol">mmol/L</option></select></label>
     </div>
     <div class="chips">
@@ -461,27 +464,27 @@
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:10px;">
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_ldl">LDL-C:</label>
-          <input type="number" id="dlp-ldl" value="130" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <input type="number" id="dlp-ldl" class="clinical-input" value="130" step="1" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_tc">Total Chol (TC):</label>
-          <input type="number" id="dlp-tc" value="210" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <input type="number" id="dlp-tc" class="clinical-input" value="210" step="1" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_hdl">HDL-C:</label>
-          <input type="number" id="dlp-hdl" value="42" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <input type="number" id="dlp-hdl" class="clinical-input" value="42" step="1" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_tg">Triglycerides (TG):</label>
-          <input type="number" id="dlp-tg" value="180" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <input type="number" id="dlp-tg" class="clinical-input" value="180" step="1" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_alt">ALT (U/L):</label>
-          <input type="number" id="dlp-alt" value="28" step="1" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <input type="number" id="dlp-alt" class="clinical-input" value="28" step="1" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px; color:var(--muted);" data-i18n="lbl_unit">الوحدة:</label>
-          <select id="dlp-unit" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border);">
+          <select id="dlp-unit" class="clinical-select">
             <option value="mg">mg/dL</option>
             <option value="mmol">mmol/L</option>
           </select>
@@ -643,7 +646,7 @@
           <div class="field">
             <label data-i18n="calc_lbl_scr">الكرياتينين بالدم (Serum Creatinine):</label>
             <div class="calc-input-with-unit">
-              <input type="number" id="calc-scr" step="0.01" min="0.1" max="25" placeholder="1.0" value="1.0">
+              <input type="number" id="calc-scr" step="0.01" min="0.1" max="25" placeholder="1.0" value="1.0" inputmode="decimal">
               <select id="calc-scr-unit">
                 <option value="mg" selected>mg/dL</option>
                 <option value="umol">µmol/L</option>
@@ -653,7 +656,7 @@
           </div>
           <div class="field">
             <label data-i18n="lbl_age">العمر (سنة):</label>
-            <input type="number" id="calc-age" min="18" max="115" value="52">
+            <input type="number" id="calc-age" min="18" max="115" value="52" inputmode="numeric">
           </div>
           <div class="field">
             <label data-i18n="lbl_sex">الجنس البيولوجي:</label>
@@ -664,7 +667,7 @@
           </div>
           <div class="field">
             <label data-i18n="calc_lbl_wt">الوزن (كجم - لحساب CrCl):</label>
-            <input type="number" id="calc-wt" min="20" max="300" value="96">
+            <input type="number" id="calc-wt" min="20" max="300" step="0.1" value="96" inputmode="decimal">
           </div>
         </div>
 

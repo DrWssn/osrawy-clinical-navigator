@@ -289,7 +289,7 @@
         const dmRes = window.OsrawyDmPregnancy.evaluatePregnancyDmProtocol(pt);
         const dosing = dmRes.insulinDosing || {};
         obsDm.innerHTML = `
-          <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
+          <div class="pregnancy-protocol-card" style="background:#FDF2F8; border:1px solid #F9A8D4; border-inline-start:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
             <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول سكري الحمل (ADA Obstetric Protocol)' : 'Diabetes in Pregnancy Protocol (ADA)'}</div>
             <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'أهداف السكر للحامل:' : 'Targets:'}</b> ${isAr ? 'صائم <95 | بعد الأكل بساعة <140 | بعد ساعتين <120 mg/dL' : 'Fasting <95 | 1h PP <140 | 2h PP <120 mg/dL'}</div>
             <div style="font-size:12.5px;"><b>${isAr ? 'حساب الأنسولين المقترح:' : 'Suggested Insulin:'}</b> TDD = ${dosing.tddUnits || 0} U/day (Basal: ${dosing.basalUnits || 0} U, Meal: ${dosing.mealBolusUnits || 0} U × 3)</div>
@@ -318,7 +318,7 @@
           : (stepOne ? (isAr ? stepOne.drugAr : stepOne.drugEn) : 'Labetalol / Nifedipine ER');
         const aspIndicated = htnRes.aspirinProphylaxis && htnRes.aspirinProphylaxis.indicated;
         obsHtn.innerHTML = `
-          <div style="background:#FDF2F8; border:1px solid #F9A8D4; border-right:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
+          <div class="pregnancy-protocol-card" style="background:#FDF2F8; border:1px solid #F9A8D4; border-inline-start:4px solid #DB2777; border-radius:8px; padding:12px; margin-bottom:14px; color:#831843;">
             <div style="font-weight:700; font-size:14px; margin-bottom:6px;">🤰 ${isAr ? 'بروتوكول ضغط الحمل والوقاية من تسمم الحمل' : 'Hypertension in Pregnancy & Preeclampsia Protocol'}</div>
             <div style="font-size:12.5px; margin-bottom:4px;"><b>${isAr ? 'الخط الأول الآمن:' : 'Safe First-Line:'}</b> ${escapeHtml(firstLine)}</div>
             ${aspIndicated ? `<div style="font-size:12.5px;"><b>🛡️ Aspirin:</b> ${isAr ? 'يوصى بـ Aspirin 81-150 ملغ مساءً للوقاية من تسمم الحمل (من الأسبوع 12 حتى الولادة).' : 'Low-dose Aspirin 81-150 mg nightly from week 12 for preeclampsia prophylaxis.'}</div>` : ''}
@@ -427,6 +427,20 @@
         const name = (nameInput && nameInput.value) ? nameInput.value : defaultName;
         PatientSync.saveToRecent(name);
         RxShare.showToast(isAr ? '✅ تم حفظ بيانات المريض في المسودات' : '✅ Patient draft saved to local storage');
+      });
+    }
+
+    const openRecentBtn = document.getElementById('open-recent-btn');
+    if (openRecentBtn) {
+      openRecentBtn.addEventListener('click', () => {
+        switchMainTab('tab-recent');
+      });
+    }
+
+    const openDrugsBtn = document.getElementById('open-drugs-btn');
+    if (openDrugsBtn) {
+      openDrugsBtn.addEventListener('click', () => {
+        switchMainTab('tab-drugs');
       });
     }
 
@@ -752,6 +766,48 @@
         stickyHeader.setAttribute("aria-expanded", String(isOpen));
       });
       window.addEventListener("resize", updateVitalsDrawerTopOffset);
+      if (typeof ResizeObserver !== "undefined" && stickyHeader) {
+        try {
+          const ro = new ResizeObserver(() => updateVitalsDrawerTopOffset());
+          ro.observe(stickyHeader);
+        } catch (_) {}
+      }
+
+      // Keyboard-aware floating chrome controller (Android soft keyboard)
+      if (typeof window !== "undefined") {
+        let isFocusedOnInput = false;
+
+        const evaluateKeyboardState = () => {
+          try {
+            if (!document.body) return;
+            const vv = window.visualViewport;
+            const isShrunk = vv && window.innerHeight ? (vv.height / window.innerHeight < 0.8) : false;
+            if (isShrunk || isFocusedOnInput) {
+              document.body.classList.add("osrawy-keyboard-open");
+            } else {
+              document.body.classList.remove("osrawy-keyboard-open");
+            }
+          } catch (_) {}
+        };
+
+        if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
+          window.visualViewport.addEventListener("resize", evaluateKeyboardState);
+        }
+
+        document.addEventListener("focusin", (e) => {
+          if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA")) {
+            isFocusedOnInput = true;
+            evaluateKeyboardState();
+          }
+        });
+
+        document.addEventListener("focusout", (e) => {
+          if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA")) {
+            isFocusedOnInput = false;
+            setTimeout(evaluateKeyboardState, 100);
+          }
+        });
+      }
     }
 
     [inputEgfr, inputK, inputSbp, inputDbp].forEach((el) => {

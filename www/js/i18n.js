@@ -18,6 +18,8 @@ const I18n = (function() {
       mkt_saudi_pill: "🇸🇦 السوق السعودي (SAR)",
       mkt_egypt_pill: "🇪🇬 السوق المصري (EGP)",
       btn_save_draft: "حفظ في المسودات (أوفلاين)",
+      btn_recent_drafts: "المسودات المحفوظة",
+      btn_drugs_directory: "دليل الأدوية والأسعار البديلة",
       btn_theme: "تبديل الوضع الليلي",
       btn_settings: "إعدادات الطبيب والعيادة",
 
@@ -333,6 +335,8 @@ const I18n = (function() {
       mkt_saudi_pill: "🇸🇦 Saudi Market (SAR)",
       mkt_egypt_pill: "🇪🇬 Egypt Market (EGP)",
       btn_save_draft: "Save to drafts (Offline)",
+      btn_recent_drafts: "Saved Patient Drafts",
+      btn_drugs_directory: "Drug Directory & Generic Alternatives",
       btn_theme: "Toggle Dark Mode",
       btn_settings: "Doctor & Clinic Settings",
 

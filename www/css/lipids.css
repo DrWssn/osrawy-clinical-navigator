@@ -4,11 +4,16 @@
    ============================================================== */
 
 .lipids-wrapper {
+  --card-bg: var(--surface, #ffffff);
+  --border-color: var(--line, #e2e8f0);
+  --text-color: var(--ink, #1e293b);
+  --text-muted: var(--muted, #475569);
+  --highlight-bg: var(--surface2, #f8fafc);
   display: flex;
   flex-direction: column;
   gap: 14px;
   font-family: inherit;
-  color: var(--text-color, #1e293b);
+  color: var(--text-color);
   box-sizing: border-box;
   text-align: start;
 }
@@ -313,4 +318,93 @@
 @keyframes pulse-alert {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+/* --- Dark Mode Styles for Lipids Engine --- */
+:root[data-theme="dark"] .lipids-wrapper,
+[data-theme="dark"] .lipids-wrapper {
+  --card-bg: var(--surface, #122220);
+  --border-color: var(--line, #24403C);
+  --text-color: var(--ink, #E2F0ED);
+  --text-muted: var(--muted, #8EAFAA);
+  --highlight-bg: var(--surface2, #182D2B);
+}
+
+:root[data-theme="dark"] .lipid-badge-very-high,
+[data-theme="dark"] .lipid-badge-very-high {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-badge-high,
+[data-theme="dark"] .lipid-badge-high {
+  background-color: rgba(234, 88, 12, 0.2);
+  color: #FDBA74;
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-badge-moderate,
+[data-theme="dark"] .lipid-badge-moderate {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #93C5FD;
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-badge-low,
+[data-theme="dark"] .lipid-badge-low {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-status-ok,
+[data-theme="dark"] .lipid-status-ok {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+:root[data-theme="dark"] .lipid-status-elevated,
+[data-theme="dark"] .lipid-status-elevated {
+  background-color: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+:root[data-theme="dark"] .lipid-alert-danger,
+[data-theme="dark"] .lipid-alert-danger {
+  background-color: rgba(225, 29, 72, 0.16);
+  border-color: rgba(244, 63, 94, 0.4);
+  border-inline-start-color: #F43F5E;
+  color: #FDA4AF;
+}
+
+:root[data-theme="dark"] .lipid-alert-warning,
+[data-theme="dark"] .lipid-alert-warning {
+  background-color: rgba(217, 119, 6, 0.16);
+  border-color: rgba(252, 211, 77, 0.4);
+  border-inline-start-color: #F59E0B;
+  color: #FDE68A;
+}
+
+:root[data-theme="dark"] .lipid-alert-info,
+[data-theme="dark"] .lipid-alert-info {
+  background-color: rgba(13, 148, 136, 0.16);
+  border-color: rgba(153, 246, 228, 0.4);
+  border-inline-start-color: #14B8A6;
+  color: #99F6E4;
+}
+
+:root[data-theme="dark"] .lipid-step-drug,
+[data-theme="dark"] .lipid-step-drug {
+  background-color: rgba(59, 130, 246, 0.18);
+  color: #93C5FD;
+}
+
+:root[data-theme="dark"] .lipid-timeline-box,
+[data-theme="dark"] .lipid-timeline-box {
+  background-color: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
 }
