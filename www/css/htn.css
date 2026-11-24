@@ -5,9 +5,9 @@
 #tab-htn {
   --accent:#0e5a6b; --accent-soft:#e1eef1; --mercury:#b3261e;
   --ok:#1f7a4a; --ok-soft:#e3f3ea; --warn:#9a6200; --warn-soft:#fbf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
-  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --f-body:"Atkinson Hyperlegible", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
-  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --f-display:"IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) #tab-htn {

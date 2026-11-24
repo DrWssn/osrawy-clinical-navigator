@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Osrawy Clinical Navigator</title>
   
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/fonts.css">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/diabetes.css">
@@ -17,16 +15,66 @@
 </head>
 <body>
 
-  <!-- Sticky Vitals Summary Bar -->
-  <header id="sticky-vitals-summary" class="sticky-vitals-bar">
-    <div class="vitals-group">
-      <span class="vital-chip" id="bar-egfr"><span class="vital-label">eGFR:</span> <b class="vital-val">68</b> <small>mL/min</small></span>
-      <span class="vital-chip" id="bar-k"><span class="vital-label">K+:</span> <b class="vital-val">4.6</b> <small>mmol/L</small></span>
-      <span class="vital-chip" id="bar-bp"><span class="vital-label">BP:</span> <b class="vital-val">148/94</b> <small>mmHg</small></span>
+  <!-- Top App Bar -->
+  <header class="top-nav-bar">
+    <div class="top-nav-content">
+      <div class="app-brand">
+        <div class="app-logo-badge">Rx</div>
+        <div class="app-title-group">
+          <h1 data-i18n="app_title">Osrawy Clinical Navigator</h1>
+          <span data-i18n="app_subtitle">Dr Hossam Yousuf · Family Practice</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="lang-toggle-btn" class="lang-pill-btn" title="Switch interface to English / التبديل للإنجليزية">🌐 English</button>
+        <button id="open-drugs-btn" class="icon-btn" title="دليل الأدوية" aria-label="دليل الأدوية" data-i18n-title="btn_drugs_directory">💊</button>
+        <button id="open-recent-btn" class="icon-btn" title="المسودات المحفوظة" aria-label="المسودات" data-i18n-title="btn_recent_drafts">📋</button>
+        <button id="top-more-btn" class="icon-btn top-more-btn" aria-label="المزيد" aria-expanded="false" title="المزيد" type="button">⋮</button>
+
+        <!-- More Menu Popover -->
+        <div id="top-more-menu" class="top-more-menu" hidden aria-hidden="true" role="menu">
+          <button id="market-toggle-btn" class="market-pill-btn menu-item-btn" role="menuitem" type="button" title="تبديل السوق (سعودي / مصري)">
+            <span class="market-full">🇸🇦 السوق السعودي (SAR)</span><span class="market-short">🇸🇦 SAR</span>
+          </button>
+          <button id="btn-open-ldl-modal" class="ldl-pill-btn menu-item-btn" role="menuitem" type="button" title="أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)" data-i18n-title="title_ldl_matrix">
+            🎯 <span data-i18n="btn_ldl_matrix_nav">أهداف LDL والستاتين</span>
+          </button>
+          <button id="save-pt-btn" class="icon-btn menu-item-btn" role="menuitem" type="button" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">
+            💾 <span data-i18n="btn_save_draft_label">حفظ المسودة</span>
+          </button>
+          <button id="theme-toggle-btn" class="icon-btn menu-item-btn" role="menuitem" type="button" title="تبديل الوضع الليلي" aria-label="الوضع الليلي" data-i18n-title="btn_theme" data-i18n-aria-label="btn_theme">
+            🌓 <span data-i18n="btn_theme_label">الوضع الليلي</span>
+          </button>
+          <button id="open-settings-btn" class="icon-btn menu-item-btn" role="menuitem" type="button" title="إعدادات الطبيب والعيادة" aria-label="الإعدادات" data-i18n-title="btn_settings" data-i18n-aria-label="btn_settings">
+            ⚙️ <span data-i18n="btn_settings_label">الإعدادات</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Tap-to-Edit Vitals Quick Drawer -->
+  <!-- Clinical Safety Guardrails Banner -->
+  <div id="clinical-guardrail-banner" class="clinical-guardrail-banner" hidden></div>
+
+  <!-- Unified Patient Cockpit (Zone 1: Identity Slot, Zone 2: Sticky Vitals Trigger) -->
+  <div class="patient-cockpit" id="patient-cockpit">
+    <div class="patient-summary-bar" id="patient-summary-bar">
+      <!-- Populated dynamically by PatientSync -->
+    </div>
+    <header id="sticky-vitals-summary" class="sticky-vitals-bar" role="button" tabindex="0" aria-label="Quick Vitals Editor" aria-expanded="false">
+      <div class="vitals-group">
+        <span class="vital-chip" id="bar-egfr"><span class="vital-label">eGFR:</span> <b class="vital-val">68</b> <small>mL/min</small></span>
+        <span class="vital-chip" id="bar-k"><span class="vital-label">K+:</span> <b class="vital-val">4.6</b> <small>mmol/L</small></span>
+        <span class="vital-chip" id="bar-bp"><span class="vital-label">BP:</span> <b class="vital-val">148/94</b> <small>mmHg</small></span>
+      </div>
+      <div class="vitals-toggle-indicator" aria-hidden="true">
+        <span class="vitals-toggle-text" data-i18n="vitals_quick_edit">تعديل سريع</span>
+        <span class="vitals-toggle-arrow">▾</span>
+      </div>
+    </header>
+  </div>
+
+  <!-- Tap-to-Edit Vitals Quick Drawer (Expands down on tapping #sticky-vitals-summary) -->
   <section id="osrawy-vitals-quick-drawer" class="osrawy-vitals-quick-drawer" aria-hidden="true">
     <div class="osrawy-vitals-quick-grid">
       <div class="osrawy-vitals-field">
@@ -54,37 +102,6 @@
       </div>
     </div>
   </section>
-
-  <!-- Clinical Safety Guardrails Banner -->
-  <div id="clinical-guardrail-banner" class="clinical-guardrail-banner" hidden></div>
-
-  <!-- Top App Bar -->
-  <header class="top-nav-bar">
-    <div class="top-nav-content">
-      <div class="app-brand">
-        <div class="app-logo-badge">Rx</div>
-        <div class="app-title-group">
-          <h1 data-i18n="app_title">Osrawy Clinical Navigator</h1>
-          <span data-i18n="app_subtitle">Dr Hossam Yousuf · Family Practice</span>
-        </div>
-      </div>
-      <div class="top-actions">
-        <button id="lang-toggle-btn" class="lang-pill-btn" title="Switch interface to English / التبديل للإنجليزية">🌐 English</button>
-        <button id="market-toggle-btn" class="market-pill-btn" title="تبديل السوق (سعودي / مصري)"><span class="market-full">🇸🇦 السوق السعودي (SAR)</span><span class="market-short">🇸🇦 SAR</span></button>
-        <button id="btn-open-ldl-modal" class="ldl-pill-btn" title="أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)" data-i18n-title="title_ldl_matrix">🎯 <span data-i18n="btn_ldl_matrix_nav">أهداف LDL والستاتين</span></button>
-        <button id="save-pt-btn" class="icon-btn" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">💾</button>
-        <button id="open-recent-btn" class="icon-btn" title="المسودات المحفوظة" aria-label="المسودات" data-i18n-title="btn_recent_drafts">📋</button>
-        <button id="open-drugs-btn" class="icon-btn" title="دليل الأدوية" aria-label="دليل الأدوية" data-i18n-title="btn_drugs_directory">💊</button>
-        <button id="theme-toggle-btn" class="icon-btn" title="تبديل الوضع الليلي" aria-label="الوضع الليلي" data-i18n-title="btn_theme" data-i18n-aria-label="btn_theme">🌓</button>
-        <button id="open-settings-btn" class="icon-btn" title="إعدادات الطبيب والعيادة" aria-label="الإعدادات" data-i18n-title="btn_settings" data-i18n-aria-label="btn_settings">⚙️</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Shared Patient Bar -->
-  <div class="patient-summary-bar" id="patient-summary-bar">
-    <!-- Populated dynamically by PatientSync -->
-  </div>
 
   <!-- MAIN TAB 1: DIABETES NAVIGATOR -->
   <section id="tab-diabetes" class="main-view-section">
@@ -519,17 +536,17 @@
     <div id="patient-leaflet-container"></div>
   </section>
 
-  <!-- Mobile Quick-Jump Button (for phones) -->
-  <button id="quick-jump-rx-btn" class="quick-jump-pill" type="button" title="انتقال سريع للروشتة والتوصيات" data-i18n-title="quick_jump_title">
-    <span class="jump-icon">⚡</span>
-    <span class="jump-text" data-i18n="quick_jump_rx">الروشتة والتوصيات ⬇</span>
-  </button>
-
-  <!-- Floating SOAP Consultation Cart Pill & Drawer -->
-  <button type="button" id="osrawy-soap-fab" class="osrawy-soap-fab" aria-label="EMR SOAP Summary">
-    <span>📋 <span data-i18n="soap_fab_label">ملخص SOAP</span></span>
-    <span id="osrawy-soap-count" class="osrawy-soap-badge">0</span>
-  </button>
+  <!-- Docked Command Bar (<= 40px) wrapping Quick-Jump and SOAP Consultation Cart -->
+  <div id="osrawy-docked-command-bar" class="osrawy-docked-command-bar">
+    <button type="button" id="osrawy-soap-fab" class="osrawy-soap-fab" aria-label="EMR SOAP Summary">
+      <span>📋 <span data-i18n="soap_fab_label">ملخص SOAP</span></span>
+      <span id="osrawy-soap-count" class="osrawy-soap-badge">0</span>
+    </button>
+    <button id="quick-jump-rx-btn" class="quick-jump-pill" type="button" title="انتقال سريع للروشتة والتوصيات" data-i18n-title="quick_jump_title">
+      <span class="jump-icon">⚡</span>
+      <span class="jump-text" data-i18n="quick_jump_rx">الروشتة والتوصيات ⬇</span>
+    </button>
+  </div>
 
   <div id="osrawy-soap-backdrop" class="osrawy-soap-backdrop" aria-hidden="true"></div>
 

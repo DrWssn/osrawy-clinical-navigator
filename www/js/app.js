@@ -60,6 +60,15 @@
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    const cmdBar = document.getElementById('osrawy-docked-command-bar');
+    if (cmdBar) {
+      if (tabId === 'tab-leaflets' || tabId === 'tab-drugs' || tabId === 'tab-recent') {
+        cmdBar.style.display = 'none';
+      } else {
+        cmdBar.style.display = '';
+      }
+    }
+
     const quickJumpBtn = document.getElementById('quick-jump-rx-btn');
     if (quickJumpBtn) {
       if (tabId === 'tab-diabetes' || tabId === 'tab-htn') {
@@ -444,6 +453,44 @@
       });
     }
 
+    // Top App Bar More Menu Popover
+    const topMoreBtn = document.getElementById('top-more-btn');
+    const topMoreMenu = document.getElementById('top-more-menu');
+
+    function closeTopMoreMenu() {
+      if (topMoreMenu && !topMoreMenu.hidden) {
+        topMoreMenu.hidden = true;
+        topMoreMenu.setAttribute('aria-hidden', 'true');
+        if (topMoreBtn) topMoreBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    if (topMoreBtn && topMoreMenu) {
+      topMoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = topMoreMenu.hidden;
+        if (willOpen) {
+          topMoreMenu.hidden = false;
+          topMoreMenu.setAttribute('aria-hidden', 'false');
+          topMoreBtn.setAttribute('aria-expanded', 'true');
+        } else {
+          closeTopMoreMenu();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!topMoreMenu.hidden && !topMoreMenu.contains(e.target) && e.target !== topMoreBtn) {
+          closeTopMoreMenu();
+        }
+      });
+
+      topMoreMenu.addEventListener('click', (e) => {
+        if (e.target && e.target.closest('button')) {
+          closeTopMoreMenu();
+        }
+      });
+    }
+
     // Modal triggers for Doctor profile
     const settingsBtn = document.getElementById('open-settings-btn');
     const settingsModal = document.getElementById('settings-modal');
@@ -624,7 +671,10 @@
 
     function updateVitalsDrawerTopOffset() {
       if (stickyHeader && vitalsDrawer) {
-        const h = stickyHeader.offsetHeight || 44;
+        const cockpit = (stickyHeader.closest && typeof stickyHeader.closest === 'function')
+          ? stickyHeader.closest('.patient-cockpit')
+          : null;
+        const h = (cockpit && cockpit.offsetHeight) ? cockpit.offsetHeight : (stickyHeader.offsetHeight || 44);
         if (document.documentElement && document.documentElement.style && typeof document.documentElement.style.setProperty === "function") {
           document.documentElement.style.setProperty("--vitals-drawer-top", h + "px");
         }
@@ -1187,6 +1237,14 @@
     // 4. Hook Capacitor Android Hardware Back Button (window.handleAndroidBack) + Escape
     const originalHandleAndroidBack = window.handleAndroidBack;
     window.handleAndroidBack = function () {
+      const topMoreMenu = document.getElementById("top-more-menu");
+      if (topMoreMenu && !topMoreMenu.hidden) {
+        topMoreMenu.hidden = true;
+        topMoreMenu.setAttribute("aria-hidden", "true");
+        const moreBtn = document.getElementById("top-more-btn");
+        if (moreBtn) moreBtn.setAttribute("aria-expanded", "false");
+        return true;
+      }
       const openModals = document.querySelectorAll(".modal-overlay.open");
       if (openModals && openModals.length > 0) {
         const topModal = openModals[openModals.length - 1];
@@ -1213,8 +1271,10 @@
 
     window.addEventListener("keydown", (e) => {
       if (e && e.key === "Escape") {
+        const topMoreMenu = document.getElementById("top-more-menu");
         const openModals = document.querySelectorAll(".modal-overlay.open");
         const hasOverlay =
+          (topMoreMenu && !topMoreMenu.hidden) ||
           (openModals && openModals.length > 0) ||
           document.body.classList.contains("osrawy-patient-mode") ||
           (soapDrawer && soapDrawer.classList.contains("is-open")) ||

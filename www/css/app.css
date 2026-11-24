@@ -123,9 +123,76 @@ input, select, textarea, [contenteditable="true"] {
 }
 
 .top-actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.top-more-btn {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* More Menu Popover */
+.top-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 1060;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 3px;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+
+.top-more-menu[hidden] {
+  display: none !important;
+}
+
+.top-more-menu .menu-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.top-more-menu .menu-item-btn:hover,
+.top-more-menu .menu-item-btn:focus-visible {
+  background: var(--surface2);
+}
+
+.top-more-menu .menu-item-btn:active {
+  transform: none;
+  background: var(--surface2);
+}
+
+.top-more-menu .market-full {
+  display: inline !important;
+}
+
+.top-more-menu .market-short {
+  display: none !important;
 }
 
 .icon-btn {
@@ -176,7 +243,7 @@ input, select, textarea, [contenteditable="true"] {
 
 /* RTL Support */
 html[dir="rtl"] {
-  --f-body: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans Arabic", system-ui, sans-serif;
   text-align: right;
 }
 
@@ -200,7 +267,117 @@ html[dir="rtl"] .now {
   margin-right: 6px;
 }
 
-/* Patient Summary Bar (Sync Bar) */
+/* Patient Cockpit (Unified 2-Zone Header Strip) */
+.patient-cockpit {
+  position: sticky;
+  top: 0;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 14px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+:root[data-theme="dark"] .patient-cockpit {
+  background: var(--surface2);
+  border-bottom-color: var(--line);
+}
+
+.patient-cockpit .patient-summary-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-cockpit .patient-summary-bar .pt-bar-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ink);
+  margin: 0;
+  padding: 0;
+}
+
+.patient-cockpit .sticky-vitals-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  position: static !important;
+  cursor: pointer;
+}
+
+.patient-cockpit .sticky-vitals-bar:hover {
+  opacity: 0.92;
+}
+
+.patient-cockpit .vitals-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+.patient-cockpit .vital-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--teal-soft, rgba(60, 199, 184, 0.15));
+  color: var(--teal, #0d9488);
+  font-family: var(--f-mono, 'IBM Plex Mono', monospace);
+  font-size: 11.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .patient-cockpit .vital-chip {
+  background: rgba(60, 199, 184, 0.16);
+  color: #3CC7B8;
+}
+
+.patient-cockpit .vital-chip.vital-warn {
+  background: rgba(234, 88, 12, 0.12);
+  color: #EA580C;
+}
+
+.patient-cockpit .vital-chip.vital-danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: #DC2626;
+}
+
+.patient-cockpit .vitals-toggle-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+/* Patient Summary Bar (Sync Bar Fallback) */
 .patient-summary-bar {
   background: var(--surface2);
   border-bottom: 1px solid var(--line);
@@ -664,7 +841,7 @@ html[dir="rtl"] .now {
 
 /* Print Stylesheet */
 @media print {
-  .top-nav-bar, .patient-summary-bar, .bottom-nav-bar, .tabbar, .rx-action-toolbar, 
+  .top-nav-bar, .patient-cockpit, .patient-summary-bar, .sticky-vitals-bar, .osrawy-docked-command-bar, .bottom-nav-bar, .tabbar, .rx-action-toolbar, 
   header.hero, #tab-htn header, .lens, #pform, #f, .tools, .foot, footer, 
   .sheet-h div, #copy, #toast, .modal-overlay, #app-toast {
     display: none !important;
@@ -1432,10 +1609,11 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .top-nav-content {
-    padding: 6px 10px 4px !important;
+    padding: 4px 10px !important;
     gap: 6px !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
+    min-height: 44px !important;
   }
 
   .app-brand {
@@ -1445,8 +1623,8 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .app-logo-badge {
-    width: 30px !important;
-    height: 30px !important;
+    width: 28px !important;
+    height: 28px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
     flex: none !important;
@@ -1470,43 +1648,27 @@ html[dir="rtl"] .ldl-clinical-notes ul {
   }
 
   .top-actions {
-    width: 100% !important;
+    width: auto !important;
     display: flex !important;
     align-items: center !important;
-    gap: 5px !important;
-    flex: 1 0 100% !important;
+    gap: 4px !important;
+    flex: 0 0 auto !important;
     flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    padding-bottom: 2px !important;
-    justify-content: flex-start !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+    justify-content: flex-end !important;
   }
 
-  .top-actions::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  .market-full {
-    display: none !important;
-  }
-
-  .market-short {
-    display: inline !important;
-  }
-
-  .lang-pill-btn,
-  .market-pill-btn,
-  .ldl-pill-btn {
-    padding: 4px 8px !important;
+  .lang-pill-btn {
+    padding: 3px 8px !important;
     font-size: 11px !important;
     border-radius: 999px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
 
-  .ldl-pill-btn span {
-    display: none !important; /* Show only 🎯 icon on smartphone */
+  .top-more-btn {
+    font-size: 18px !important;
   }
 
   .icon-btn {
@@ -1517,7 +1679,28 @@ html[dir="rtl"] .ldl-clinical-notes ul {
     flex-shrink: 0 !important;
   }
 
-  /* 2. Patient Summary Bar: Single-row horizontal strip with non-duplicated vitals */
+  /* 2. Unified Patient Cockpit on Smartphone */
+  .patient-cockpit {
+    padding: 3px 8px !important;
+    min-height: 38px !important;
+    gap: 6px !important;
+  }
+
+  .patient-cockpit .patient-summary-bar .pt-bar-item:nth-child(n+3) {
+    display: none !important; /* On small phone screens, keep Name & Age/Sex in identity zone */
+  }
+
+  .patient-cockpit .vitals-toggle-indicator {
+    display: none !important; /* Hide 'تعديل سريع ▾' on phones to save space */
+  }
+
+  .patient-cockpit .vital-chip {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+    gap: 3px !important;
+  }
+
+  /* Fallback Patient Summary Bar */
   .patient-summary-bar {
     padding: 5px 10px !important;
     gap: 8px !important;
@@ -2416,6 +2599,19 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   border-radius: 6px;
 }
 
+[data-theme="dark"] .qr-svg-box,
+:root[data-theme="dark"] .qr-svg-box {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important;
+}
+[data-theme="dark"] .qr-svg-box svg rect,
+:root[data-theme="dark"] .qr-svg-box svg rect,
+[data-theme="dark"] .qr-svg-box svg path,
+:root[data-theme="dark"] .qr-svg-box svg path {
+  fill: #000000 !important;
+}
+
 /* Guardrails Banner (Cross-Engine - Logical RTL-safe) */
 .clinical-guardrail-banner {
   background: var(--danger-bg, #FEF2F2);
@@ -2641,10 +2837,12 @@ body.osrawy-patient-mode .osrawy-vitals-quick-drawer,
 body.osrawy-patient-mode .top-nav-bar,
 body.osrawy-patient-mode #clinical-guardrail-banner,
 body.osrawy-patient-mode #patient-summary-bar,
+body.osrawy-patient-mode .patient-cockpit,
 body.osrawy-patient-mode #quick-jump-rx-btn,
 body.osrawy-patient-mode .quick-jump-pill,
 body.osrawy-patient-mode .osrawy-bottom-nav,
 body.osrawy-patient-mode .osrawy-soap-fab,
+body.osrawy-patient-mode .osrawy-docked-command-bar,
 body.osrawy-patient-mode .osrawy-soap-drawer,
 body.osrawy-patient-mode .osrawy-soap-backdrop,
 body.osrawy-patient-mode .clinician-only-controls {
@@ -2704,13 +2902,47 @@ body.osrawy-patient-mode .osrawy-handoff-exit-bar {
   }
 }
 
+/* Docked Command Bar (<= 40px) */
+.osrawy-docked-command-bar {
+  position: fixed;
+  bottom: calc(var(--nav-h, 60px) + 8px + env(safe-area-inset-bottom, 0px));
+  inset-inline: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+  z-index: 950;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.osrawy-docked-command-bar .osrawy-soap-fab,
+.osrawy-docked-command-bar .quick-jump-pill {
+  position: relative !important;
+  bottom: auto !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: auto !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 480px) {
+  .osrawy-docked-command-bar {
+    padding: 0 10px;
+    height: 38px;
+    bottom: calc(var(--nav-h, 60px) + 6px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* ==========================================================================
    Keyboard Awareness & Pregnancy Protocol Dark Mode
    ========================================================================== */
 body.osrawy-keyboard-open .osrawy-bottom-nav,
 body.osrawy-keyboard-open .bottom-nav-bar,
 body.osrawy-keyboard-open .quick-jump-pill,
-body.osrawy-keyboard-open .osrawy-soap-fab {
+body.osrawy-keyboard-open .osrawy-soap-fab,
+body.osrawy-keyboard-open .osrawy-docked-command-bar {
   display: none !important;
 }
 
