@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Check, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Check, ShieldCheck, RefreshCw, Download, ExternalLink } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { BottomSheet } from '../ui/BottomSheet';
 import { loadSettings, saveSettings, DoctorSettings } from '../../engines/exporters';
+import { checkAppUpdate, UpdateInfo, CURRENT_VERSION } from '../../engines/updater';
 
 export const SettingsSheet: React.FC = () => {
   const { overlayStack, popOverlay, lang } = useAppStore();
@@ -12,7 +13,9 @@ export const SettingsSheet: React.FC = () => {
   const [settings, setSettings] = useState<DoctorSettings>(() => loadSettings());
   const [saved, setSaved] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const handleSave = () => {
     saveSettings(settings);
@@ -20,13 +23,35 @@ export const SettingsSheet: React.FC = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleCheckUpdate = () => {
+  const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
-    setUpdateMsg(null);
-    setTimeout(() => {
+    setUpdateStatus(null);
+    setUpdateError(null);
+    try {
+      const info = await checkAppUpdate();
+      setUpdateInfo(info);
+      if (info.isAvailable) {
+        setUpdateStatus(
+          isAr
+            ? `🚀 يتوفر تحديث جديد: v${info.latestVersion}`
+            : `🚀 New update available: v${info.latestVersion}`
+        );
+      } else {
+        setUpdateStatus(
+          isAr
+            ? `✅ أنت تستخدم أحدث إصدار سريري (v${CURRENT_VERSION})`
+            : `✅ You are running the latest clinical version (v${CURRENT_VERSION})`
+        );
+      }
+    } catch {
+      setUpdateError(
+        isAr
+          ? 'تعذر التحقق من التحديثات (تأكد من الاتصال بالإنترنت)'
+          : 'Could not check for updates (check internet connection)'
+      );
+    } finally {
       setCheckingUpdate(false);
-      setUpdateMsg(isAr ? 'أنت تستخدم أحدث إصدار سريري (v2.0.0).' : 'You are running the latest clinical version (v2.0.0).');
-    }, 1200);
+    }
   };
 
   return (
@@ -106,7 +131,7 @@ export const SettingsSheet: React.FC = () => {
               <ShieldCheck className="w-4 h-4 text-emerald-500" />
               <span className="text-xs font-bold text-[var(--text)]">Osrawy Clinical Navigator</span>
             </div>
-            <span className="text-[11px] font-mono text-[var(--muted)] font-bold">v2.0.0</span>
+            <span className="text-[11px] font-mono text-[var(--muted)] font-bold">v{CURRENT_VERSION}</span>
           </div>
 
           <button
@@ -119,10 +144,29 @@ export const SettingsSheet: React.FC = () => {
             <span>{checkingUpdate ? (isAr ? 'جاري التحقق...' : 'Checking...') : (isAr ? 'التحقق من التحديثات' : 'Check for Updates')}</span>
           </button>
 
-          {updateMsg && (
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold text-center mt-1">
-              {updateMsg}
+          {updateStatus && (
+            <p className={`text-[11px] font-semibold text-center mt-1 ${updateInfo?.isAvailable ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {updateStatus}
             </p>
+          )}
+
+          {updateError && (
+            <p className="text-[11px] text-rose-500 font-semibold text-center mt-1">
+              {updateError}
+            </p>
+          )}
+
+          {updateInfo?.isAvailable && (
+            <a
+              href={updateInfo.downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all mt-1"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isAr ? `تحميل وتثبيت التحديث (v${updateInfo.latestVersion})` : `Download & Install Update (v${updateInfo.latestVersion})`}</span>
+              <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+            </a>
           )}
         </div>
       </div>

@@ -8,3 +8,4 @@ export * from './leaflets';
 export * from './htn';
 export * from './diabetes';
 export * from './exporters';
+export * from './updater';
