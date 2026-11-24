@@ -1464,13 +1464,16 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 1. Cardiorenal Calculator Card (eGFR + CrCl) -->
-        <div class="tool-card">
+        <div class="tool-card" id="egfr-crcl-card">
           <div class="tool-header">
             <span class="tool-icon">🫘</span>
             <div class="tool-header-text">
               <h2 class="tool-title">${isAr ? 'حاسبة وظائف الكلى وتصفية الكرياتينين (CKD-EPI 2021 & CrCl)' : 'Kidney Function & Creatinine Clearance (CKD-EPI & CrCl)'}</h2>
               <p class="tool-sub">${isAr ? 'معادلة CKD-EPI 2021 دون عرق مع معادلة Cockcroft-Gault لضبط جرعات الأدوية ومضادات التخثر' : 'Race-free CKD-EPI 2021 alongside Cockcroft-Gault for precise drug & DOAC adjustments'}</p>
             </div>
+            <button type="button" class="btn-emr-copy" id="btn-copy-emr-egfr" title="${isAr ? 'نسخ ملخص EMR' : 'Copy EMR Note'}" aria-label="Copy EMR Note">
+              📋 ${isAr ? 'نسخ EMR' : 'Copy EMR'}
+            </button>
           </div>
           
           <div class="tool-inputs-grid">
@@ -1512,13 +1515,16 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 2. KDIGO 2024 CKD Risk Matrix & Albuminuria -->
-        <div class="tool-card">
+        <div class="tool-card" id="kdigo-matrix-card">
           <div class="tool-header">
             <span class="tool-icon">📊</span>
             <div class="tool-header-text">
               <h2 class="tool-title">${isAr ? 'مصفوفة KDIGO 2024 التفاعلية لزلال البول وتصنيف مخاطر الكلى' : 'Interactive KDIGO 2024 Heatmap Matrix & Albuminuria'}</h2>
               <p class="tool-sub">${isAr ? 'تقاطع معدل الترشيح eGFR مع نسبة زلال البول إلى الكرياتينين (UACR) لتحديد خطورة التدهور وتكرار المتابعة السنوية' : 'Risk stratification combining eGFR and urine albumin-creatinine ratio (UACR)'}</p>
             </div>
+            <button type="button" class="btn-emr-copy" id="btn-copy-emr-kdigo" title="${isAr ? 'نسخ ملخص EMR' : 'Copy EMR Note'}" aria-label="Copy EMR Note">
+              📋 ${isAr ? 'نسخ EMR' : 'Copy EMR'}
+            </button>
           </div>
           
           <div class="tool-inputs-grid" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));">
@@ -1538,13 +1544,16 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 3. DOAC Renal Dosing (Apixaban & Rivaroxaban) -->
-        <div class="tool-card">
+        <div class="tool-card" id="doac-card">
           <div class="tool-header">
             <span class="tool-icon">🩸</span>
             <div class="tool-header-text">
               <h2 class="tool-title">${isAr ? 'حاسبة جرعات مضادات التخثر الحديثة (DOAC Renal Dosing)' : 'DOAC Renal Dosing (Apixaban & Rivaroxaban)'}</h2>
               <p class="tool-sub">${isAr ? 'قاعدة استيفاء شرطين من 3 لـ Apixaban (العمر ≥80، الوزن ≤60 كجم، الكرياتينين ≥1.5) وتعديل جرعة Rivaroxaban بحسب CrCl' : 'Apixaban 2-of-3 criteria (Age ≥80, Wt ≤60kg, Scr ≥1.5mg/dL) & Rivaroxaban CrCl dosing'}</p>
             </div>
+            <button type="button" class="btn-emr-copy" id="btn-copy-emr-doac" title="${isAr ? 'نسخ ملخص EMR' : 'Copy EMR Note'}" aria-label="Copy EMR Note">
+              📋 ${isAr ? 'نسخ EMR' : 'Copy EMR'}
+            </button>
           </div>
           
           <div id="tab-doac-results" class="tool-results-box">
@@ -1553,13 +1562,16 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 4. FIB-4 Liver Fibrosis Index -->
-        <div class="tool-card">
+        <div class="tool-card" id="fib4-card">
           <div class="tool-header">
             <span class="tool-icon">🧬</span>
             <div class="tool-header-text">
               <h2 class="tool-title">${isAr ? 'مؤشر تليف الكبد الدهني (FIB-4 Index for MASLD)' : 'FIB-4 Liver Fibrosis Index for MASLD'}</h2>
               <p class="tool-sub">${isAr ? 'مسح تليف الكبد لمرضى السكري والسمنة باستخدام العمر، إنزيمات الكبد AST و ALT، والصفائح الدموية' : 'Screening advanced liver fibrosis in T2DM and metabolic syndrome using Age, AST, ALT, and Platelets'}</p>
             </div>
+            <button type="button" class="btn-emr-copy" id="btn-copy-emr-fib4" title="${isAr ? 'نسخ ملخص EMR' : 'Copy EMR Note'}" aria-label="Copy EMR Note">
+              📋 ${isAr ? 'نسخ EMR' : 'Copy EMR'}
+            </button>
           </div>
 
           <div class="tool-inputs-grid" style="grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));">
@@ -1583,13 +1595,16 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 5. Bedside Point-of-Care Micro-Tools -->
-        <div class="tool-card">
+        <div class="tool-card" id="micro-tools-card">
           <div class="tool-header">
             <span class="tool-icon">⚡</span>
             <div class="tool-header-text">
               <h2 class="tool-title">${isAr ? 'حاسبات سريعة لنقطة الرعاية (Bedside Micro-Tools)' : 'Point-of-Care Bedside Micro-Tools'}</h2>
               <p class="tool-sub">${isAr ? 'تحويل السكر التراكمي إلى متوسط السكر اليومي، الكالسيوم المصحح للألبومين، ومكافئ جرعات الكورتيزون' : 'HbA1c-to-eAG converter, Corrected Calcium for hypoalbuminemia, and Steroid dose equivalence'}</p>
             </div>
+            <button type="button" class="btn-emr-copy" id="btn-copy-emr-micro" title="${isAr ? 'نسخ ملخص EMR' : 'Copy EMR Note'}" aria-label="Copy EMR Note">
+              📋 ${isAr ? 'نسخ EMR' : 'Copy EMR'}
+            </button>
           </div>
 
           <div class="micro-tools-grid">
@@ -1985,6 +2000,123 @@ const ClinicalTools = (function() {
           document.querySelectorAll('.main-view-section, .tab-panel').forEach(s => s.style.display = (s.id === 'tab-recent') ? 'block' : 'none');
           if (typeof window.renderRecentPatients === 'function') window.renderRecentPatients();
         }
+      };
+    }
+
+    function copySnippet(text, btn) {
+      if (!text || !btn) return;
+      const done = () => {
+        const orig = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = `✓ ${isAr ? 'تم النسخ!' : 'Copied!'}`;
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = orig;
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          fallbackCopyText(text, done);
+        });
+      } else {
+        fallbackCopyText(text, done);
+      }
+    }
+
+    function fallbackCopyText(text, cb) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const res = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (cb && res) cb();
+      } catch (e) {}
+    }
+
+    // Bind EMR Snippet Copy Buttons
+    const btnCopyEgfr = document.getElementById('btn-copy-emr-egfr');
+    if (btnCopyEgfr) {
+      btnCopyEgfr.onclick = function() {
+        const scr = readTabNum('tab-scr', 1.0);
+        const scrUnit = document.getElementById('tab-scr-unit')?.value || 'mg';
+        const age = readTabNum('tab-age', 52);
+        const sex = document.getElementById('tab-sex')?.value || 'm';
+        const wt = readTabNum('tab-wt', 75);
+        const egfrRes = calculateCKDEPI(scr, scrUnit, age, sex, wt);
+        const egfrVal = egfrRes.egfr;
+        const text = isAr
+          ? `[تقييم وظائف الكلى وتصفية الكرياتينين]\n• معدل الترشيح CKD-EPI 2021: ${egfrRes.egfr} مل/دقيقة/1.73م² (${egfrRes.stageLabelAr})\n• تصفية الكرياتينين Cockcroft-Gault: ${egfrRes.crcl} مل/دقيقة (الوزن: ${wt} كجم، الكرياتينين: ${scr} ${scrUnit})\n• تعديل جرعات الأدوية: ميتفورمين ${egfrVal < 30 ? 'ممنوع تماماً' : egfrVal < 45 ? 'أقصى جرعة 1000مجم/يوم' : 'جرعة قياسية'} · SGLT2i ${egfrVal < 20 ? 'لا يُبدأ به' : 'موصى به لحماية الكلى'} · مثبطات DPP-4: ليناجليبتين لا يتطلب تعديل`
+          : `[Renal Function & CrCl Assessment]\n• CKD-EPI 2021 eGFR: ${egfrRes.egfr} mL/min/1.73m² (${egfrRes.stageLabelEn})\n• Cockcroft-Gault CrCl: ${egfrRes.crcl} mL/min (Weight: ${wt} kg, SCr: ${scr} ${scrUnit})\n• Drug Adjustments: Metformin ${egfrVal < 30 ? 'Contraindicated' : egfrVal < 45 ? 'Max 1000mg/d' : 'Standard'} · SGLT2i ${egfrVal < 20 ? 'Not initiated' : 'Cardiorenal Indicated'} · DPP-4i Linagliptin No renal adjust`;
+        copySnippet(text, btnCopyEgfr);
+      };
+    }
+
+    const btnCopyKdigo = document.getElementById('btn-copy-emr-kdigo');
+    if (btnCopyKdigo) {
+      btnCopyKdigo.onclick = function() {
+        const kEgfr = readTabNum('tab-kdigo-egfr', 75);
+        const kUacr = readTabNum('tab-kdigo-uacr', 30);
+        const matrixRes = evaluateKdigoMatrix(kEgfr, kUacr);
+        const text = isAr
+          ? `[تقييم مخاطر الكلى KDIGO 2024]\n• التصنيف: G${matrixRes.gfrCategory} A${matrixRes.uacrCategory} (${matrixRes.riskLabelAr})\n• التحاليل: eGFR ${kEgfr} مل/دقيقة/1.73م² · زلال البول UACR ${kUacr} مجم/جم\n• الخطة العلاجية: ${matrixRes.recsAr}\n• المتابعة: إعادة فحص eGFR و UACR ${matrixRes.surveillanceAr}`
+          : `[CKD KDIGO 2024 Assessment]\n• Staging: G${matrixRes.gfrCategory} A${matrixRes.uacrCategory} (${matrixRes.riskLabelEn})\n• Lab Values: eGFR ${kEgfr} mL/min/1.73m² · UACR ${kUacr} mg/g\n• Plan: ${matrixRes.recsEn}\n• Surveillance: Re-evaluate eGFR and UACR ${matrixRes.surveillanceEn}`;
+        copySnippet(text, btnCopyKdigo);
+      };
+    }
+
+    const btnCopyDoac = document.getElementById('btn-copy-emr-doac');
+    if (btnCopyDoac) {
+      btnCopyDoac.onclick = function() {
+        const scr = readTabNum('tab-scr', 1.0);
+        const scrUnit = document.getElementById('tab-scr-unit')?.value || 'mg';
+        const age = readTabNum('tab-age', 52);
+        const sex = document.getElementById('tab-sex')?.value || 'm';
+        const wt = readTabNum('tab-wt', 75);
+        const crclRes = calculateCrCl(scr, scrUnit, age, sex, wt);
+        const doacRes = evaluateDoacDosing(crclRes.crcl, age, wt, scr, scrUnit);
+        const apix = doacRes.apixaban;
+        const riv = doacRes.rivaroxaban;
+        const text = isAr
+          ? `[جرعات مضادات التخثر الفموية الحديثة DOAC]\n• أبيكسابان (Eliquis): ${apix.doseAr} (${apix.criteriaMetCount}/3 من معايير التخفيض: العمر ${age}سنة، الوزن ${wt}كجم، الكرياتينين ${scr})\n• ريفاروكسابان (Xarelto): ${riv.doseAr} مع وجبة العشاء (تصفية الكرياتينين ${crclRes.crcl} مل/دقيقة)`
+          : `[DOAC Anticoagulation Dosing]\n• Apixaban (Eliquis): ${apix.doseEn} (${apix.criteriaMetCount}/3 criteria met: Age ${age}y, Weight ${wt}kg, SCr ${scr})\n• Rivaroxaban (Xarelto): ${riv.doseEn} with food (CrCl: ${crclRes.crcl} mL/min)`;
+        copySnippet(text, btnCopyDoac);
+      };
+    }
+
+    const btnCopyFib4 = document.getElementById('btn-copy-emr-fib4');
+    if (btnCopyFib4) {
+      btnCopyFib4.onclick = function() {
+        const age = readTabNum('tab-age', 52);
+        const ast = readTabNum('tab-fib4-ast', 38);
+        const alt = readTabNum('tab-fib4-alt', 42);
+        const plt = readTabNum('tab-fib4-plt', 210);
+        const fib4Res = calculateFib4(age, ast, alt, plt);
+        if (!fib4Res) return;
+        const text = isAr
+          ? `[مسح تليف الكبد مؤشر FIB-4]\n• النتيجة: ${fib4Res.score} (${fib4Res.riskLabelAr || fib4Res.riskTier})\n• الحدود المرجعية (عمر ${age} سنة): منخفض < ${fib4Res.lowCutoff} · مرتفع > ${fib4Res.highCutoff}\n• التوصية السريرية (AASLD/ADA): ${fib4Res.actionAr}`
+          : `[Liver Fibrosis Screening (FIB-4 Index)]\n• Score: ${fib4Res.score} (${fib4Res.riskLabelEn || fib4Res.riskTier})\n• Cutoffs (Age ${age}y): Low < ${fib4Res.lowCutoff} · High > ${fib4Res.highCutoff}\n• Clinical Recommendation (AASLD/ADA): ${fib4Res.actionEn}`;
+        copySnippet(text, btnCopyFib4);
+      };
+    }
+
+    const btnCopyMicro = document.getElementById('btn-copy-emr-micro');
+    if (btnCopyMicro) {
+      btnCopyMicro.onclick = function() {
+        const a1c = readTabNum('micro-a1c', 7.5);
+        const ca = readTabNum('micro-ca', 8.0);
+        const alb = readTabNum('micro-alb', 3.0);
+        const eagTxt = document.getElementById('micro-eag-result')?.textContent || '';
+        const caTxt = document.getElementById('micro-corr-ca-result')?.textContent || '';
+        const stTxt = document.getElementById('micro-steroid-result')?.textContent || '';
+        const text = isAr
+          ? `[الحاسبات السريرية السريعة Bedside Micro-Tools]\n• السكر التراكمي إلى متوسط السكر (eAG): ${eagTxt} (HbA1c ${a1c}%)\n• الكالسيوم المصحح: ${caTxt} (الكالسيوم الكلي ${ca}، الألبومين ${alb})\n• مكافئات الكورتيزون: ${stTxt}`
+          : `[Point-of-Care Bedside Conversions]\n• Estimated Avg Glucose (eAG): ${eagTxt} (HbA1c ${a1c}%)\n• Corrected Calcium: ${caTxt} (Total Ca ${ca}, Albumin ${alb})\n• Steroid Equivalence: ${stTxt}`;
+        copySnippet(text, btnCopyMicro);
       };
     }
 

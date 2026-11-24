@@ -446,6 +446,15 @@
       });
     }
 
+    const openPaletteBtn = document.getElementById('btn-open-palette');
+    if (openPaletteBtn) {
+      openPaletteBtn.addEventListener('click', () => {
+        if (typeof window.CommandPalette !== 'undefined' && window.CommandPalette.open) {
+          window.CommandPalette.open();
+        }
+      });
+    }
+
     const openDrugsBtn = document.getElementById('open-drugs-btn');
     if (openDrugsBtn) {
       openDrugsBtn.addEventListener('click', () => {
@@ -1237,6 +1246,10 @@
     // 4. Hook Capacitor Android Hardware Back Button (window.handleAndroidBack) + Escape
     const originalHandleAndroidBack = window.handleAndroidBack;
     window.handleAndroidBack = function () {
+      if (typeof window.CommandPalette !== "undefined" && window.CommandPalette.isOpen && window.CommandPalette.isOpen()) {
+        window.CommandPalette.close();
+        return true;
+      }
       const topMoreMenu = document.getElementById("top-more-menu");
       if (topMoreMenu && !topMoreMenu.hidden) {
         topMoreMenu.hidden = true;
@@ -1274,6 +1287,7 @@
         const topMoreMenu = document.getElementById("top-more-menu");
         const openModals = document.querySelectorAll(".modal-overlay.open");
         const hasOverlay =
+          (typeof window.CommandPalette !== "undefined" && window.CommandPalette.isOpen && window.CommandPalette.isOpen()) ||
           (topMoreMenu && !topMoreMenu.hidden) ||
           (openModals && openModals.length > 0) ||
           document.body.classList.contains("osrawy-patient-mode") ||

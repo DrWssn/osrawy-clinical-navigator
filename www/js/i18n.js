@@ -19,6 +19,7 @@ const I18n = (function() {
       mkt_egypt_pill: "🇪🇬 السوق المصري (EGP)",
       btn_save_draft: "حفظ في المسودات (أوفلاين)",
       btn_save_draft_label: "حفظ المسودة",
+      btn_quick_search: "البحث السريع والتنقل (Ctrl+K)",
       btn_recent_drafts: "المسودات المحفوظة",
       btn_drugs_directory: "دليل الأدوية والأسعار البديلة",
       btn_theme: "تبديل الوضع الليلي",
@@ -341,6 +342,7 @@ const I18n = (function() {
       mkt_egypt_pill: "🇪🇬 Egypt Market (EGP)",
       btn_save_draft: "Save to drafts (Offline)",
       btn_save_draft_label: "Save Draft",
+      btn_quick_search: "Quick Search & Navigation (Ctrl+K)",
       btn_recent_drafts: "Saved Patient Drafts",
       btn_drugs_directory: "Drug Directory & Generic Alternatives",
       btn_theme: "Toggle Dark Mode",
@@ -786,4 +788,10 @@ const I18n = (function() {
 
 if (typeof window !== 'undefined') {
   window.I18n = I18n;
+}
+if (typeof global !== 'undefined') {
+  global.I18n = I18n;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = I18n;
 }
