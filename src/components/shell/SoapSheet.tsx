@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { BottomSheet } from '../ui/BottomSheet';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { buildStructuredSoapNote, buildPrescriptionReport, buildWhatsAppShareUrl } from '../../engines/exporters';
+import { printClinicalReport } from '../../engines/printReport';
 
 export const SoapSheet: React.FC = () => {
   const patient = usePatientStore(s => s.patient);
@@ -45,7 +46,7 @@ export const SoapSheet: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    printClinicalReport(patient, undefined, lang);
   };
 
   return (
@@ -94,10 +95,11 @@ export const SoapSheet: React.FC = () => {
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center justify-center w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface2)] text-[var(--text)] hover:bg-[var(--surface)] active:scale-95 transition-all shrink-0"
-            title="Print"
+            className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl border border-[var(--line)] bg-[var(--surface2)] text-[var(--text)] hover:bg-[var(--surface)] active:scale-95 transition-all text-xs font-semibold shrink-0"
+            title="Print A4 / PDF"
           >
-            <Printer className="w-4 h-4 text-[var(--muted)]" />
+            <Printer className="w-4 h-4 text-[var(--primary)]" />
+            <span>{isAr ? 'طباعة A4' : 'Print A4'}</span>
           </button>
         </div>
 

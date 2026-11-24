@@ -9,3 +9,5 @@ export * from './htn';
 export * from './diabetes';
 export * from './exporters';
 export * from './updater';
+export * from './ascvd';
+export * from './printReport';

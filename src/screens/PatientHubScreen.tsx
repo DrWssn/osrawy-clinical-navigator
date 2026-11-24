@@ -4,7 +4,8 @@ import { useAppStore } from '../store/useAppStore';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { getDynamicTargets, buildShareText } from '../engines/leaflets';
 import { generateSVG } from '../engines/qr';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Printer } from 'lucide-react';
+import { printClinicalReport } from '../engines/printReport';
 
 export const PatientHubScreen: React.FC = () => {
   const patient = usePatientStore(s => s.patient);
@@ -203,6 +204,15 @@ export const PatientHubScreen: React.FC = () => {
           <span className="text-[11px] font-mono text-[var(--muted)]">
             100% Offline Vector SVG · No internet required
           </span>
+
+          <button
+            type="button"
+            onClick={() => printClinicalReport(patient, undefined, lang)}
+            className="flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-[var(--primary)] text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-95 transition-all mt-1"
+          >
+            <Printer className="w-4 h-4" />
+            <span>{isAr ? 'طباعة التقرير الطبي والوصفة (A4 / PDF)' : 'Print A4 Clinical Report & Rx'}</span>
+          </button>
         </div>
       )}
 
