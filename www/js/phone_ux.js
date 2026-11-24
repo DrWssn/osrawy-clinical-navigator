@@ -49,17 +49,17 @@
 
     if (diaTab.querySelector('.phone-pane-switcher-dm')) return;
 
+    const isAr = isRtl();
     const switcher = document.createElement('div');
     switcher.className = 'phone-pane-switcher phone-pane-switcher-dm';
     switcher.setAttribute('role', 'tablist');
-    switcher.setAttribute('aria-label', 'Diabetes View Switcher');
+    switcher.setAttribute('aria-label', isAr ? 'مبدل عرض السكري' : 'Diabetes View Switcher');
 
-    const isAr = isRtl();
     switcher.innerHTML = `
-      <button type="button" class="phone-pane-btn active" data-pane="form">
+      <button type="button" class="phone-pane-btn active" data-pane="form" aria-label="${isAr ? 'بيانات المريض' : 'Patient Inputs'}">
         👤 ${isAr ? 'بيانات المريض' : 'Patient Inputs'}
       </button>
-      <button type="button" class="phone-pane-btn" data-pane="plan">
+      <button type="button" class="phone-pane-btn" data-pane="plan" aria-label="${isAr ? 'الخطة والروشتة' : 'Plan & Rx'}">
         💊 ${isAr ? 'الخطة والروشتة' : 'Plan & Rx'}
       </button>
     `;
@@ -77,6 +77,9 @@
           // Trigger smooth scroll to top of results
           const res = document.getElementById('result');
           if (res) res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          const form = document.getElementById('pform');
+          if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
     });
@@ -91,17 +94,17 @@
 
     if (htnTab.querySelector('.phone-pane-switcher-htn')) return;
 
+    const isAr = isRtl();
     const switcher = document.createElement('div');
     switcher.className = 'phone-pane-switcher phone-pane-switcher-htn';
     switcher.setAttribute('role', 'tablist');
-    switcher.setAttribute('aria-label', 'Hypertension View Switcher');
+    switcher.setAttribute('aria-label', isAr ? 'مبدل عرض الضغط' : 'Hypertension View Switcher');
 
-    const isAr = isRtl();
     switcher.innerHTML = `
-      <button type="button" class="phone-pane-btn active" data-pane="form">
+      <button type="button" class="phone-pane-btn active" data-pane="form" aria-label="${isAr ? 'القياسات والفحوصات' : 'Vitals & Labs'}">
         👤 ${isAr ? 'القياسات والفحوصات' : 'Vitals & Labs'}
       </button>
-      <button type="button" class="phone-pane-btn" data-pane="plan">
+      <button type="button" class="phone-pane-btn" data-pane="plan" aria-label="${isAr ? 'الخطة العلاجية' : 'Recommendations'}">
         💊 ${isAr ? 'الخطة العلاجية' : 'Recommendations'}
       </button>
     `;
@@ -116,8 +119,11 @@
         htnTab.setAttribute('data-phone-pane', pane);
         switcher.querySelectorAll('.phone-pane-btn').forEach(b => b.classList.toggle('active', b === btn));
         if (pane === 'plan') {
-          const out = document.getElementById('out');
-          if (out) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const sheet = htnTab.querySelector('.sheet') || document.getElementById('out');
+          if (sheet) sheet.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          const f = document.getElementById('f');
+          if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
     });
@@ -126,6 +132,7 @@
   /* ------------------------------------------------------------------------
      5. Priority 3 Alternative Drugs Collapsible Accordion
      ------------------------------------------------------------------------ */
+  let wasAltAccordionOpen = false;
   let isCollapsingAlt = false;
 
   function collapsePriority3Alternatives() {
@@ -135,12 +142,16 @@
     const resEl = document.getElementById('result');
     if (!resEl) return;
 
-    // Find tertiary or alternative sections (e.g., sulfonylureas, pioglitazone alternatives)
-    const altSections = resEl.querySelectorAll('.rx-sec.rx-alt, .rx-sec[data-priority="3"]');
-    if (altSections.length === 0) return;
-
     // Guard against multiple wraps
     if (resEl.querySelector('.phone-alt-accordion')) return;
+
+    // Query Priority 3 alternative steps
+    const altSteps = resEl.querySelectorAll('.step[data-priority="3"]');
+    if (altSteps.length === 0) return;
+
+    const firstAlt = altSteps[0];
+    const parent = firstAlt.parentNode;
+    if (!parent) return;
 
     isCollapsingAlt = true;
     try {
@@ -156,17 +167,71 @@
       const content = document.createElement('div');
       content.className = 'phone-alt-content';
 
-      altSections.forEach(sec => content.appendChild(sec));
-      details.appendChild(content);
+      // Preserve open state if previously opened or if any contained input is checked
+      const hasChecked = Array.from(altSteps).some(el => !!el.querySelector('input:checked'));
+      if (wasAltAccordionOpen || hasChecked) {
+        details.open = true;
+      }
 
-      resEl.appendChild(details);
+      details.addEventListener('toggle', () => {
+        wasAltAccordionOpen = details.open;
+      });
+
+      // Insert accordion in-place before firstAlt inside parent (.steps)
+      parent.insertBefore(details, firstAlt);
+      altSteps.forEach(sec => content.appendChild(sec));
+      details.appendChild(content);
     } finally {
       isCollapsingAlt = false;
     }
   }
 
   /* ------------------------------------------------------------------------
-     6. Initialization & Global Event Listeners
+     6. Dynamic Switcher Labels & i18n Synchronization
+     ------------------------------------------------------------------------ */
+  function updateSwitcherLabels(lang) {
+    const isAr = lang ? (lang === 'ar') : isRtl();
+
+    const dmSwitcher = document.querySelector('.phone-pane-switcher-dm');
+    if (dmSwitcher) {
+      dmSwitcher.setAttribute('aria-label', isAr ? 'مبدل عرض السكري' : 'Diabetes View Switcher');
+      const formBtn = dmSwitcher.querySelector('[data-pane="form"]');
+      const planBtn = dmSwitcher.querySelector('[data-pane="plan"]');
+      if (formBtn) {
+        formBtn.innerHTML = `👤 ${isAr ? 'بيانات المريض' : 'Patient Inputs'}`;
+        formBtn.setAttribute('aria-label', isAr ? 'بيانات المريض' : 'Patient Inputs');
+      }
+      if (planBtn) {
+        planBtn.innerHTML = `💊 ${isAr ? 'الخطة والروشتة' : 'Plan & Rx'}`;
+        planBtn.setAttribute('aria-label', isAr ? 'الخطة والروشتة' : 'Plan & Rx');
+      }
+    }
+
+    const htnSwitcher = document.querySelector('.phone-pane-switcher-htn');
+    if (htnSwitcher) {
+      htnSwitcher.setAttribute('aria-label', isAr ? 'مبدل عرض الضغط' : 'Hypertension View Switcher');
+      const formBtn = htnSwitcher.querySelector('[data-pane="form"]');
+      const planBtn = htnSwitcher.querySelector('[data-pane="plan"]');
+      if (formBtn) {
+        formBtn.innerHTML = `👤 ${isAr ? 'القياسات والفحوصات' : 'Vitals & Labs'}`;
+        formBtn.setAttribute('aria-label', isAr ? 'القياسات والفحوصات' : 'Vitals & Labs');
+      }
+      if (planBtn) {
+        planBtn.innerHTML = `💊 ${isAr ? 'الخطة العلاجية' : 'Recommendations'}`;
+        planBtn.setAttribute('aria-label', isAr ? 'الخطة العلاجية' : 'Recommendations');
+      }
+    }
+
+    const summary = document.querySelector('.phone-alt-summary');
+    if (summary) {
+      summary.textContent = isAr ? '➕ خيارات علاجية بديلة (سلفونيل يوريا، بيوجليتازون)' : '➕ Alternative Drug Classes (SUs, TZDs)';
+    }
+  }
+
+  window.osrawyUpdateSwitcherLabels = updateSwitcherLabels;
+
+  /* ------------------------------------------------------------------------
+     7. Initialization & Global Event Listeners
      ------------------------------------------------------------------------ */
   function bootPhoneUX() {
     updateCockpitOffset();
@@ -176,6 +241,13 @@
       setupDiabetesSwitcher();
       setupHtnSwitcher();
       collapsePriority3Alternatives();
+    }
+
+    // Dynamic language listener
+    if (typeof window !== 'undefined' && window.I18n && typeof window.I18n.onChange === 'function') {
+      window.I18n.onChange((lang) => {
+        updateSwitcherLabels(lang);
+      });
     }
 
     // Observe #result mutations to keep accordion working across re-renders
@@ -196,6 +268,10 @@
       if (isPhone()) {
         setupDiabetesSwitcher();
         setupHtnSwitcher();
+        collapsePriority3Alternatives();
+      } else {
+        const details = document.querySelector('.phone-alt-accordion');
+        if (details) details.open = true;
       }
     });
     window.addEventListener('orientationchange', () => {

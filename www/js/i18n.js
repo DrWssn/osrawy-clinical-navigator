@@ -295,7 +295,7 @@ const I18n = (function() {
 
       // Clinical Tools: CKD-EPI 2021 & ASCVD LDL-C Goals
       title_ldl_matrix: "أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)",
-      btn_ldl_matrix_nav: "أهداف LDL والستاتين",
+      btn_ldl_matrix_nav: "🎯 أهداف LDL والستاتين",
       btn_calc: "حاسبة",
       calc_egfr_btn_title: "حاسبة وظائف الكلى CKD-EPI 2021",
       btn_ldl_dia_trigger: "🎯 أهداف LDL وخطة الستاتين (ADA 2025)",

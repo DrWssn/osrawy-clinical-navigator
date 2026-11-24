@@ -93,7 +93,7 @@ function drugBlock(keys,egfr){
 const PC={1:"coral",2:"teal",3:"sun"};
 function step(pri,kicker,title,why,keys){return {pri,kicker,title,why,keys:keys||[]};}
 function stepHTML(s,egfr){
-  return `<div class="step" style="${cv(PC[s.pri])}"><div class="k">${s.kicker}</div><h4>${s.title}</h4><p>${s.why}</p>${s.keys.length?drugBlock(s.keys,egfr):""}</div>`;
+  return `<div class="step" data-priority="${s.pri}" style="${cv(PC[s.pri])}"><div class="k">${s.kicker}</div><h4>${s.title}</h4><p>${s.why}</p>${s.keys.length?drugBlock(s.keys,egfr):""}</div>`;
 }
 
 /* ================= Personalised screening ================= */

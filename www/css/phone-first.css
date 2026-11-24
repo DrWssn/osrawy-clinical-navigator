@@ -5,6 +5,25 @@
    Sticky modal headers, Market switcher visibility, and Segmented switchers.
    ========================================================================== */
 
+.phone-pane-switcher {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .phone-alt-accordion {
+    display: contents !important;
+    border: none !important;
+    background: transparent !important;
+  }
+  .phone-alt-accordion > .phone-alt-summary {
+    display: none !important;
+  }
+  .phone-alt-accordion > .phone-alt-content,
+  .phone-alt-accordion:not([open]) > .phone-alt-content {
+    display: contents !important;
+  }
+}
+
 @media (max-width: 767px) {
 
   /* ------------------------------------------------------------------------
@@ -202,10 +221,11 @@
   }
 
   /* Pane visibility switching for HTN */
-  #tab-htn[data-phone-pane="plan"] .htn-inputs-panel {
+  #tab-htn[data-phone-pane="plan"] #f,
+  #tab-htn[data-phone-pane="plan"] .tools {
     display: none !important;
   }
-  #tab-htn[data-phone-pane="form"] #out {
+  #tab-htn[data-phone-pane="form"] .sheet {
     display: none !important;
   }
 
@@ -280,13 +300,32 @@
   /* ------------------------------------------------------------------------
      9. Bug 8 Fix: Sticky First Table Column on Mobile
      ------------------------------------------------------------------------ */
-  .drug-table th:first-child,
-  .drug-table td:first-child {
+  #reftbl th:first-child,
+  #reftbl td:first-child,
+  #ins .tbl table th:first-child,
+  #ins .tbl table td:first-child,
+  #tab-htn .tbl table th:first-child,
+  #tab-htn .tbl table td:first-child {
     position: sticky !important;
     inset-inline-start: 0 !important;
     background: var(--surface) !important;
     z-index: 2 !important;
-    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  #reftbl th:first-child,
+  #ins .tbl table th:first-child,
+  #tab-htn .tbl table th:first-child {
+    background: var(--surface2) !important;
+  }
+
+  [dir="rtl"] #reftbl th:first-child,
+  [dir="rtl"] #reftbl td:first-child,
+  [dir="rtl"] #ins .tbl table th:first-child,
+  [dir="rtl"] #ins .tbl table td:first-child,
+  [dir="rtl"] #tab-htn .tbl table th:first-child,
+  [dir="rtl"] #tab-htn .tbl table td:first-child {
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.08) !important;
   }
 
   .kdigo-table th,
@@ -429,14 +468,6 @@
     font-size: 11px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-  }
-
-  /* Compact Top Bar Title */
-  .app-title-group h1 {
-    font-size: 14.5px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
   }
 
   /* Calc Button Pill Compact */
