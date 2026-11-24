@@ -1,10 +1,14 @@
 {
   "name": "osrawy-clinical-navigator",
-  "version": "1.2.18",
+  "version": "2.0.0",
+  "type": "module",
   "description": "Osrawy Diabetes and Hypertension Clinical Treatment Navigator",
   "main": "www/index.html",
   "scripts": {
-    "build": "cap sync",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit && vite build && cap sync android",
     "cap:android": "cap open android"
   },
   "author": "Dr Hossam Yousuf",
@@ -12,6 +16,21 @@
   "dependencies": {
     "@capacitor/android": "^6.2.0",
     "@capacitor/cli": "^6.2.0",
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/core": "^6.2.0",
+    "lucide-react": "^1.79.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "autoprefixer": "^10.7.0",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   }
 }

@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --app-primary: #0A4F4B;
+    --app-primary-dark: #062E2B;
+    --brand-teal: #0A4F4B;
+  }
+
+  body {
+    font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea, select {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
