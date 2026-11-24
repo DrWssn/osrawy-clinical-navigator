@@ -109,12 +109,19 @@
     const sections = [];
     const summary = [];
 
-    // gauge
+    // gauge & hemodynamics
     const pos = Math.max(0, Math.min(100, (p.s-100)/(200-100)*100));
+    const mapVal = Math.round(p.d + (p.s - p.d) / 3);
+    const ppVal = Math.round(p.s - p.d);
+    const isStiff = ppVal >= 60;
     sections.push(`<div class="sec"><div class="k">Classification · ${lens==='acc'?'ACC/AHA 2025':'ESC 2024'}</div>
-      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px"><span class="big" style="font-family:var(--f-mono)">${p.s}/${p.d}</span><span class="pill ${cl.cls}">${cl.label}</span></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px"><span class="big" style="font-family:var(--f-mono)">${p.s}/${p.d}</span> <span class="pill ${cl.cls}">${cl.label}</span></div>
       <div class="gauge" aria-hidden="true"><i style="left:${pos}%"></i></div>
       <div class="scale"><span>100</span><span>120</span><span>140</span><span>160</span><span>180</span><span>200</span></div>
+      <div class="htn-hemo-bar no-print" dir="ltr" aria-hidden="true">
+        <span class="htn-hemo-chip"><b>MAP:</b> <span class="htn-hemo-val">${mapVal}</span> mmHg</span>
+        <span class="htn-hemo-chip"><b>Pulse Pressure:</b> <span class="htn-hemo-val ${isStiff ? 'is-stiff' : ''}">${ppVal}</span> mmHg ${isStiff ? '⚠️' : ''}</span>
+      </div>
       ${p.oob ? '' : '<p class="hint">Not yet confirmed out of office. Confirm with home BP or ABPM before labelling, unless BP is severe.</p>'}
       ${(p.age!=null && p.age<40 && cl.stage>=1) ? '<p class="hint">Age under 40: screen for secondary hypertension.</p>':''}</div>`);
     summary.push(`BP ${p.s}/${p.d}: ${cl.label} (${lens==='acc'?'ACC/AHA 2025':'ESC 2024'}).`);

@@ -1446,17 +1446,17 @@ const ClinicalTools = (function() {
     container.innerHTML = `
       <div class="clinical-tools-dashboard" style="margin-bottom:24px;">
         <!-- Header -->
-        <div class="panel" style="margin-bottom:16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div class="tool-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div>
-              <h2 style="margin:0 0 4px 0;">🧮 ${isAr ? 'الأدوات الإكلينيكية والحاسبات المتقدمة' : 'Advanced Clinical Calculators & Tools'}</h2>
-              <p class="sub" style="margin:0;">${isAr ? 'حاسبات وظائف الكلى، تصفية الكرياتينين، زلال البول KDIGO، جرعات DOAC، ومؤشر تليف الكبد FIB-4' : 'Kidney functions, CrCl, KDIGO albuminuria matrix, DOAC renal dosing, and FIB-4 liver fibrosis'}</p>
+              <h2 class="tool-title" style="font-size:1.15rem;">🧮 ${isAr ? 'الأدوات الإكلينيكية والحاسبات المتقدمة' : 'Advanced Clinical Calculators & Tools'}</h2>
+              <p class="tool-sub">${isAr ? 'حاسبات وظائف الكلى، تصفية الكرياتينين، مصفوفة KDIGO، جرعات DOAC، ومؤشر تليف الكبد FIB-4' : 'Kidney functions, CrCl, KDIGO albuminuria matrix, DOAC renal dosing, and FIB-4 liver fibrosis'}</p>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn" id="btn-tools-open-drugs" style="background:var(--teal); color:#fff; font-size:12px; padding:6px 12px;">
+              <button type="button" class="btn" id="btn-tools-open-drugs" style="background:var(--teal); color:#fff; font-size:12px; padding:6px 14px; border-radius:8px;">
                 💊 ${isAr ? 'دليل الأدوية والأسعار' : 'Drugs Directory'}
               </button>
-              <button type="button" class="btn" id="btn-tools-open-recent" style="font-size:12px; padding:6px 12px;">
+              <button type="button" class="btn" id="btn-tools-open-recent" style="font-size:12px; padding:6px 14px; border-radius:8px;">
                 💾 ${isAr ? 'مسودات المرضى' : 'Saved Drafts'}
               </button>
             </div>
@@ -1464,113 +1464,186 @@ const ClinicalTools = (function() {
         </div>
 
         <!-- 1. Cardiorenal Calculator Card (eGFR + CrCl) -->
-        <div class="panel" style="margin-bottom:16px;">
-          <div class="ph" style="--c:var(--teal);--cs:var(--teal-soft)">
-            <span class="ic">🫘</span>
-            <h2>${isAr ? 'حاسبة وظائف الكلى وتصفية الكرياتينين (CKD-EPI 2021 & CrCl)' : 'Kidney Function & Creatinine Clearance (CKD-EPI & CrCl)'}</h2>
+        <div class="tool-card">
+          <div class="tool-header">
+            <span class="tool-icon">🫘</span>
+            <div class="tool-header-text">
+              <h2 class="tool-title">${isAr ? 'حاسبة وظائف الكلى وتصفية الكرياتينين (CKD-EPI 2021 & CrCl)' : 'Kidney Function & Creatinine Clearance (CKD-EPI & CrCl)'}</h2>
+              <p class="tool-sub">${isAr ? 'معادلة CKD-EPI 2021 دون عرق مع معادلة Cockcroft-Gault لضبط جرعات الأدوية ومضادات التخثر' : 'Race-free CKD-EPI 2021 alongside Cockcroft-Gault for precise drug & DOAC adjustments'}</p>
+            </div>
           </div>
-          <p class="sub">${isAr ? 'معادلة CKD-EPI 2021 دون عرق مع معادلة Cockcroft-Gault لضبط جرعات الأدوية ومضادات التخثر' : 'Race-free CKD-EPI 2021 alongside Cockcroft-Gault for precise drug & DOAC adjustments'}</p>
           
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:14px;">
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الكرياتينين (Scr):' : 'Serum Cr:'}</label>
+          <div class="tool-inputs-grid">
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'الكرياتينين (Scr):' : 'Serum Cr:'}</label>
               <input type="number" id="tab-scr" class="clinical-input" inputmode="decimal" step="0.01" value="${initialScr}">
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوحدة:' : 'Unit:'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'الوحدة:' : 'Unit:'}</label>
               <select id="tab-scr-unit" class="clinical-select">
                 <option value="mg" ${initialScrUnit === 'mg' ? 'selected' : ''}>mg/dL</option>
                 <option value="umol" ${initialScrUnit === 'umol' ? 'selected' : ''}>µmol/L</option>
               </select>
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'العمر (سنة):' : 'Age (yrs):'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'العمر (سنة):' : 'Age (yrs):'}</label>
               <input type="number" id="tab-age" class="clinical-input" inputmode="numeric" value="${initialAge}">
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الجنس:' : 'Sex:'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'الجنس:' : 'Sex:'}</label>
               <select id="tab-sex" class="clinical-select">
                 <option value="m" ${initialSex === 'm' ? 'selected' : ''}>${isAr ? 'ذكر' : 'Male'}</option>
                 <option value="f" ${initialSex === 'f' ? 'selected' : ''}>${isAr ? 'أنثى' : 'Female'}</option>
               </select>
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'الوزن (كجم):' : 'Weight (kg):'}</label>
               <input type="number" id="tab-wt" class="clinical-input" inputmode="decimal" value="${initialWt}">
             </div>
           </div>
 
-          <div id="tab-egfr-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px;">
+          <div id="tab-egfr-results" class="tool-results-box">
             <!-- Output dynamically computed -->
           </div>
 
-          <button type="button" class="btn" id="btn-sync-tools-egfr" style="background:var(--teal); color:#fff; font-size:13px;">
+          <button type="button" class="btn" id="btn-sync-tools-egfr" style="background:var(--teal); color:#fff; font-size:13px; font-weight:700; border-radius:9px; padding:10px 16px;">
             🔄 ${isAr ? 'مزامنة معدل الترشيح المحسوب مع المريض والروشتة' : 'Sync Calculated eGFR with Active Patient & Rx'}
           </button>
         </div>
 
         <!-- 2. KDIGO 2024 CKD Risk Matrix & Albuminuria -->
-        <div class="panel" style="margin-bottom:16px;">
-          <div class="ph" style="--c:var(--sun);--cs:var(--sun-soft)">
-            <span class="ic">📊</span>
-            <h2>${isAr ? 'مصفوفة KDIGO 2024 لزلال البول وتصنيف مخاطر الكلى' : 'KDIGO 2024 Heatmap & Albuminuria Staging'}</h2>
+        <div class="tool-card">
+          <div class="tool-header">
+            <span class="tool-icon">📊</span>
+            <div class="tool-header-text">
+              <h2 class="tool-title">${isAr ? 'مصفوفة KDIGO 2024 التفاعلية لزلال البول وتصنيف مخاطر الكلى' : 'Interactive KDIGO 2024 Heatmap Matrix & Albuminuria'}</h2>
+              <p class="tool-sub">${isAr ? 'تقاطع معدل الترشيح eGFR مع نسبة زلال البول إلى الكرياتينين (UACR) لتحديد خطورة التدهور وتكرار المتابعة السنوية' : 'Risk stratification combining eGFR and urine albumin-creatinine ratio (UACR)'}</p>
+            </div>
           </div>
-          <p class="sub">${isAr ? 'تقاطع معدل الترشيح eGFR مع نسبة زلال البول إلى الكرياتينين (UACR) لتحديد خطورة التدهور وتكرار المتابعة' : 'Risk stratification combining eGFR and urine albumin-creatinine ratio (UACR)'}</p>
           
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px;">
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'معدل الترشيح (eGFR mL/min):' : 'eGFR (mL/min):'}</label>
+          <div class="tool-inputs-grid" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));">
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'معدل الترشيح (eGFR mL/min):' : 'eGFR (mL/min):'}</label>
               <input type="number" id="tab-kdigo-egfr" class="clinical-input" inputmode="numeric" value="${initialEgfr}">
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'زلال البول UACR (mg/g):' : 'UACR (mg/g):'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'زلال البول UACR (mg/g):' : 'UACR (mg/g):'}</label>
               <input type="number" id="tab-kdigo-uacr" class="clinical-input" inputmode="numeric" value="${initialUacr}">
             </div>
           </div>
 
-          <div id="tab-kdigo-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
-            <!-- Dynamic KDIGO results -->
+          <div id="tab-kdigo-results" class="tool-results-box">
+            <!-- Dynamic KDIGO 5x3 Heatmap results -->
           </div>
         </div>
 
         <!-- 3. DOAC Renal Dosing (Apixaban & Rivaroxaban) -->
-        <div class="panel" style="margin-bottom:16px;">
-          <div class="ph" style="--c:var(--sky);--cs:var(--sky-soft)">
-            <span class="ic">🩸</span>
-            <h2>${isAr ? 'حاسبة جرعات مضادات التخثر الحديثة (DOAC Renal Dosing)' : 'DOAC Renal Dosing (Apixaban & Rivaroxaban)'}</h2>
+        <div class="tool-card">
+          <div class="tool-header">
+            <span class="tool-icon">🩸</span>
+            <div class="tool-header-text">
+              <h2 class="tool-title">${isAr ? 'حاسبة جرعات مضادات التخثر الحديثة (DOAC Renal Dosing)' : 'DOAC Renal Dosing (Apixaban & Rivaroxaban)'}</h2>
+              <p class="tool-sub">${isAr ? 'قاعدة استيفاء شرطين من 3 لـ Apixaban (العمر ≥80، الوزن ≤60 كجم، الكرياتينين ≥1.5) وتعديل جرعة Rivaroxaban بحسب CrCl' : 'Apixaban 2-of-3 criteria (Age ≥80, Wt ≤60kg, Scr ≥1.5mg/dL) & Rivaroxaban CrCl dosing'}</p>
+            </div>
           </div>
-          <p class="sub">${isAr ? 'قاعدة استيفاء شرطين من 3 لـ Apixaban (العمر ≥80، الوزن ≤60 كجم، الكرياتينين ≥1.5) وتعديل جرعة Rivaroxaban بحسب CrCl' : 'Apixaban 2-of-3 criteria (Age ≥80, Wt ≤60kg, Scr ≥1.5mg/dL) & Rivaroxaban CrCl dosing'}</p>
           
-          <div id="tab-doac-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
+          <div id="tab-doac-results" class="tool-results-box">
             <!-- Dynamic DOAC results -->
           </div>
         </div>
 
         <!-- 4. FIB-4 Liver Fibrosis Index -->
-        <div class="panel" style="margin-bottom:16px;">
-          <div class="ph" style="--c:var(--grape);--cs:var(--grape-soft)">
-            <span class="ic">🫁</span>
-            <h2>${isAr ? 'مؤشر تليف الكبد الدهني (FIB-4 Index for MASLD)' : 'FIB-4 Liver Fibrosis Index for MASLD'}</h2>
+        <div class="tool-card">
+          <div class="tool-header">
+            <span class="tool-icon">🧬</span>
+            <div class="tool-header-text">
+              <h2 class="tool-title">${isAr ? 'مؤشر تليف الكبد الدهني (FIB-4 Index for MASLD)' : 'FIB-4 Liver Fibrosis Index for MASLD'}</h2>
+              <p class="tool-sub">${isAr ? 'مسح تليف الكبد لمرضى السكري والسمنة باستخدام العمر، إنزيمات الكبد AST و ALT، والصفائح الدموية' : 'Screening advanced liver fibrosis in T2DM and metabolic syndrome using Age, AST, ALT, and Platelets'}</p>
+            </div>
           </div>
-          <p class="sub">${isAr ? 'مسح تليف الكبد لمرضى السكري والسمنة باستخدام العمر، إنزيمات الكبد AST و ALT، والصفائح الدموية' : 'Screening advanced liver fibrosis in T2DM and metabolic syndrome using Age, AST, ALT, and Platelets'}</p>
 
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:12px;">
-            <div>
-              <label style="font-size:12px; color:var(--muted);">AST (U/L):</label>
+          <div class="tool-inputs-grid" style="grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));">
+            <div class="tool-input-group">
+              <label class="tool-label">AST (U/L):</label>
               <input type="number" id="tab-fib4-ast" class="clinical-input" inputmode="numeric" value="38">
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">ALT (U/L):</label>
+            <div class="tool-input-group">
+              <label class="tool-label">ALT (U/L):</label>
               <input type="number" id="tab-fib4-alt" class="clinical-input" inputmode="numeric" value="42">
             </div>
-            <div>
-              <label style="font-size:12px; color:var(--muted);">${isAr ? 'الصفائح الدموية (PLT 10⁹/L):' : 'Platelets (10⁹/L):'}</label>
+            <div class="tool-input-group">
+              <label class="tool-label">${isAr ? 'الصفائح (PLT 10⁹/L):' : 'Platelets (10⁹/L):'}</label>
               <input type="number" id="tab-fib4-plt" class="clinical-input" inputmode="numeric" value="210">
             </div>
           </div>
 
-          <div id="tab-fib4-results" style="background:var(--surface2); padding:12px; border-radius:8px; border:1px solid var(--border);">
+          <div id="tab-fib4-results" class="tool-results-box">
             <!-- Dynamic FIB-4 results -->
+          </div>
+        </div>
+
+        <!-- 5. Bedside Point-of-Care Micro-Tools -->
+        <div class="tool-card">
+          <div class="tool-header">
+            <span class="tool-icon">⚡</span>
+            <div class="tool-header-text">
+              <h2 class="tool-title">${isAr ? 'حاسبات سريعة لنقطة الرعاية (Bedside Micro-Tools)' : 'Point-of-Care Bedside Micro-Tools'}</h2>
+              <p class="tool-sub">${isAr ? 'تحويل السكر التراكمي إلى متوسط السكر اليومي، الكالسيوم المصحح للألبومين، ومكافئ جرعات الكورتيزون' : 'HbA1c-to-eAG converter, Corrected Calcium for hypoalbuminemia, and Steroid dose equivalence'}</p>
+            </div>
+          </div>
+
+          <div class="micro-tools-grid">
+            <!-- Micro 1: HbA1c to eAG -->
+            <div class="micro-tool-card">
+              <div class="micro-tool-title">🩺 ${isAr ? 'متوسط السكر (HbA1c ⟷ eAG)' : 'Estimated Avg Glucose (eAG)'}</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label style="font-size:12px; color:var(--muted); font-weight:600;">HbA1c (%):</label>
+                <input type="number" id="micro-a1c" class="clinical-input" value="7.5" step="0.1" min="4" max="18" style="width:85px;">
+              </div>
+              <div id="micro-eag-result" class="micro-result-pill">169 mg/dL (9.4 mmol/L)</div>
+              <div style="font-size:0.75rem; color:var(--muted);">${isAr ? 'معادلة الجمعية الأمريكية للسكري (ADA eAG)' : 'ADA formula: eAG = 28.7 × A1c - 46.7'}</div>
+            </div>
+
+            <!-- Micro 2: Corrected Calcium -->
+            <div class="micro-tool-card">
+              <div class="micro-tool-title">🧪 ${isAr ? 'الكالسيوم المصحح (Corrected Ca)' : 'Corrected Calcium'}</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div>
+                  <label style="font-size:11px; color:var(--muted); font-weight:600;">Total Ca (mg/dL):</label>
+                  <input type="number" id="micro-ca" class="clinical-input" value="8.0" step="0.1">
+                </div>
+                <div>
+                  <label style="font-size:11px; color:var(--muted); font-weight:600;">Albumin (g/dL):</label>
+                  <input type="number" id="micro-alb" class="clinical-input" value="3.0" step="0.1">
+                </div>
+              </div>
+              <div id="micro-corr-ca-result" class="micro-result-pill">8.8 mg/dL (Normal)</div>
+              <div style="font-size:0.75rem; color:var(--muted);">${isAr ? 'تصحيح نقص ألبومين الدم (Payne formula)' : 'Payne: Total Ca + 0.8 × (4.0 - Albumin)'}</div>
+            </div>
+
+            <!-- Micro 3: Steroid Equivalence -->
+            <div class="micro-tool-card">
+              <div class="micro-tool-title">💊 ${isAr ? 'مكافئ الكورتيزون (Steroids)' : 'Steroid Equivalence'}</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div>
+                  <label style="font-size:11px; color:var(--muted); font-weight:600;">${isAr ? 'الجرعة (مجم):' : 'Dose (mg):'}</label>
+                  <input type="number" id="micro-steroid-dose" class="clinical-input" value="20" step="1">
+                </div>
+                <div>
+                  <label style="font-size:11px; color:var(--muted); font-weight:600;">${isAr ? 'الدواء:' : 'Drug:'}</label>
+                  <select id="micro-steroid-type" class="clinical-select">
+                    <option value="prednisone" selected>Prednisone</option>
+                    <option value="hydrocortisone">Hydrocortisone</option>
+                    <option value="methylprednisolone">Methylpred</option>
+                    <option value="dexamethasone">Dexamethasone</option>
+                  </select>
+                </div>
+              </div>
+              <div id="micro-steroid-result" style="font-size:0.82rem; font-family:var(--f-mono); font-weight:700; color:var(--ink);">
+                = Hydro 80mg · Dexa 3mg
+              </div>
+              <div style="font-size:0.75rem; color:var(--muted);">${isAr ? 'مكافئات مضادات الالتهاب الستيرويدية' : 'Anti-inflammatory glucocorticoid equivalence'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1599,7 +1672,7 @@ const ClinicalTools = (function() {
       const sex = document.getElementById('tab-sex')?.value || 'm';
       const wt = readTabNum('tab-wt', 80);
 
-      // 1. eGFR & CrCl
+      // 1. eGFR & CrCl Dual Telemetry
       const egfrRes = calculateCKDEPI(scr, unit, age, sex);
       const crclRes = calculateCrCl(scr, unit, age, sex, wt);
       const outBox = document.getElementById('tab-egfr-results');
@@ -1608,20 +1681,38 @@ const ClinicalTools = (function() {
           outBox.innerHTML = `<div style="font-size:13px; color:var(--muted);">${isAr ? 'يرجى إدخال قيم صحيحة وموجبة للكرياتينين والعمر.' : 'Please enter valid positive values for Serum Creatinine and Age.'}</div>`;
         } else {
           const crclDisplay = crclRes ? `${crclRes.crcl}` : '—';
+
+          // Renal Drug Adjustment Statuses
+          let metTag = 'tag-safe', metText = isAr ? 'آمن (الجرعة الكاملة حتى 2000 مجم/يوم)' : 'Safe (Full dose up to 2000 mg/d)';
+          if (egfrRes.egfr < 30) { metTag = 'tag-caution'; metText = isAr ? 'ممنوع تماماً (خطر الحماض اللبني Lactic Acidosis)' : 'Contraindicated (Lactic Acidosis risk)'; }
+          else if (egfrRes.egfr < 45) { metTag = 'tag-adjust'; metText = isAr ? 'تخفيض الجرعة (الحد الأقصى 1000 مجم/يوم)' : 'Dose cap (Max 1000 mg/d)'; }
+
+          let sglt2Tag = 'tag-safe', sglt2Text = isAr ? 'ابدأ واستمر عليه لحماية القلب والكلى' : 'Cardiorenal organ protection';
+          if (egfrRes.egfr < 20) { sglt2Tag = 'tag-caution'; sglt2Text = isAr ? 'لا تبدأ به؛ استمر عليه إذا كان مستخدماً حتى الغسيل' : 'Do not initiate; continue until dialysis if already on it'; }
+
+          let glp1Tag = 'tag-safe', glp1Text = isAr ? 'آمن دون تعديل الجرعة حتى eGFR 15' : 'Safe without dose adjustment down to eGFR 15';
+          if (egfrRes.egfr < 15) { glp1Tag = 'tag-caution'; glp1Text = isAr ? 'بيانات محدودة في الفشل الكلوي النهائي' : 'Limited data in ESRD'; }
+
+          let dpp4Tag = 'tag-safe', dpp4Text = isAr ? 'ليناجليبتين 5 مجم دون تعديل؛ سيتاجليبتين يحتاج تعديل' : 'Linagliptin 5 mg (no adjustment); Sitagliptin dose-adjusted';
+          if (egfrRes.egfr < 30) { dpp4Tag = 'tag-adjust'; dpp4Text = isAr ? 'سيتاجليبتين 25 مجم أو ليناجليبتين 5 مجم' : 'Sitagliptin 25 mg daily or Linagliptin 5 mg'; }
+          else if (egfrRes.egfr < 45) { dpp4Tag = 'tag-adjust'; dpp4Text = isAr ? 'سيتاجليبتين 50 مجم أو ليناجليبتين 5 مجم' : 'Sitagliptin 50 mg daily or Linagliptin 5 mg'; }
+
           outBox.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div>
-                <div style="font-size:18px; font-weight:700; color:var(--teal);">eGFR: ${egfrRes.egfr} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min/1.73m²</span></div>
-                <div style="font-size:13px; font-weight:600; color:var(--muted);">${isAr ? egfrRes.stage.nameAr : egfrRes.stage.nameEn}</div>
+            <div class="telemetry-row">
+              <div class="telemetry-stat">
+                <div class="telemetry-val stat-egfr">eGFR: ${egfrRes.egfr} <span style="font-size:12px; font-weight:600; color:var(--ink);">mL/min/1.73m²</span></div>
+                <div class="telemetry-sub">${isAr ? egfrRes.stage.nameAr : egfrRes.stage.nameEn}</div>
               </div>
-              <div style="text-align:${isAr ? 'left' : 'right'};">
-                <div style="font-size:16px; font-weight:700; color:var(--grape);">CrCl: ${crclDisplay} <span style="font-size:12px; font-weight:normal; color:var(--ink);">mL/min</span></div>
-                <div style="font-size:11px; color:var(--muted);">(Cockcroft-Gault)</div>
+              <div class="telemetry-stat" style="text-align:${isAr ? 'left' : 'right'};">
+                <div class="telemetry-val stat-crcl">CrCl: ${crclDisplay} <span style="font-size:12px; font-weight:600; color:var(--ink);">mL/min</span></div>
+                <div class="telemetry-sub">${isAr ? 'تصفية الكرياتينين (Cockcroft-Gault)' : 'Cockcroft-Gault CrCl'}</div>
               </div>
             </div>
-            <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
-              <b>${isAr ? 'أمان الميتفورمين:' : 'Metformin:'}</b> ${isAr ? egfrRes.stage.metforminAr : egfrRes.stage.metforminEn} | 
-              <b>${isAr ? 'مثبطات SGLT2:' : 'SGLT2i:'}</b> ${isAr ? egfrRes.stage.sglt2iAr : egfrRes.stage.sglt2iEn}
+            <div class="renal-drug-matrix">
+              <div class="renal-drug-pill"><span class="renal-drug-tag ${metTag}">Metformin</span> <span>${metText}</span></div>
+              <div class="renal-drug-pill"><span class="renal-drug-tag ${sglt2Tag}">SGLT2i</span> <span>${sglt2Text}</span></div>
+              <div class="renal-drug-pill"><span class="renal-drug-tag ${glp1Tag}">GLP-1 RA</span> <span>${glp1Text}</span></div>
+              <div class="renal-drug-pill"><span class="renal-drug-tag ${dpp4Tag}">DPP-4i</span> <span>${dpp4Text}</span></div>
             </div>
           `;
         }
@@ -1656,32 +1747,80 @@ const ClinicalTools = (function() {
         };
       }
 
-      // 2. KDIGO
+      // 2. Interactive KDIGO 2024 5x3 Heatmap Grid
       const fallbackEgfr = egfrRes ? egfrRes.egfr : 68;
       const kEgfr = readTabNum('tab-kdigo-egfr', fallbackEgfr);
-      const kUacr = readTabNum('tab-kdigo-uacr', 30);
+      const kUacr = readTabNum('tab-kdigo-uacr', 0);
       const kdigoRes = evaluateKdigoMatrix(kEgfr, kUacr);
       const kBox = document.getElementById('tab-kdigo-results');
       if (kBox && kdigoRes) {
-        const riskColor = (kdigoRes.riskTier === 'VERY_HIGH') ? '#DC2626' : (kdigoRes.riskTier === 'HIGH' ? '#EA580C' : (kdigoRes.riskTier === 'MODERATE' ? '#D97706' : '#16A34A'));
+        const kStages = [
+          { g: 'G1', label: 'G1 (≥90)', gMin: 90 },
+          { g: 'G2', label: 'G2 (60–89)', gMin: 60 },
+          { g: 'G3a', label: 'G3a (45–59)', gMin: 45 },
+          { g: 'G3b', label: 'G3b (30–44)', gMin: 30 },
+          { g: 'G4', label: 'G4 (15–29)', gMin: 15 },
+          { g: 'G5', label: 'G5 (<15)', gMin: 0 }
+        ];
+        const aStages = [
+          { a: 'A1', label: isAr ? 'A1 طبيعي (<30)' : 'A1 Normal (<30)' },
+          { a: 'A2', label: isAr ? 'A2 متوسط (30–300)' : 'A2 Micro (30–300)' },
+          { a: 'A3', label: isAr ? 'A3 شديد (>300)' : 'A3 Macro (>300)' }
+        ];
+
+        function getCellRiskColor(g, a) {
+          if (g === 'G4' || g === 'G5' || (g === 'G3b' && (a === 'A2' || a === 'A3')) || (g === 'G3a' && a === 'A3')) return 'red';
+          if ((g === 'G3b' && a === 'A1') || (g === 'G3a' && a === 'A2') || ((g === 'G1' || g === 'G2') && a === 'A3')) return 'orange';
+          if ((g === 'G3a' && a === 'A1') || ((g === 'G1' || g === 'G2') && a === 'A2')) return 'yellow';
+          return 'green';
+        }
+
+        let tableRows = '';
+        kStages.forEach(st => {
+          let cells = '';
+          aStages.forEach(col => {
+            const isCur = (st.g === kdigoRes.gStage && col.a === kdigoRes.aStage);
+            const color = getCellRiskColor(st.g, col.a);
+            cells += `<td class="kdigo-cell kdigo-cell-${color} ${isCur ? 'is-active' : ''}" data-kdigo-cell="${st.g}${col.a}">
+              ${st.g}${col.a} ${isCur ? '📍' : ''}
+            </td>`;
+          });
+          tableRows += `<tr><th class="kdigo-stage-hdr">${st.label}</th>${cells}</tr>`;
+        });
+
+        const actionCardCls = (kdigoRes.riskTier === 'VERY_HIGH') ? 'kdigo-action-red' : (kdigoRes.riskTier === 'HIGH' ? 'kdigo-action-orange' : (kdigoRes.riskTier === 'MODERATE' ? 'kdigo-action-yellow' : 'kdigo-action-green'));
+
         kBox.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-              <span style="display:inline-block; padding:3px 8px; border-radius:4px; font-weight:700; color:#fff; background:${riskColor}; font-size:12px;">
-                ${kdigoRes.composite} (${isAr ? kdigoRes.riskLabelAr : kdigoRes.riskLabelEn})
+          <div class="kdigo-matrix-container">
+            <table class="kdigo-table">
+              <thead>
+                <tr>
+                  <th>GFR \\ UACR</th>
+                  <th>${aStages[0].label}</th>
+                  <th>${aStages[1].label}</th>
+                  <th>${aStages[2].label}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+          <div class="kdigo-action-card ${actionCardCls}">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+              <span style="font-weight:800; font-size:0.95rem;">
+                ${kdigoRes.composite} · ${isAr ? kdigoRes.riskLabelAr : kdigoRes.riskLabelEn}
+              </span>
+              <span style="font-size:0.8rem; font-weight:700;">
+                📅 ${isAr ? 'تكرار المتابعة:' : 'Surveillance:'} ${isAr ? kdigoRes.monitoringAr : kdigoRes.monitoringEn}
               </span>
             </div>
-            <div style="font-size:12px; color:var(--muted);">
-              <b>${isAr ? 'تكرار المتابعة:' : 'Surveillance:'}</b> ${isAr ? kdigoRes.monitoringAr : kdigoRes.monitoringEn}
-            </div>
-          </div>
-          <div style="margin-top:8px; font-size:12px; border-top:1px solid var(--border); padding-top:6px;">
-            <b>${isAr ? 'الإجراء والتوجيه:' : 'Action:'}</b> ${isAr ? kdigoRes.recommendationAr : kdigoRes.recommendationEn}
+            <div><b>${isAr ? 'التوجيه السريري (KDIGO 2024):' : 'Action & Management:'}</b> ${isAr ? kdigoRes.recommendationAr : kdigoRes.recommendationEn}</div>
           </div>
         `;
       }
 
-      // 3. DOAC
+      // 3. DOAC Renal Dosing Interactive Calculator
       const doacRes = evaluateDoacDosing({
         age: age,
         weightKg: wt,
@@ -1692,17 +1831,48 @@ const ClinicalTools = (function() {
       });
       const dBox = document.getElementById('tab-doac-results');
       if (dBox && doacRes) {
+        const critAge = (age >= 80);
+        const critWt = (wt > 0 && wt <= 60);
+        const critScr = (scr >= 1.5);
+
         dBox.innerHTML = `
-          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">
-            💊 <b>Apixaban (Eliquis):</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}
+          <div style="font-size:0.88rem; font-weight:700; color:var(--ink); margin-bottom:6px;">
+            🎯 ${isAr ? 'معايير تخفيض جرعة أبيكسابان (Eliquis 2-of-3 Criteria):' : 'Apixaban (Eliquis) 2-of-3 Criteria:'}
           </div>
-          <div style="font-size:13px; font-weight:600; border-top:1px solid var(--border); padding-top:6px; margin-top:4px;">
-            💊 <b>Rivaroxaban (Xarelto):</b> ${isAr ? doacRes.rivaroxabanAr : doacRes.rivaroxabanEn}
+          <div class="doac-criteria-grid">
+            <div class="doac-crit-chip ${critAge ? 'is-met' : ''}">
+              <span>${critAge ? '✅' : '⬜'}</span>
+              <span>${isAr ? 'العمر ≥ 80 سنة' : 'Age ≥ 80 years'} (${age} y)</span>
+            </div>
+            <div class="doac-crit-chip ${critWt ? 'is-met' : ''}">
+              <span>${critWt ? '✅' : '⬜'}</span>
+              <span>${isAr ? 'الوزن ≤ 60 كجم' : 'Weight ≤ 60 kg'} (${wt} kg)</span>
+            </div>
+            <div class="doac-crit-chip ${critScr ? 'is-met' : ''}">
+              <span>${critScr ? '✅' : '⬜'}</span>
+              <span>${isAr ? 'الكرياتينين ≥ 1.5 ملغ/دسل' : 'Serum Cr ≥ 1.5 mg/dL'} (${scr} mg/dL)</span>
+            </div>
+          </div>
+          <div class="doac-dose-result">
+            <div style="font-size:0.92rem; font-weight:700;">💊 <b>Apixaban (Eliquis):</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}</div>
+            <div style="font-size:0.78rem; color:var(--muted);">${isAr ? doacRes.apixaban.reasonAr : doacRes.apixaban.reasonEn}</div>
+          </div>
+          <div class="doac-dose-result" style="margin-top:8px;">
+            <div style="font-size:0.92rem; font-weight:700;">💊 <b>Rivaroxaban (Xarelto):</b> ${isAr ? doacRes.rivaroxabanAr : doacRes.rivaroxabanEn}</div>
+            <div style="font-size:0.78rem; color:var(--warn); font-weight:600;">⚠️ ${isAr ? 'يجب تناوله مع وجبة طعام رئيسية (العشاء) لزيادة الامتصاص بنسبة 39%' : 'Must be taken with evening meal (food increases absorption by 39%)'}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; font-size:0.78rem;">
+            <span style="background:var(--surface2); padding:5px 9px; border-radius:6px; border:1px solid var(--line);">
+              <b>Dabigatran:</b> 150 mg BID (110 mg if age ≥80 or CrCl 30–49; avoid CrCl &lt;30)
+            </span>
+            <span style="background:var(--surface2); padding:5px 9px; border-radius:6px; border:1px solid var(--line);">
+              <b>Edoxaban:</b> 60 mg QD (30 mg if CrCl 15–50 or Wt ≤60 kg)
+            </span>
           </div>
         `;
       }
 
-      // 4. FIB-4
+      // 4. FIB-4 Liver Fibrosis Visual Meter
       const ast = readTabNum('tab-fib4-ast', 38);
       const alt = readTabNum('tab-fib4-alt', 42);
       const pltVal = readTabNum('tab-fib4-plt', 210);
@@ -1712,29 +1882,81 @@ const ClinicalTools = (function() {
         if (!fib4Res) {
           fBox.innerHTML = `<div style="font-size:13px; color:var(--muted);">${isAr ? 'يرجى إدخال قيم صحيحة وموجبة للعمر و AST و ALT والصفائح الدموية.' : 'Please enter valid positive values for Age, AST, ALT, and Platelets.'}</div>`;
         } else {
+          const fibVal = fib4Res.score;
+          const fibPos = Math.round(Math.min(Math.max((fibVal / 5.0) * 100, 4), 96));
           const fibColor = (fib4Res.riskTier === 'HIGH') ? '#DC2626' : (fib4Res.riskTier === 'INTERMEDIATE' ? '#D97706' : '#16A34A');
           const fibLabel = isAr
             ? (fib4Res.riskLabelAr || (fib4Res.riskTier === 'HIGH' ? 'خطورة عالية' : (fib4Res.riskTier === 'INTERMEDIATE' ? 'خطورة متوسطة' : 'خطورة منخفضة')))
             : (fib4Res.riskLabelEn || (fib4Res.riskTier === 'HIGH' ? 'High Risk' : (fib4Res.riskTier === 'INTERMEDIATE' ? 'Intermediate Risk' : 'Low Risk')));
+
           fBox.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div style="font-size:15px; font-weight:700;">
-                FIB-4: <span style="color:${fibColor};">${fib4Res.score}</span> 
-                <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; color:#fff; background:${fibColor}; margin-right:4px;">
+              <div style="font-size:1.15rem; font-weight:800; font-family:var(--f-mono);">
+                FIB-4: <span style="color:${fibColor}; font-size:1.35rem;">${fib4Res.score}</span>
+                <span style="display:inline-block; padding:3px 8px; border-radius:999px; font-size:0.78rem; font-weight:700; color:#fff; background:${fibColor}; margin-inline-start:6px;">
                   ${fibLabel}
                 </span>
               </div>
+              <div style="font-size:0.8rem; color:var(--muted);">
+                ${isAr ? `معايير العمر (${age} سنة): الحد المنخفض < ${fib4Res.lowCutoff}` : `Cutoffs (Age ${age}y): Low < ${fib4Res.lowCutoff} | High > ${fib4Res.highCutoff}`}
+              </div>
             </div>
-            <div style="margin-top:6px; font-size:12px; border-top:1px solid var(--border); padding-top:4px;">
-              <b>${isAr ? 'التوصية السريرية:' : 'Recommendation:'}</b> ${isAr ? fib4Res.actionAr : fib4Res.actionEn}
+            <div class="fib4-gauge-wrap" dir="ltr">
+              <div class="fib4-track">
+                <div class="fib4-pin" style="left:${fibPos}%;" title="FIB-4: ${fib4Res.score}"></div>
+              </div>
+              <div class="fib4-scale-legend">
+                <span>0 (Low &lt; ${fib4Res.lowCutoff})</span>
+                <span>Intermediate (${fib4Res.lowCutoff}–${fib4Res.highCutoff})</span>
+                <span>High (&gt; ${fib4Res.highCutoff})</span>
+              </div>
+            </div>
+            <div style="margin-top:8px; font-size:0.84rem; border-top:1px solid var(--line); padding-top:8px; line-height:1.45;">
+              <b>${isAr ? 'التوصية السريرية:' : 'Recommendation:'}</b> ${isAr ? fib4Res.actionAr : fib4Res.actionEn} <span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">(${isAr ? 'إرشادات AASLD / ADA 2025' : 'AASLD/ADA 2025'})</span>
             </div>
           `;
         }
       }
+
+      // 5. Point-of-Care Bedside Micro-Tools Recalculation
+      function recalculateMicroTools() {
+        // eAG
+        const a1c = readTabNum('micro-a1c', 7.5);
+        const eagMg = Math.round(28.7 * a1c - 46.7);
+        const eagMmol = Math.round((eagMg / 18.0182) * 10) / 10;
+        const eagBox = document.getElementById('micro-eag-result');
+        if (eagBox) eagBox.textContent = `${eagMg} mg/dL (${eagMmol} mmol/L)`;
+
+        // Corrected Ca
+        const ca = readTabNum('micro-ca', 8.0);
+        const alb = readTabNum('micro-alb', 3.0);
+        const corrCa = Math.round((ca + 0.8 * (4.0 - alb)) * 10) / 10;
+        const caStatus = (corrCa < 8.5) ? (isAr ? 'منخفض' : 'Low') : ((corrCa > 10.5) ? (isAr ? 'مرتفع' : 'High') : (isAr ? 'طبيعي' : 'Normal'));
+        const caBox = document.getElementById('micro-corr-ca-result');
+        if (caBox) caBox.textContent = `${corrCa} mg/dL (${caStatus})`;
+
+        // Steroids
+        const sDose = readTabNum('micro-steroid-dose', 20);
+        const sType = document.getElementById('micro-steroid-type')?.value || 'prednisone';
+        let predEq = sDose;
+        if (sType === 'hydrocortisone') predEq = sDose / 4;
+        else if (sType === 'methylprednisolone') predEq = sDose / 0.8;
+        else if (sType === 'dexamethasone') predEq = sDose / 0.15;
+
+        const hydroVal = Math.round(predEq * 4 * 10) / 10;
+        const methylVal = Math.round(predEq * 0.8 * 10) / 10;
+        const dexaVal = Math.round(predEq * 0.15 * 100) / 100;
+        const sBox = document.getElementById('micro-steroid-result');
+        if (sBox) {
+          sBox.textContent = `= Pred ${Math.round(predEq * 10) / 10}mg · Hydro ${hydroVal}mg · Methyl ${methylVal}mg · Dexa ${dexaVal}mg`;
+        }
+      }
+
+      recalculateMicroTools();
     }
 
     // Attach listeners
-    ['tab-scr', 'tab-scr-unit', 'tab-age', 'tab-sex', 'tab-wt', 'tab-kdigo-egfr', 'tab-kdigo-uacr', 'tab-fib4-ast', 'tab-fib4-alt', 'tab-fib4-plt'].forEach(id => {
+    ['tab-scr', 'tab-scr-unit', 'tab-age', 'tab-sex', 'tab-wt', 'tab-kdigo-egfr', 'tab-kdigo-uacr', 'tab-fib4-ast', 'tab-fib4-alt', 'tab-fib4-plt', 'micro-a1c', 'micro-ca', 'micro-alb', 'micro-steroid-dose', 'micro-steroid-type'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', recalculateToolsTab);

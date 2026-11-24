@@ -1,0 +1,548 @@
+/* ==============================================================
+   Osrawy Clinical Tools Stylesheet (www/css/tools.css)
+   Scoped styling for Nephrology, Hepatology, DOAC & Bedside Calculators
+   ============================================================== */
+
+.clinical-tools-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  text-align: start;
+}
+
+/* Tool Card Architecture */
+.tool-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tool-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  background: var(--surface2, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.tool-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  margin: 0 0 3px 0;
+}
+
+.tool-sub {
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Inputs Grid */
+.tool-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.tool-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+}
+
+.clinical-input,
+.clinical-select {
+  font-family: var(--f-mono, 'IBM Plex Mono', ui-monospace, monospace);
+  font-size: 0.95rem;
+  color: var(--ink, #0f172a);
+  background: var(--surface2, #f8fafc);
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clinical-input:focus,
+.clinical-select:focus {
+  outline: none;
+  border-color: var(--teal, #0d9488);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+/* Results Box */
+.tool-results-box {
+  background: var(--surface2, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Dual Telemetry Badges (eGFR & CrCl) */
+.telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.telemetry-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.telemetry-val {
+  font-family: var(--f-mono, 'IBM Plex Mono', monospace);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.telemetry-val.stat-egfr {
+  color: var(--teal, #0d9488);
+}
+
+.telemetry-val.stat-crcl {
+  color: var(--sky, #0284c7);
+}
+
+.telemetry-sub {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+  margin-top: 2px;
+}
+
+/* Renal Drug Adjustment Matrix Card */
+.renal-drug-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line, #cbd5e1);
+}
+
+.renal-drug-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  font-size: 0.8rem;
+}
+
+.renal-drug-tag {
+  font-family: var(--f-mono, monospace);
+  font-weight: 700;
+  font-size: 0.74rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.tag-safe {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tag-adjust {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tag-caution {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* --- Interactive KDIGO 2024 Heatmap Matrix --- */
+.kdigo-matrix-container {
+  overflow-x: auto;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid var(--line, #e2e8f0);
+}
+
+.kdigo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  text-align: center;
+  min-width: 440px;
+}
+
+.kdigo-table th,
+.kdigo-table td {
+  padding: 8px 6px;
+  border: 1px solid var(--line, #e2e8f0);
+}
+
+.kdigo-table th {
+  background: var(--surface2, #f8fafc);
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+}
+
+.kdigo-stage-hdr {
+  font-family: var(--f-mono, monospace);
+  font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.kdigo-cell {
+  position: relative;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.kdigo-cell:hover {
+  filter: brightness(0.95);
+  transform: scale(1.02);
+  z-index: 2;
+}
+
+.kdigo-cell.is-active {
+  box-shadow: inset 0 0 0 3px var(--teal, #0d9488), 0 0 10px rgba(13, 148, 136, 0.4);
+  font-weight: 900;
+  z-index: 3;
+}
+
+.kdigo-cell-green {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.kdigo-cell-yellow {
+  background-color: #fef08a;
+  color: #854d0e;
+}
+
+.kdigo-cell-orange {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.kdigo-cell-red {
+  background-color: #fecaca;
+  color: #991b1b;
+}
+
+.kdigo-action-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-top: 10px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  border-inline-start-width: 5px;
+  border-inline-start-style: solid;
+}
+
+.kdigo-action-green {
+  background-color: #ecfdf5;
+  border-inline-start-color: #10b981;
+  color: #065f46;
+}
+
+.kdigo-action-yellow {
+  background-color: #fefce8;
+  border-inline-start-color: #eab308;
+  color: #854d0e;
+}
+
+.kdigo-action-orange {
+  background-color: #fff7ed;
+  border-inline-start-color: #f97316;
+  color: #9a3412;
+}
+
+.kdigo-action-red {
+  background-color: #fef2f2;
+  border-inline-start-color: #ef4444;
+  color: #991b1b;
+}
+
+/* --- FIB-4 Liver Fibrosis Gauge --- */
+.fib4-gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 6px 8px;
+}
+
+.fib4-track {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981 0%, #10b981 26%, #f59e0b 26%, #f59e0b 53%, #ef4444 53%, #ef4444 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+  direction: ltr !important;
+}
+
+.fib4-pin {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border: 3px solid #0f172a;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 2;
+  transition: left 0.3s ease;
+}
+
+.fib4-scale-legend {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  direction: ltr !important;
+}
+
+/* --- DOAC Interactive Criteria --- */
+.doac-criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.doac-crit-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e2e8f0);
+  background: var(--surface, #ffffff);
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+}
+
+.doac-crit-chip.is-met {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.doac-dose-result {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* --- Bedside Point-of-Care Micro-Tools --- */
+.micro-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.micro-tool-card {
+  background: var(--surface2, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.micro-tool-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.micro-result-pill {
+  font-family: var(--f-mono, monospace);
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--teal, #0d9488);
+}
+
+/* ==============================================================
+   Dark Mode Styles for Clinical Tools
+   ============================================================== */
+:root[data-theme="dark"] .tool-card,
+[data-theme="dark"] .tool-card {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .tool-icon,
+[data-theme="dark"] .tool-icon {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .clinical-input,
+:root[data-theme="dark"] .clinical-select,
+[data-theme="dark"] .clinical-input,
+[data-theme="dark"] .clinical-select {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
+}
+
+:root[data-theme="dark"] .tool-results-box,
+[data-theme="dark"] .tool-results-box {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .renal-drug-pill,
+[data-theme="dark"] .renal-drug-pill {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
+}
+
+:root[data-theme="dark"] .kdigo-matrix-container,
+:root[data-theme="dark"] .kdigo-table th,
+:root[data-theme="dark"] .kdigo-table td,
+[data-theme="dark"] .kdigo-matrix-container,
+[data-theme="dark"] .kdigo-table th,
+[data-theme="dark"] .kdigo-table td {
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .kdigo-table th,
+[data-theme="dark"] .kdigo-table th {
+  background: var(--surface2, #182D2B);
+  color: var(--ink, #E2F0ED);
+}
+
+:root[data-theme="dark"] .kdigo-cell-green,
+[data-theme="dark"] .kdigo-cell-green {
+  background-color: rgba(16, 185, 129, 0.22);
+  color: #6ee7b7;
+}
+
+:root[data-theme="dark"] .kdigo-cell-yellow,
+[data-theme="dark"] .kdigo-cell-yellow {
+  background-color: rgba(234, 179, 8, 0.22);
+  color: #fde047;
+}
+
+:root[data-theme="dark"] .kdigo-cell-orange,
+[data-theme="dark"] .kdigo-cell-orange {
+  background-color: rgba(249, 115, 22, 0.22);
+  color: #fdba74;
+}
+
+:root[data-theme="dark"] .kdigo-cell-red,
+[data-theme="dark"] .kdigo-cell-red {
+  background-color: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+:root[data-theme="dark"] .kdigo-action-green,
+[data-theme="dark"] .kdigo-action-green {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #a7f3d0;
+}
+
+:root[data-theme="dark"] .kdigo-action-yellow,
+[data-theme="dark"] .kdigo-action-yellow {
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #fef08a;
+}
+
+:root[data-theme="dark"] .kdigo-action-orange,
+[data-theme="dark"] .kdigo-action-orange {
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #fed7aa;
+}
+
+:root[data-theme="dark"] .kdigo-action-red,
+[data-theme="dark"] .kdigo-action-red {
+  background-color: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+:root[data-theme="dark"] .fib4-pin,
+[data-theme="dark"] .fib4-pin {
+  background: #E2F0ED;
+  border-color: #122220;
+}
+
+:root[data-theme="dark"] .doac-crit-chip,
+[data-theme="dark"] .doac-crit-chip {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
+}
+
+:root[data-theme="dark"] .doac-crit-chip.is-met,
+[data-theme="dark"] .doac-crit-chip.is-met {
+  background-color: rgba(245, 158, 11, 0.2);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fde68a;
+}
+
+:root[data-theme="dark"] .doac-dose-result,
+[data-theme="dark"] .doac-dose-result {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
+}
+
+:root[data-theme="dark"] .micro-tool-card,
+[data-theme="dark"] .micro-tool-card {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+}
