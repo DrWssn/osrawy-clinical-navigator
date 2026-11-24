@@ -326,7 +326,7 @@ const I18n = (function() {
       vitals_quick_edit: "تعديل سريع",
       soap_fab_label: "ملخص SOAP",
       soap_drawer_title: "ملخص الاستشارة الطبية (SOAP)",
-      soap_pull_btn: "🔄 تحديث من المحركات",
+      soap_pull_btn: "🔄 مزامنة",
       soap_copy_btn: "📋 نسخ الملاحظة",
       handoff_enter_btn: "📱 وضع شاشة المريض",
       handoff_exit_btn: "✕ إنهاء وضع المريض"
@@ -334,7 +334,7 @@ const I18n = (function() {
 
     en: {
       // General App Branding & Top Bar
-      app_title: "Osrawy Clinical Navigator",
+      app_title: "Osrawy Navigator",
       app_subtitle: "Dr Hossam Yousuf · Family Practice",
       lang_toggle_btn: "🌐 عربي",
       lang_toggle_title: "التبديل إلى الواجهة العربية / Switch interface to Arabic",
@@ -619,7 +619,7 @@ const I18n = (function() {
       // Clinical Tools: CKD-EPI 2021 & ASCVD LDL-C Goals
       title_ldl_matrix: "🎯 ASCVD LDL-C Goals & Statin Intensity (ADA 2025 / ESC 2023)",
       btn_ldl_matrix_nav: "🎯 LDL & Statins",
-      btn_calc: "Calculator",
+      btn_calc: "Calc",
       calc_egfr_btn_title: "CKD-EPI 2021 eGFR Calculator",
       btn_ldl_dia_trigger: "🎯 LDL Goals & Statin Strategy (ADA 2025)",
       btn_ldl_htn_trigger: "🎯 LDL Goals & Statin Strategy (ESC/ADA)",
@@ -649,7 +649,7 @@ const I18n = (function() {
       vitals_quick_edit: "Quick Edit",
       soap_fab_label: "SOAP Note",
       soap_drawer_title: "EMR SOAP Consultation Summary",
-      soap_pull_btn: "🔄 Pull Active Engines",
+      soap_pull_btn: "🔄 Sync",
       soap_copy_btn: "📋 Copy SOAP Note",
       handoff_enter_btn: "📱 Patient Handoff Mode",
       handoff_exit_btn: "✕ Exit Patient Mode"

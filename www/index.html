@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/tools.css">
   <link rel="stylesheet" href="css/palette.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/phone-first.css">
 </head>
 <body>
 
@@ -23,7 +24,7 @@
       <div class="app-brand">
         <div class="app-logo-badge">Rx</div>
         <div class="app-title-group">
-          <h1 data-i18n="app_title">Osrawy Clinical Navigator</h1>
+          <h1 data-i18n="app_title">Osrawy Navigator</h1>
           <span data-i18n="app_subtitle">Dr Hossam Yousuf · Family Practice</span>
         </div>
       </div>
@@ -40,7 +41,7 @@
             <span class="market-full">🇸🇦 السوق السعودي (SAR)</span><span class="market-short">🇸🇦 SAR</span>
           </button>
           <button id="btn-open-ldl-modal" class="ldl-pill-btn menu-item-btn" role="menuitem" type="button" title="أهداف الكوليسترول وخطة الستاتين (ADA 2025 / ESC 2023)" data-i18n-title="title_ldl_matrix">
-            🎯 <span data-i18n="btn_ldl_matrix_nav">أهداف LDL والستاتين</span>
+            <span data-i18n="btn_ldl_matrix_nav">🎯 أهداف LDL والستاتين</span>
           </button>
           <button id="save-pt-btn" class="icon-btn menu-item-btn" role="menuitem" type="button" title="حفظ في المسودات" aria-label="حفظ المسودة" data-i18n-title="btn_save_draft" data-i18n-aria-label="btn_save_draft">
             💾 <span data-i18n="btn_save_draft_label">حفظ المسودة</span>
@@ -128,7 +129,7 @@
       <label class="costmode" for="cheap"><input type="checkbox" id="cheap" checked><span data-i18n="dia_cheap_desc"><b>Cheapest effective treatment first</b><br>Ranks low-cost options and local generics first, keeping heart and kidney protection.</span></label>
       <h3 data-i18n="dia_h3_basics">Basics</h3>
       <div class="fields">
-        <div class="field full"><label for="pname" data-i18n="lbl_pname">Patient name</label><input id="pname" type="text" placeholder="e.g. Ahmed Mahmoud" data-i18n-placeholder="ph_pname"></div>
+        <div class="field full"><label for="pname" data-i18n="lbl_pname">Patient name</label><input id="pname" type="text" value="Ahmed Mahmoud" placeholder="e.g. Ahmed Mahmoud" data-i18n-placeholder="ph_pname"></div>
         <div class="field"><label for="age" data-i18n="lbl_age">Age (y)</label><input id="age" type="number" inputmode="numeric" value="52"></div>
         <div class="field"><label for="sex" data-i18n="lbl_sex">Sex</label><select id="sex"><option value="m" data-i18n="opt_male">Male</option><option value="f" data-i18n="opt_female">Female</option></select></div>
         <div class="field"><label for="wt" data-i18n="lbl_wt">Weight (kg)</label><input id="wt" type="number" step="0.1" inputmode="decimal" value="96"></div>
@@ -741,6 +742,7 @@
   <script src="js/htn_engine.js"></script>
   <script src="js/patient_leaflets.js"></script>
   <script src="js/command_palette.js"></script>
+  <script src="js/phone_ux.js"></script>
   <script src="js/updater.js"></script>
   <script src="js/app.js"></script>
 </body>

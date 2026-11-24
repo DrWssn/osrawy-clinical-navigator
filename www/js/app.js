@@ -1065,6 +1065,7 @@
 
       renderSoapSummary();
     }
+    window.harvestActiveEngines = harvestActiveEngines;
 
     function fmtSoapVital(val) {
       return (val !== undefined && val !== null && val !== "") ? val : "--";
@@ -1302,6 +1303,7 @@
     // Sync immediately (PatientSync.loadActive() has already run in earlier DOMContentLoaded listener)
     updateVitalsDrawerTopOffset();
     syncQuickInputsFromState();
+    harvestActiveEngines();
     renderSoapSummary();
   }
 

@@ -1,0 +1,466 @@
+/* ==========================================================================
+   OSRAWY CLINICAL NAVIGATOR - PHONE-FIRST NATIVE ANDROID OVERHAUL
+   Scoped strictly to mobile viewports (< 768px) for 360px-412px phones.
+   Fixes: Clipped identity, Colliding Calc pills, Zero-gap sticky vitals,
+   Sticky modal headers, Market switcher visibility, and Segmented switchers.
+   ========================================================================== */
+
+@media (max-width: 767px) {
+
+  /* ------------------------------------------------------------------------
+     1. Top App Bar & Brand Title
+     ------------------------------------------------------------------------ */
+  .top-nav-bar {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 8px !important;
+  }
+
+  .app-title-group h1 {
+    font-size: 14.5px !important;
+    letter-spacing: -0.01em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Shorten language toggle pill */
+  .lang-pill-btn {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     2. Bug 1 Fix: Unified 2-Zone Patient Cockpit (No "Nam" Clipping)
+     ------------------------------------------------------------------------ */
+  .patient-cockpit {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px 8px !important;
+    min-height: 44px !important;
+    gap: 3px !important;
+    background: var(--surface2) !important;
+    border-bottom: 1px solid var(--line) !important;
+  }
+
+  /* Row 1: Patient Identity Strip (Smooth horizontal scroll on long names) */
+  .patient-cockpit #patient-summary-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 11.5px !important;
+    white-space: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  .patient-cockpit #patient-summary-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .patient-cockpit #patient-summary-bar .pt-bar-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+    color: var(--ink) !important;
+  }
+
+  /* Hide duplicate eGFR, UACR, and BP chips from Row 1 since Row 2 has them */
+  .patient-cockpit #patient-summary-bar .pt-bar-item:nth-child(n+4) {
+    display: none !important;
+  }
+
+  /* Row 2: Sticky Vitals Summary Chips */
+  .patient-cockpit #sticky-vitals-summary {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .patient-cockpit .vitals-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .patient-cockpit .vitals-group::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .patient-cockpit .vital-chip {
+    padding: 2px 7px !important;
+    font-size: 11px !important;
+    gap: 3px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .patient-cockpit .vitals-toggle-indicator {
+    font-size: 10px !important;
+    flex-shrink: 0 !important;
+    padding-inline-start: 4px !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     3. Bug 3 Fix: Zero-Gap Flush Sticky Subtabs (.tabbar)
+     ------------------------------------------------------------------------ */
+  .tabbar {
+    position: sticky !important;
+    top: var(--vitals-drawer-top, 44px) !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    z-index: 980 !important;
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     4. Bug 2 Fix: Calculator Button & Input Bottom Alignment
+     ------------------------------------------------------------------------ */
+  .calc-chip-btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+    gap: 2px !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+  }
+
+  .fields,
+  #tab-htn .row {
+    align-items: flex-end !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     5. Bug 6 Fix: Segmented Patient/Plan View Switcher (No Floating Pills)
+     ------------------------------------------------------------------------ */
+  .phone-pane-switcher {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--surface2, #f1f5f9) !important;
+    border: 1px solid var(--line, #e2e8f0) !important;
+    border-radius: 999px !important;
+    padding: 3px !important;
+    margin: 8px auto 12px auto !important;
+    max-width: 320px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .phone-pane-btn {
+    flex: 1 1 50% !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--muted, #64748b) !important;
+    cursor: pointer !important;
+    transition: all 0.18s ease !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+
+  .phone-pane-btn.active {
+    background: var(--surface, #ffffff) !important;
+    color: var(--teal, #0d9488) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Hide floating quick-jump button on phones when segmented switcher is active */
+  #quick-jump-rx-btn {
+    display: none !important;
+  }
+
+  /* Pane visibility switching for Diabetes */
+  #tab-diabetes[data-phone-pane="plan"] #pform {
+    display: none !important;
+  }
+  #tab-diabetes[data-phone-pane="form"] #result {
+    display: none !important;
+  }
+
+  /* Pane visibility switching for HTN */
+  #tab-htn[data-phone-pane="plan"] .htn-inputs-panel {
+    display: none !important;
+  }
+  #tab-htn[data-phone-pane="form"] #out {
+    display: none !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     6. Bug 4 Fix: Settings Modal Header Sticky & Flex-Column
+     ------------------------------------------------------------------------ */
+  .modal-card {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 85vh !important;
+    overflow: hidden !important;
+  }
+
+  .modal-header {
+    flex: 0 0 auto !important;
+    position: sticky !important;
+    top: 0 !important;
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+    z-index: 10 !important;
+    padding: 12px 16px !important;
+  }
+
+  .modal-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 14px 16px !important;
+  }
+
+  .modal-footer {
+    flex: 0 0 auto !important;
+    padding: 10px 16px !important;
+    background: var(--surface2) !important;
+    border-top: 1px solid var(--line) !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     7. Bug 5 Fix: Top More Menu Market Switcher Visibility
+     ------------------------------------------------------------------------ */
+  .top-more-menu .market-pill-btn {
+    background: transparent !important;
+    color: var(--ink) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
+    font-weight: 500 !important;
+    text-align: start !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .top-more-menu .market-pill-btn:hover {
+    background: var(--surface2) !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     8. Bug 7 Fix: Lipids Step Headers Flex-Wrap
+     ------------------------------------------------------------------------ */
+  .lipid-step-header {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    align-items: flex-start !important;
+  }
+
+  .lipid-step-badge {
+    margin-top: 2px !important;
+    font-size: 11px !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     9. Bug 8 Fix: Sticky First Table Column on Mobile
+     ------------------------------------------------------------------------ */
+  .drug-table th:first-child,
+  .drug-table td:first-child {
+    position: sticky !important;
+    inset-inline-start: 0 !important;
+    background: var(--surface) !important;
+    z-index: 2 !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  .kdigo-table th,
+  .kdigo-table td {
+    padding: 4px 5px !important;
+    font-size: 11px !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     10. Bug 9 Fixes: Component Polish
+     ------------------------------------------------------------------------ */
+  /* Steroid Equivalence Select */
+  .micro-tools-grid select {
+    padding: 5px 6px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* Patient Leaflets Navigation & Actions */
+  .patient-leaflet-container .leaflet-nav {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+    gap: 6px !important;
+  }
+
+  .patient-leaflet-container .leaflet-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .leaflet-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     11. Priority 3 Alternative Drugs Collapsible Accordion
+     ------------------------------------------------------------------------ */
+  .phone-alt-accordion {
+    border: 1px dashed var(--line, #cbd5e1);
+    border-radius: 12px;
+    margin-top: 10px;
+    background: var(--surface2, #f8fafc);
+    overflow: hidden;
+  }
+
+  .phone-alt-summary {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted, #64748b);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .phone-alt-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .phone-alt-summary::after {
+    content: "▼";
+    font-size: 10px;
+    transition: transform 0.2s ease;
+  }
+
+  .phone-alt-accordion[open] .phone-alt-summary::after {
+    transform: rotate(180deg);
+  }
+
+  .phone-alt-content {
+    padding: 8px 10px 12px 10px;
+  }
+
+  /* ------------------------------------------------------------------------
+     11. Bug 9 Fix: Leaflets Mobile Toolbar (2 Neat Rows)
+     ------------------------------------------------------------------------ */
+  .leaflet-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  .leaflet-tab-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    width: 100% !important;
+    padding-bottom: 2px !important;
+  }
+
+  .leaflet-tab-group::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .leaflet-tab-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .leaflet-actions-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .leaflet-actions-group .zoom-controls {
+    display: flex !important;
+    gap: 4px !important;
+  }
+
+  .leaflet-actions-group .icon-tool-btn {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 11.5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .leaflet-actions-group .lang-tool-btn,
+  .leaflet-actions-group .pill-tool-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Compact Top Bar Title */
+  .app-title-group h1 {
+    font-size: 14.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Calc Button Pill Compact */
+  .btn-calc-pill {
+    padding: 2px 6px !important;
+    font-size: 10.5px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+} /* End @media (max-width: 767px) */
+
+/* Dark Mode Overrides for Phone Styles */
+:root[data-theme="dark"] .phone-pane-switcher {
+  background: var(--surface2, #182D2B) !important;
+  border-color: var(--line, #24403C) !important;
+}
+
+:root[data-theme="dark"] .phone-pane-btn.active {
+  background: var(--surface, #122220) !important;
+  color: var(--teal, #3CC7B8) !important;
+}
+
+:root[data-theme="dark"] .phone-alt-accordion {
+  border-color: var(--line, #24403C);
+  background: var(--surface2, #182D2B);
+}

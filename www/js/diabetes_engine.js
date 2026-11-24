@@ -116,9 +116,18 @@ function screening(p){
     I("Neuropathy symptoms","Yearly","Including autonomic: postural dizziness, gastroparesis, ED"),
     p.age>=65||p.dur>=10||p.ascvd?I("Ankle-brachial index (ABI)","Now, repeat if symptoms",p.age>=65?"Age ≥65":p.dur>=10?"Diabetes ≥10 years":"ASCVD",true):null,
   ]);
+  let ldlGoalDesc = p.ascvd ? "LDL goal <55 mg/dL" : "LDL goal <70 mg/dL";
+  if (typeof LipidsEngine !== "undefined" && typeof LipidsEngine.stratifyRisk === "function") {
+    try {
+      const lStrat = LipidsEngine.stratifyRisk(p);
+      if (lStrat && lStrat.ldlTargetMg) {
+        ldlGoalDesc = `LDL goal <${lStrat.ldlTargetMg} mg/dL`;
+      }
+    } catch (_) {}
+  }
   A("Heart & lipids","sky",[
     I("Blood pressure","Every visit","Target <130/80"),
-    I("Lipid profile","Yearly",p.ascvd?"LDL goal <55 mg/dL":"LDL goal <70 mg/dL",true),
+    I("Lipid profile","Yearly",ldlGoalDesc,true),
     p.age>=40||p.ascvd?I("ECG","Baseline, then if symptoms","Silent ischemia, LVH",true):null,
     I("NT-proBNP","Consider yearly","Detect asymptomatic heart failure"),
     p.hf!=="none"?I("Echocardiography","If not done in 1 year","Heart failure follow-up"):null,
@@ -337,7 +346,7 @@ function renderScreening(P){
 function renderRx(){
   const w=$("rxwrap"); if(!w) return;
   const sel=[...new Set([...document.querySelectorAll(".rxck")].filter(c=>c.checked).map(c=>c.dataset.k))];
-  const p=RXP; const name=$("pname").value;
+  const p=RXP; const name=($("pname")&&$("pname").value.trim())||((typeof window !== "undefined" && window.PatientSync && window.PatientSync.get) ? window.PatientSync.get().name : "")||"Ahmed Mahmoud";
   const warn=[],by={};
   sel.forEach(k=>{(by[grp(k)]=by[grp(k)]||[]).push(D[k].name);});
   Object.values(by).forEach(a=>{if(a.length>1)warn.push(`Same class twice: ${a.join(" + ")}. Keep one.`);});

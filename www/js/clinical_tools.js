@@ -413,8 +413,8 @@ const ClinicalTools = (function() {
 
     let apixabanDose = '5 mg PO BID';
     let apixabanDoseAr = '٥ ملغ مرتين يومياً';
-    let apixabanEn = 'Apixaban: 5 mg PO BID (Standard dose)';
-    let apixabanAr = 'أبيكسابان: ٥ ملغ فموياً مرتين يومياً (5 mg PO BID)';
+    let apixabanEn = '5 mg PO BID (Standard dose)';
+    let apixabanAr = '٥ ملغ فموياً مرتين يومياً (5 mg PO BID - جرعة قياسية)';
     let apixabanReduced = false;
     let apixabanContraindicated = false;
     let apixabanReasonEn = 'Standard dose: fewer than 2 dose-reduction criteria met.';
@@ -424,16 +424,16 @@ const ClinicalTools = (function() {
       apixabanContraindicated = true;
       apixabanDose = 'Contraindicated / Not recommended';
       apixabanDoseAr = 'ممنوع استخدامه / غير موصى به';
-      apixabanEn = 'Apixaban: Contraindicated / Not recommended (CrCl < 15 mL/min)';
-      apixabanAr = 'أبيكسابان: غير موصى به / ممنوع استخدامه (تصفية الكرياتينين < 15)';
+      apixabanEn = 'Contraindicated / Not recommended (CrCl < 15 mL/min)';
+      apixabanAr = 'غير موصى به / ممنوع استخدامه (تصفية الكرياتينين < 15)';
       apixabanReasonEn = `CrCl is ${crcl} mL/min (<15 mL/min). Apixaban is contraindicated / not recommended in severe ESRD without dialysis per European/KDIGO guidelines.`;
       apixabanReasonAr = `تصفية الكرياتينين ${crcl} مل/دقيقة (<15). يُحظر استخدام أبيكسابان في الفشل الكلوي النهائي دون غسيل.`;
     } else if (meets2of3) {
       apixabanReduced = true;
       apixabanDose = '2.5 mg PO BID';
       apixabanDoseAr = '٢.٥ ملغ مرتين يومياً';
-      apixabanEn = 'Apixaban: 2.5 mg PO BID (Dose reduced per 2-of-3 ABC criteria)';
-      apixabanAr = 'أبيكسابان: ٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID - مخفض)';
+      apixabanEn = '2.5 mg PO BID (Dose reduced per 2-of-3 ABC criteria)';
+      apixabanAr = '٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID - مخفض)';
       const metList = [];
       if (critAge) metList.push(`Age ≥ 80 (${age} y)`);
       if (critWeight) metList.push(`Weight <= 60 kg (${wt} kg)`);
@@ -444,8 +444,8 @@ const ClinicalTools = (function() {
       apixabanReduced = true;
       apixabanDose = '2.5 mg PO BID';
       apixabanDoseAr = '٢.٥ ملغ مرتين يومياً';
-      apixabanEn = 'Apixaban: 2.5 mg PO BID (CrCl 15–29 mL/min)';
-      apixabanAr = 'أبيكسابان: ٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID)';
+      apixabanEn = '2.5 mg PO BID (CrCl 15–29 mL/min)';
+      apixabanAr = '٢.٥ ملغ فموياً مرتين يومياً (2.5 mg PO BID)';
       apixabanReasonEn = `CrCl 15–29 mL/min (${crcl} mL/min): Dose reduction to 2.5 mg PO BID recommended for advanced renal impairment.`;
       apixabanReasonAr = `تصفية الكرياتينين 15–29 مل/دقيقة: يُوصى بتخفيض الجرعة إلى ٢.٥ ملغ مرتين يومياً لقصور وظائف الكلى.`;
     }
@@ -479,8 +479,8 @@ const ClinicalTools = (function() {
     // CrCl < 15 mL/min: Contraindicated / avoid
     let rivaroxabanDose = '20 mg PO daily with food';
     let rivaroxabanDoseAr = '20 مجم مرة واحدة يومياً مع وجبة العشاء/الطعام';
-    let rivaroxabanEn = 'Rivaroxaban: 20 mg PO daily with food';
-    let rivaroxabanAr = 'ريفاروكسابان: ٢٠ ملغ فموياً مرة واحدة يومياً مع وجبة الطعام (20 mg PO daily with food)';
+    let rivaroxabanEn = '20 mg PO daily with food';
+    let rivaroxabanAr = '٢٠ ملغ فموياً مرة واحدة يومياً مع وجبة الطعام (20 mg PO daily with food)';
     let rivaroxabanReduced = false;
     let rivaroxabanContraindicated = false;
     let rivaroxabanReasonEn = `CrCl ≥ 50 mL/min (${crcl} mL/min): Standard 20 mg daily with food.`;
@@ -490,16 +490,16 @@ const ClinicalTools = (function() {
       rivaroxabanContraindicated = true;
       rivaroxabanDose = 'Contraindicated / Not recommended';
       rivaroxabanDoseAr = 'ممنوع استخدامه / غير موصى به';
-      rivaroxabanEn = 'Rivaroxaban: Contraindicated / Not recommended (CrCl < 15 mL/min)';
-      rivaroxabanAr = 'ريفاروكسابان: غير موصى به / ممنوع استخدامه';
+      rivaroxabanEn = 'Contraindicated / Not recommended (CrCl < 15 mL/min)';
+      rivaroxabanAr = 'غير موصى به / ممنوع استخدامه';
       rivaroxabanReasonEn = `CrCl is ${crcl} mL/min (<15 mL/min). Rivaroxaban is contraindicated / not recommended due to bleeding risk in ESRD.`;
       rivaroxabanReasonAr = `تصفية الكرياتينين ${crcl} مل/دقيقة (<15). يُحظر استخدام ريفاروكسابان لخطر النزيف في الفشل الكلوي المتقدم.`;
     } else if (crcl >= 15 && crcl < 50) {
       rivaroxabanReduced = true;
       rivaroxabanDose = '15 mg PO daily with food';
       rivaroxabanDoseAr = '15 مجم مرة واحدة يومياً مع وجبة الطعام (مساءً)';
-      rivaroxabanEn = 'Rivaroxaban: 15 mg PO daily with food (CrCl 15–49 mL/min)';
-      rivaroxabanAr = 'ريفاروكسابان: ١٥ ملغ فموياً مرة واحدة يومياً مع الطعام (15 mg PO daily with food)';
+      rivaroxabanEn = '15 mg PO daily with food (CrCl 15–49 mL/min)';
+      rivaroxabanAr = '١٥ ملغ فموياً مرة واحدة يومياً مع الطعام (15 mg PO daily with food)';
       rivaroxabanReasonEn = `CrCl 15–49 mL/min (${crcl} mL/min): Dose reduced to 15 mg once daily with food to maintain therapeutic exposure.`;
       rivaroxabanReasonAr = `تصفية الكرياتينين 15–49 مل/دقيقة (${crcl} مل/دقيقة): تم تخفيض الجرعة إلى 15 مجم مرة واحدة يومياً مع وجبة الطعام.`;
     }
@@ -1452,14 +1452,6 @@ const ClinicalTools = (function() {
               <h2 class="tool-title" style="font-size:1.15rem;">🧮 ${isAr ? 'الأدوات الإكلينيكية والحاسبات المتقدمة' : 'Advanced Clinical Calculators & Tools'}</h2>
               <p class="tool-sub">${isAr ? 'حاسبات وظائف الكلى، تصفية الكرياتينين، مصفوفة KDIGO، جرعات DOAC، ومؤشر تليف الكبد FIB-4' : 'Kidney functions, CrCl, KDIGO albuminuria matrix, DOAC renal dosing, and FIB-4 liver fibrosis'}</p>
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn" id="btn-tools-open-drugs" style="background:var(--teal); color:#fff; font-size:12px; padding:6px 14px; border-radius:8px;">
-                💊 ${isAr ? 'دليل الأدوية والأسعار' : 'Drugs Directory'}
-              </button>
-              <button type="button" class="btn" id="btn-tools-open-recent" style="font-size:12px; padding:6px 14px; border-radius:8px;">
-                💾 ${isAr ? 'مسودات المرضى' : 'Saved Drafts'}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -1639,14 +1631,14 @@ const ClinicalTools = (function() {
             <!-- Micro 3: Steroid Equivalence -->
             <div class="micro-tool-card">
               <div class="micro-tool-title">💊 ${isAr ? 'مكافئ الكورتيزون (Steroids)' : 'Steroid Equivalence'}</div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <div style="display:grid; grid-template-columns:80px 1fr; gap:6px; align-items:flex-end;">
                 <div>
                   <label style="font-size:11px; color:var(--muted); font-weight:600;">${isAr ? 'الجرعة (مجم):' : 'Dose (mg):'}</label>
                   <input type="number" id="micro-steroid-dose" class="clinical-input" value="20" step="1">
                 </div>
                 <div>
                   <label style="font-size:11px; color:var(--muted); font-weight:600;">${isAr ? 'الدواء:' : 'Drug:'}</label>
-                  <select id="micro-steroid-type" class="clinical-select">
+                  <select id="micro-steroid-type" class="clinical-select" style="padding:6px 6px; font-size:11.5px;">
                     <option value="prednisone" selected>Prednisone</option>
                     <option value="hydrocortisone">Hydrocortisone</option>
                     <option value="methylprednisolone">Methylpred</option>
@@ -1869,11 +1861,11 @@ const ClinicalTools = (function() {
             </div>
           </div>
           <div class="doac-dose-result">
-            <div style="font-size:0.92rem; font-weight:700;">💊 <b>Apixaban (Eliquis):</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}</div>
+            <div style="font-size:0.92rem; font-weight:700;">💊 <b>${isAr ? 'أبيكسابان (إليكويس):' : 'Apixaban (Eliquis):'}</b> ${isAr ? doacRes.apixabanAr : doacRes.apixabanEn}</div>
             <div style="font-size:0.78rem; color:var(--muted);">${isAr ? doacRes.apixaban.reasonAr : doacRes.apixaban.reasonEn}</div>
           </div>
           <div class="doac-dose-result" style="margin-top:8px;">
-            <div style="font-size:0.92rem; font-weight:700;">💊 <b>Rivaroxaban (Xarelto):</b> ${isAr ? doacRes.rivaroxabanAr : doacRes.rivaroxabanEn}</div>
+            <div style="font-size:0.92rem; font-weight:700;">💊 <b>${isAr ? 'ريفاروكسابان (زاريلتو):' : 'Rivaroxaban (Xarelto):'}</b> ${isAr ? doacRes.rivaroxabanAr : doacRes.rivaroxabanEn}</div>
             <div style="font-size:0.78rem; color:var(--warn); font-weight:600;">⚠️ ${isAr ? 'يجب تناوله مع وجبة طعام رئيسية (العشاء) لزيادة الامتصاص بنسبة 39%' : 'Must be taken with evening meal (food increases absorption by 39%)'}</div>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; font-size:0.78rem;">
@@ -1921,9 +1913,9 @@ const ClinicalTools = (function() {
                 <div class="fib4-pin" style="left:${fibPos}%;" title="FIB-4: ${fib4Res.score}"></div>
               </div>
               <div class="fib4-scale-legend">
-                <span>0 (Low &lt; ${fib4Res.lowCutoff})</span>
-                <span>Intermediate (${fib4Res.lowCutoff}–${fib4Res.highCutoff})</span>
-                <span>High (&gt; ${fib4Res.highCutoff})</span>
+                <span>Low &lt;${fib4Res.lowCutoff}</span>
+                <span>${fib4Res.lowCutoff}–${fib4Res.highCutoff}</span>
+                <span>High &gt;${fib4Res.highCutoff}</span>
               </div>
             </div>
             <div style="margin-top:8px; font-size:0.84rem; border-top:1px solid var(--line); padding-top:8px; line-height:1.45;">
