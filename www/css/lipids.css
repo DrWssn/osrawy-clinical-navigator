@@ -225,6 +225,150 @@
   border-top: 1px dashed rgba(0, 0, 0, 0.1);
 }
 
+/* --- LDL Gap Visualizer Card --- */
+.lipid-gap-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lipid-gap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lipid-gap-title {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text-color, #0f172a);
+}
+
+.lipid-gap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.lipid-gap-badge.is-achieved {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.lipid-gap-badge.is-pending {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.lipid-gap-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 6px 8px;
+}
+
+.lipid-gap-track {
+  position: relative;
+  height: 14px;
+  background: var(--highlight-bg, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.lipid-gap-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.lipid-gap-fill.fill-success {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.lipid-gap-fill.fill-warning {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.lipid-gap-target-line {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 3px;
+  background: #2563eb;
+  border-radius: 2px;
+  z-index: 2;
+  transform: translateX(-50%);
+}
+
+.lipid-gap-target-pin {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e40af;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.lipid-gap-current-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+  z-index: 3;
+}
+
+.lipid-gap-current-pin {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #991b1b;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.lipid-gap-scale-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--f-mono, monospace);
+  color: var(--text-muted, #64748b);
+  margin-top: 18px;
+}
+
+.lipid-gap-legend-center {
+  font-weight: 600;
+  color: #2563eb;
+}
+
 /* --- Pathway Steps Section --- */
 .lipid-pathway-section {
   display: flex;
@@ -242,23 +386,27 @@
 .lipid-steps-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
 }
 
 .lipid-step-card {
+  position: relative;
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: transform 0.15s ease;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .lipid-step-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -266,28 +414,60 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: #3b82f6;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
   border-radius: 50%;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.84rem;
+  font-weight: 800;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
 }
 
 .lipid-step-title {
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 700;
   color: var(--text-color, #1e293b);
+  flex: 1;
+}
+
+.lipid-step-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.lipid-step-badge.is-current {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.lipid-step-badge.is-escalation {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.lipid-step-badge.is-reserve {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .lipid-step-drug {
   font-size: 0.88rem;
-  color: #2563eb;
+  font-weight: 600;
+  color: #1e40af;
   background-color: #eff6ff;
-  border-radius: 6px;
-  padding: 6px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 8px 12px;
 }
 
 .lipid-step-desc {
@@ -399,7 +579,61 @@
 :root[data-theme="dark"] .lipid-step-drug,
 [data-theme="dark"] .lipid-step-drug {
   background-color: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
   color: #93C5FD;
+}
+
+:root[data-theme="dark"] .lipid-gap-card,
+[data-theme="dark"] .lipid-gap-card {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .lipid-gap-track,
+[data-theme="dark"] .lipid-gap-track {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .lipid-gap-badge.is-achieved,
+[data-theme="dark"] .lipid-gap-badge.is-achieved {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+:root[data-theme="dark"] .lipid-gap-badge.is-pending,
+[data-theme="dark"] .lipid-gap-badge.is-pending {
+  background-color: rgba(234, 88, 12, 0.18);
+  color: #FDBA74;
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+:root[data-theme="dark"] .lipid-step-card,
+[data-theme="dark"] .lipid-step-card {
+  background: var(--surface, #122220);
+  border-color: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .lipid-step-badge.is-current,
+[data-theme="dark"] .lipid-step-badge.is-current {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6EE7B7;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-step-badge.is-escalation,
+[data-theme="dark"] .lipid-step-badge.is-escalation {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FCD34D;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+:root[data-theme="dark"] .lipid-step-badge.is-reserve,
+[data-theme="dark"] .lipid-step-badge.is-reserve {
+  background: rgba(148, 163, 184, 0.15);
+  color: #CBD5E1;
+  border-color: rgba(148, 163, 184, 0.3);
 }
 
 :root[data-theme="dark"] .lipid-timeline-box,

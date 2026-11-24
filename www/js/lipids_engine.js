@@ -522,6 +522,8 @@ const OsrawyLipidsEngine = (function() {
         gapMmol: gapMg > 0 ? toMmolL(gapMg, 'cholesterol') : 0,
         neededReductionPercent: gapPercent > 0 ? gapPercent : 0
       },
+      onStatin,
+      onEzetimibe,
       recommendation,
       alerts,
       guardrails: alerts,
@@ -557,20 +559,6 @@ const OsrawyLipidsEngine = (function() {
       `;
     });
 
-    let stepsHtml = '';
-    pathway.steps.forEach(s => {
-      stepsHtml += `
-        <div class="lipid-step-card">
-          <div class="lipid-step-header">
-            <span class="lipid-step-num">${s.stepNumber}</span>
-            <span class="lipid-step-title">${isAr ? s.titleAr : s.titleEn}</span>
-          </div>
-          <div class="lipid-step-drug">💊 <b>${isAr ? s.drugAr : s.drugEn}</b></div>
-          <div class="lipid-step-desc">${isAr ? s.detailAr : s.detailEn}</div>
-        </div>
-      `;
-    });
-
     const ldlTargetDisplay = pathway.isMmol ? `${t.ldlTargetMmol} mmol/L` : `${t.ldlTargetMg} mg/dL`;
     const ldlCurrentDisplay = pathway.isMmol ? `${labs.ldlMmol} mmol/L` : `${labs.ldlMg} mg/dL`;
     const nonHdlTargetDisplay = pathway.isMmol ? `${t.nonHdlTargetMmol} mmol/L` : `${t.nonHdlTargetMg} mg/dL`;
@@ -579,6 +567,75 @@ const OsrawyLipidsEngine = (function() {
     const statusBadge = gap.isAtTarget
       ? `<span class="lipid-status-tag lipid-status-ok">✅ ${isAr ? 'الهدف محقق' : 'At Target'}</span>`
       : `<span class="lipid-status-tag lipid-status-elevated">⚠️ ${isAr ? `فوق الهدف بـ ${pathway.isMmol ? gap.gapMmol : gap.gapMg}` : `${pathway.isMmol ? gap.gapMmol : gap.gapMg} above goal`}</span>`;
+
+    // LDL Gap Calculation & Visualizer
+    const ldlValMg = labs.ldlMg || (pathway.isMmol ? Math.round(labs.ldlMmol * 38.67) : 0);
+    const ldlTargetValMg = t.ldlTargetMg || 70;
+    const maxScaleMg = Math.max(ldlValMg * 1.15, ldlTargetValMg * 1.35, 190);
+    const targetPos = Math.min(Math.max(Math.round((ldlTargetValMg / maxScaleMg) * 100), 10), 85);
+    const currentPos = Math.min(Math.max(Math.round((ldlValMg / maxScaleMg) * 100), 5), 98);
+    const gapDiffText = pathway.isMmol ? `${gap.gapMmol} mmol/L` : `${gap.gapMg} mg/dL`;
+
+    const gapVisualizerHtml = `
+      <div class="lipid-gap-card">
+        <div class="lipid-gap-header">
+          <div class="lipid-gap-title">🎯 <b>${isAr ? 'فجوة الكوليسترول الضار (LDL Gap-to-Goal)' : 'LDL-C Gap-to-Goal'}</b></div>
+          <span class="lipid-gap-badge ${gap.isAtTarget ? 'is-achieved' : 'is-pending'}">
+            ${gap.isAtTarget
+              ? (isAr ? 'الهدف محقق' : 'Goal Achieved')
+              : `${isAr ? 'مطلوب خفض' : 'Reduction Needed'}: ${gap.neededReductionPercent}% (${gapDiffText})`}
+          </span>
+        </div>
+        <div class="lipid-gap-bar-container" dir="ltr">
+          <div class="lipid-gap-track">
+            <div class="lipid-gap-fill ${gap.isAtTarget ? 'fill-success' : 'fill-warning'}" style="width: ${currentPos}%;"></div>
+            <div class="lipid-gap-target-line" style="left: ${targetPos}%;" title="${isAr ? 'الهدف المنشود' : 'Target Goal'}: < ${ldlTargetDisplay}">
+              <span class="lipid-gap-target-pin">&lt; ${ldlTargetDisplay}</span>
+            </div>
+            <div class="lipid-gap-current-marker" style="left: ${currentPos}%;" title="${isAr ? 'المستوى الحالي' : 'Current'}: ${ldlCurrentDisplay}">
+              <span class="lipid-gap-current-pin">${ldlCurrentDisplay}</span>
+            </div>
+          </div>
+          <div class="lipid-gap-scale-legend">
+            <span>0</span>
+            <span class="lipid-gap-legend-center">${isAr ? 'الهدف المحدد' : 'Goal Target'}: &lt; ${ldlTargetDisplay}</span>
+            <span>${Math.round(maxScaleMg)} mg/dL</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    let stepsHtml = '';
+    pathway.steps.forEach(s => {
+      let stepBadge = '';
+      if (s.stepNumber === 1) {
+        stepBadge = pathway.onStatin
+          ? `<span class="lipid-step-badge is-current">${isAr ? 'قيد الاستخدام' : 'In Current Plan'}</span>`
+          : `<span class="lipid-step-badge is-escalation">${isAr ? 'الخطوة الأولى' : 'Step 1 (First-line)'}</span>`;
+      } else if (s.stepNumber === 2) {
+        stepBadge = pathway.onEzetimibe
+          ? `<span class="lipid-step-badge is-current">${isAr ? 'قيد الاستخدام' : 'In Current Plan'}</span>`
+          : (pathway.onStatin && !gap.isAtTarget
+              ? `<span class="lipid-step-badge is-escalation">${isAr ? 'التصعيد الموصى به' : 'Recommended Escalation'}</span>`
+              : `<span class="lipid-step-badge is-reserve">${isAr ? 'الخطوة التالية' : 'Next Step If Above Goal'}</span>`);
+      } else if (s.stepNumber === 3) {
+        stepBadge = (pathway.onEzetimibe && !gap.isAtTarget)
+          ? `<span class="lipid-step-badge is-escalation">${isAr ? 'التصعيد الموصى به' : 'Recommended Escalation'}</span>`
+          : `<span class="lipid-step-badge is-reserve">${isAr ? 'احتياطي متقدم' : 'Advanced Reserve'}</span>`;
+      }
+
+      stepsHtml += `
+        <div class="lipid-step-card">
+          <div class="lipid-step-header">
+            <span class="lipid-step-num">${s.stepNumber}</span>
+            <span class="lipid-step-title">${isAr ? s.titleAr : s.titleEn}</span>
+            ${stepBadge}
+          </div>
+          <div class="lipid-step-drug">💊 <b>${isAr ? s.drugAr : s.drugEn}</b></div>
+          <div class="lipid-step-desc">${isAr ? s.detailAr : s.detailEn}</div>
+        </div>
+      `;
+    });
 
     container.innerHTML = `
       <div class="lipids-wrapper ${isAr ? 'rtl' : 'ltr'}">
@@ -622,6 +679,9 @@ const OsrawyLipidsEngine = (function() {
             <div class="lipid-metric-target">${isAr ? 'إنزيم الكبد ALT:' : 'Liver ALT:'} <b>${labs.altUl} U/L</b></div>
           </div>
         </div>
+
+        <!-- LDL Gap Visualizer Card -->
+        ${gapVisualizerHtml}
 
         <!-- Safety Guardrails Alerts -->
         ${alertsHtml ? `<div class="lipid-alerts-section">${alertsHtml}</div>` : ''}

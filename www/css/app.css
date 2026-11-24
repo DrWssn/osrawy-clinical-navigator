@@ -2797,7 +2797,7 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   color: var(--ink, #0f172a);
   border-top: 2px solid var(--app-primary, var(--teal, #0d9488));
   border-radius: 18px 18px 0 0;
-  padding: 16px;
+  padding: 12px 16px 16px;
   padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
   box-shadow: 0 -12px 32px rgba(15, 23, 42, 0.28);
   visibility: hidden;
@@ -2813,21 +2813,53 @@ button, a, input, select, textarea, [role="button"], [role="tab"] {
   transition: transform 0.22s ease-out, visibility 0s linear 0s;
 }
 
+.osrawy-soap-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line, #cbd5e1);
+  margin: 2px auto 14px;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.osrawy-soap-drawer:hover .osrawy-soap-handle {
+  opacity: 1;
+}
+
 .osrawy-soap-textarea {
   width: 100%;
-  min-height: 160px;
+  min-height: 175px;
   margin: 10px 0;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--line, #cbd5e1);
   background: var(--surface2, #f8fafc);
   color: var(--ink, #0f172a);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.84rem;
-  line-height: 1.5;
+  font-family: var(--f-mono, 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.86rem;
+  line-height: 1.55;
   direction: ltr;
   text-align: left;
   resize: vertical;
+  box-sizing: border-box;
+}
+
+.osrawy-soap-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#osrawy-soap-copy {
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+#osrawy-soap-copy:active {
+  transform: scale(0.97);
 }
 
 /* 4. Full-Screen Patient Handoff Mode (#tab-leaflets) */
@@ -2952,4 +2984,24 @@ body.osrawy-keyboard-open .osrawy-docked-command-bar {
   border-color: rgba(244, 114, 182, 0.35) !important;
   border-inline-start-color: #F472B6 !important;
   color: #FBCFE8 !important;
+}
+
+:root[data-theme="dark"] .osrawy-soap-drawer,
+[data-theme="dark"] .osrawy-soap-drawer {
+  background: var(--surface, #122220);
+  border-top-color: var(--app-primary, var(--teal, #0d9488));
+  color: var(--ink, #E2F0ED);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="dark"] .osrawy-soap-handle,
+[data-theme="dark"] .osrawy-soap-handle {
+  background: var(--line, #24403C);
+}
+
+:root[data-theme="dark"] .osrawy-soap-textarea,
+[data-theme="dark"] .osrawy-soap-textarea {
+  background: var(--surface2, #182D2B);
+  border-color: var(--line, #24403C);
+  color: var(--ink, #E2F0ED);
 }

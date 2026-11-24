@@ -551,6 +551,7 @@
   <div id="osrawy-soap-backdrop" class="osrawy-soap-backdrop" aria-hidden="true"></div>
 
   <aside id="osrawy-soap-drawer" class="osrawy-soap-drawer" aria-hidden="true">
+    <div class="osrawy-soap-handle" aria-hidden="true"></div>
     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
       <strong id="osrawy-soap-title" data-i18n="soap_drawer_title" style="font-size:0.98rem;">
         ملخص الاستشارة الطبية (SOAP)
@@ -558,14 +559,14 @@
       <button type="button" id="osrawy-soap-close" class="osrawy-ux-btn" style="min-height:38px; padding:4px 12px;">✕</button>
     </div>
     <textarea id="osrawy-soap-textarea" class="osrawy-soap-textarea" readonly></textarea>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button type="button" id="osrawy-soap-sync-active" class="osrawy-ux-btn" style="flex:1;" data-i18n="soap_pull_btn">
+    <div class="osrawy-soap-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" id="osrawy-soap-sync-active" class="osrawy-ux-btn" style="flex:1; min-height:44px;" data-i18n="soap_pull_btn">
         🔄 تحديث من المحركات
       </button>
-      <button type="button" id="osrawy-soap-copy" class="osrawy-ux-btn is-primary" style="flex:1;" data-i18n="soap_copy_btn">
+      <button type="button" id="osrawy-soap-copy" class="osrawy-ux-btn is-primary" style="flex:2; min-height:44px;" data-i18n="soap_copy_btn">
         📋 نسخ الملاحظة
       </button>
-      <button type="button" id="osrawy-soap-clear" class="osrawy-ux-btn" aria-label="Clear SOAP">
+      <button type="button" id="osrawy-soap-clear" class="osrawy-ux-btn" style="min-height:44px; padding:0 14px;" aria-label="Clear SOAP">
         🗑️
       </button>
     </div>

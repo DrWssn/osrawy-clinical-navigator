@@ -129,9 +129,38 @@ input, select, textarea {
   text-align: start;
 }
 #tab-htn .k { font-family:var(--f-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-#tab-htn .gauge { position:relative; height:10px; border-radius:5px; background:linear-gradient(90deg,var(--ok) 0 20%,#c9a227 20% 35%,var(--warn) 35% 55%,var(--bad) 55% 100%); opacity:.9; direction:ltr !important; }
-#tab-htn .gauge i { position:absolute; top:-5px; width:4px; height:20px; background:var(--ink); border-radius:2px; transform:translateX(-50%); transition:left .3s; }
-#tab-htn .scale { display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:10.5px; color:var(--muted); direction:ltr !important; }
+#tab-htn .gauge {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ok) 0 20%, #c9a227 20% 35%, var(--warn) 35% 55%, var(--bad) 55% 100%);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.14);
+  opacity: .95;
+  direction: ltr !important;
+}
+#tab-htn .gauge i {
+  position: absolute;
+  top: -6px;
+  width: 6px;
+  height: 26px;
+  background: var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--surface), 0 3px 8px rgba(0,0,0,0.28);
+  transform: translateX(-50%);
+  transition: left .3s ease-out;
+  z-index: 2;
+}
+#tab-htn .scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 6px;
+  direction: ltr !important;
+  letter-spacing: 0.04em;
+}
 #tab-htn .big { font-family:var(--f-display); font-size:26px; font-weight:700; line-height:1.1; }
 #tab-htn .pill { display:inline-block; font-size:12px; font-weight:700; border-radius:999px; padding:3px 10px; }
 #tab-htn .p-ok { background:var(--ok-soft); color:var(--ok); }
