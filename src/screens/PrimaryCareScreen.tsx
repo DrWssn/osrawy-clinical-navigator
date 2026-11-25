@@ -128,8 +128,8 @@ export const PrimaryCareScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3 p-3 max-w-3xl mx-auto pb-24 animate-in fade-in duration-150">
-      {/* Sticky Sub-Tab Switcher */}
-      <div className="sticky top-[84px] z-10 bg-[var(--bg)]/95 backdrop-blur-sm py-1.5">
+      {/* Sub-Tab Switcher */}
+      <div className="w-full py-1.5">
         <SegmentedControl<PcSubTab>
           value={pcSubTab}
           onChange={setPcSubTab}

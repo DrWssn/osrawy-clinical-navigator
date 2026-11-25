@@ -13,8 +13,8 @@ export const CrmScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Sticky Cardio-Metabolic Domain Switcher */}
-      <div className="sticky top-[84px] z-10 bg-[var(--bg)]/95 backdrop-blur-sm border-b border-[var(--line)]/60 px-3 py-2">
+      {/* Cardio-Metabolic Domain Switcher */}
+      <div className="w-full bg-[var(--surface)] border-b border-[var(--line)] px-3 py-2.5 shadow-xs">
         <div className="max-w-lg mx-auto">
           <SegmentedControl<CrmSubTab>
             value={crmSubTab}

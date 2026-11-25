@@ -50,7 +50,7 @@ export const VitalsStrip: React.FC = () => {
           openVitals();
         }
       }}
-      className="sticky top-12 z-20 h-9 w-full bg-surface/95 backdrop-blur-sm border-b border-[var(--line)] px-3 flex items-center cursor-pointer hover:bg-[var(--surface2)] transition-colors select-none"
+      className="sticky top-12 z-20 h-9 w-full bg-[var(--surface)] border-b border-[var(--line)] px-3 flex items-center cursor-pointer hover:bg-[var(--surface2)] transition-colors select-none"
       title={isAr ? 'انقر لتعديل المؤشرات الحيوية والتحاليل' : 'Tap to edit vitals & labs'}
     >
       <div className="w-full max-w-5xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">

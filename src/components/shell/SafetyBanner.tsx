@@ -129,7 +129,7 @@ export const SafetyBanner: React.FC = () => {
 
         {/* Expandable Multi-Alert Drawer */}
         {expanded && (
-          <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto pe-0.5 animate-in fade-in duration-150">
+          <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto overscroll-contain pe-0.5 animate-in fade-in duration-150">
             {sortedAlerts.map((g) => {
               const sig = `${g.level}:${g.titleEn}`;
               const acked = isAlertAcked(g.id, sig);

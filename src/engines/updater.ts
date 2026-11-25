@@ -12,7 +12,7 @@ export interface UpdateInfo {
   publishedAt: string;
 }
 
-export const CURRENT_VERSION = '2.2.0';
+export const CURRENT_VERSION = '2.2.1';
 export const REPO_OWNER = 'DrWssn';
 export const REPO_NAME = 'osrawy-clinical-navigator';
 
