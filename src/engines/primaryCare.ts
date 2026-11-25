@@ -7,9 +7,12 @@ function parseNumOr(val: unknown, fallback: number): number {
 export function evaluateAsthmaGina(patientInput: any): any {
   const p = patientInput || {};
 
+  const daySymptomsNum = parseFloat(String(p.asthmaDaySymptoms));
   const dayPositive = (p.daySymptoms && p.daySymptoms !== 'none' && p.daySymptoms !== '0') ||
                       !!p.asthmaDaytime ||
-                      (parseFloat(String(p.asthmaDaytimePerWk)) > 2);
+                      (parseFloat(String(p.asthmaDaytimePerWk)) > 2) ||
+                      (!isNaN(daySymptomsNum) && daySymptomsNum > 2) ||
+                      (typeof p.asthmaDaySymptoms === 'string' && p.asthmaDaySymptoms !== '' && p.asthmaDaySymptoms !== 'none' && p.asthmaDaySymptoms !== '0' && isNaN(daySymptomsNum));
 
   const nightWaking = !!(p.nightWaking || p.asthmaNightWaking);
 
@@ -21,7 +24,7 @@ export function evaluateAsthmaGina(patientInput: any): any {
   const activityLimit = !!(p.activityLimit || p.asthmaActivityLimit);
 
   const sabaPerWk = parseFloat(String(p.sabaUsePerWeek)) || parseFloat(String(p.asthmaRelieverPerWk)) || (relieverPositive ? 4 : 0);
-  const canistersPerYr = parseFloat(String(p.asthmaCanistersPerYr)) || 0;
+  const canistersPerYr = parseFloat(String(p.asthmaSabaCanistersYr ?? p.asthmaCanistersPerYr)) || 0;
   const currentStep = parseInt(String(p.currentStep || p.asthmaStep), 10) || 2;
   const preferredTrack = parseInt(String(p.preferredTrack || p.asthmaTrack), 10) || 1;
 
@@ -50,6 +53,11 @@ export function evaluateAsthmaGina(patientInput: any): any {
 
   const alerts: any[] = [];
   function addAlert(a: any) {
+    a.severity = a.severity || a.level;
+    a.msgEn = a.msgEn || a.messageEn;
+    a.msgAr = a.msgAr || a.messageAr;
+    a.engine = a.engine || 'primaryCare';
+    a.sourceEngine = a.sourceEngine || 'asthma';
     a.text = `${a.titleEn}: ${a.messageEn} | ${a.titleAr}: ${a.messageAr}`;
     a.message = `${a.messageEn} | ${a.messageAr}`;
     a.msg = a.messageEn;
@@ -123,8 +131,10 @@ export function evaluateAsthmaGina(patientInput: any): any {
   const stepDetails = TRACK_1_STEPS[recommendedStep] || TRACK_1_STEPS[3];
 
   let recommendation = `GINA Track 1 MART: Step ${recommendedStep} (${stepDetails.title}). ${stepDetails.nameEn}`;
+  let recommendationAr = `مسار GINA 1 (MART): الخطوة ${recommendedStep}. ${stepDetails.nameAr}`;
   if (controlLevel === 'uncontrolled' && recommendedStep > currentStep) {
     recommendation = `Uncontrolled asthma on Step ${currentStep}: Step up to Step ${recommendedStep} Low-Dose MART (ICS-Formoterol). ${stepDetails.nameEn}`;
+    recommendationAr = `ربو غير منضبط على الخطوة ${currentStep}: صعّد إلى الخطوة ${recommendedStep} (مسار MART: بوديسونيد/فورموتيرول). ${stepDetails.nameAr}`;
   }
 
   return {
@@ -136,10 +146,13 @@ export function evaluateAsthmaGina(patientInput: any): any {
     controlBadgeClass,
     score,
     sabaPerWk,
+    canistersPerYr,
     currentStep,
     recommendedStep,
     preferredTrack,
     recommendation,
+    recommendationEn: recommendation,
+    recommendationAr,
     stepDetails,
     alerts,
     guardrails: alerts
@@ -160,7 +173,7 @@ export function evaluateCopdGold(patientInput: any): any {
   }
 
   const moderateExac = pickNum([p.moderateExacerbations, p.exacerbationsLastYear, p.copdExacerbations], 0);
-  const hospExac = pickNum([p.hospitalExacerbations, p.hospitalizationsLastYear, p.copdHospitalExacerbations], 0);
+  const hospExac = pickNum([p.hospitalExacerbations, p.hospitalizationsLastYear, p.copdHospitalExacerbations, p.copdHospitalizations], 0);
   const mmrc = pickNum([p.mMRC, p.mmrcScore, p.copdMmrc], 0);
   const cat = pickNum([p.catScore, p.copdCat], 0);
   const eos = pickNum([p.bloodEosinophils, p.eosinophilsPerUl, p.copdEosinophils], 150);
@@ -196,6 +209,11 @@ export function evaluateCopdGold(patientInput: any): any {
 
   const alerts: any[] = [];
   function addAlert(a: any) {
+    a.severity = a.severity || a.level;
+    a.msgEn = a.msgEn || a.messageEn;
+    a.msgAr = a.msgAr || a.messageAr;
+    a.engine = a.engine || 'primaryCare';
+    a.sourceEngine = a.sourceEngine || 'copd';
     a.text = `${a.titleEn}: ${a.messageEn} | ${a.titleAr}: ${a.messageAr}`;
     a.message = `${a.messageEn} | ${a.messageAr}`;
     a.msg = a.messageEn;
@@ -207,6 +225,7 @@ export function evaluateCopdGold(patientInput: any): any {
     addAlert({
       id: 'copd-low-eos-pneumonia-risk',
       level: 'warning',
+      sourceEngine: 'copd',
       titleEn: `Caution: Low Blood Eosinophils (${eos} cells/µL < 100) - Pneumonia Risk with ICS`,
       titleAr: `تحذير سريري: انخفاض الخلايا الحمضية (${eos} < 100) - خطر ذات الرئة عند استخدام الكورتيزون`,
       messageEn: `Blood eosinophil count is ${eos} cells/µL (< 100 cells/µL). GOLD 2024–2025 guidelines advise against initiating or maintaining ICS in this subgroup: negligible exacerbation reduction benefit combined with a substantially increased risk of severe bacterial pneumonia. Prefer LABA + LAMA bronchodilation.`,
@@ -230,6 +249,8 @@ export function evaluateCopdGold(patientInput: any): any {
     primaryRxEn,
     primaryRxAr,
     recommendation: primaryRxEn,
+    recommendationEn: primaryRxEn,
+    recommendationAr: primaryRxAr,
     alerts,
     guardrails: alerts
   };
@@ -243,6 +264,9 @@ export function evaluateThyroid(patientInput: any): any {
   const age = parseNumOr(p.age, 52);
   const wt = parseNumOr(p.weightKg !== undefined ? p.weightKg : p.wt, 70);
   const isPregnant = !!(p.pregnancy || p.pregnant || p.preg || p.pregHtn);
+  const trimesterRaw = parseInt(String(p.thyroidTrimester ?? p.trimester ?? 2), 10);
+  const thyroidTrimester = (trimesterRaw === 1 || trimesterRaw === 2 || trimesterRaw === 3) ? trimesterRaw : 2;
+  const pregTshTarget = thyroidTrimester === 1 ? 2.5 : 3.0;
   const hasAscvd = !!(p.ascvd || p.cad || (p.hf && p.hf !== 'none' && p.hf !== false));
   const hasAsthmaOrCopd = !!(p.asthma || p.copd);
 
@@ -276,10 +300,39 @@ export function evaluateThyroid(patientInput: any): any {
     statusNameEn = 'Subclinical Hyperthyroidism';
     statusNameAr = 'فرط نشاط الغدة الدرقية تحت الإكلينيكي';
     badgeClass = 'badge-warning';
+  } else if (tsh < 0.4 && ft4 < 0.8) {
+    status = 'central_hypo';
+    diagnosis = 'Suspected Central (Secondary/Pituitary) Hypothyroidism (Low TSH + Low FT4)';
+    statusNameEn = 'Suspected Central Hypothyroidism';
+    statusNameAr = 'اشتباه قصور غدة درقية مركزي / نخامي (TSH و FT4 منخفضان)';
+    badgeClass = 'badge-danger';
+  } else if (tsh > 4.5 && ft4 > 1.8) {
+    status = 'discordant_high_both';
+    diagnosis = 'Discordant Thyroid Panel (Elevated TSH + Elevated FT4)';
+    statusNameEn = 'Discordant Pattern (High TSH + High FT4)';
+    statusNameAr = 'اضطراب غير متطابق (ارتفاع TSH و FT4 معاً)';
+    badgeClass = 'badge-warning';
+  } else if (tsh >= 0.4 && tsh <= 4.5 && ft4 > 1.8) {
+    status = 'discordant_high_ft4';
+    diagnosis = 'Discordant Thyroid Panel (Normal TSH + Elevated FT4)';
+    statusNameEn = 'Discordant Pattern (Normal TSH + High FT4)';
+    statusNameAr = 'نتيجة غير متطابقة (TSH طبيعي مع ارتفاع FT4)';
+    badgeClass = 'badge-warning';
+  } else if (tsh >= 0.4 && tsh <= 4.5 && ft4 < 0.8) {
+    status = 'discordant_low_ft4';
+    diagnosis = 'Discordant Thyroid Panel (Normal TSH + Low FT4)';
+    statusNameEn = 'Discordant Pattern (Normal TSH + Low FT4)';
+    statusNameAr = 'نتيجة غير متطابقة (TSH طبيعي مع انخفاض FT4)';
+    badgeClass = 'badge-warning';
   }
 
   const alerts: any[] = [];
-  function addAlert(a: any) {
+  function addThyroidAlert(a: any) {
+    a.severity = a.severity || a.level;
+    a.msgEn = a.msgEn || a.messageEn;
+    a.msgAr = a.msgAr || a.messageAr;
+    a.engine = a.engine || 'primaryCare';
+    a.sourceEngine = a.sourceEngine || 'thyroid';
     a.text = `${a.titleEn}: ${a.messageEn} | ${a.titleAr}: ${a.messageAr}`;
     a.message = `${a.messageEn} | ${a.messageAr}`;
     a.msg = a.messageEn;
@@ -298,21 +351,26 @@ export function evaluateThyroid(patientInput: any): any {
       rxAr = `جرعة ليفوثيروكسين تحفظية للبدء: 25 إلى 50 ميكروجرام يومياً على معدة فارغة لوجود أمراض قلبية أو كبر السن. تُرفع الجرعة تدريجياً كل 6-8 أسابيع لتفادي نوبات الذبحة الصدرية.`;
     } else if (isPregnant) {
       recommendedDose = Math.round(wt * 1.8);
-      rxEn = `Pregnancy Levothyroxine replacement: ~1.8 mcg/kg/day (~${recommendedDose} mcg daily). Maternal thyroid hormone is critical for fetal neurological development. Maintain trimester-specific TSH target (<2.5 mIU/L in T1; <3.0 in T2/T3). Recheck TSH every 4 weeks.`;
-      rxAr = `علاج قصور الغدة أثناء الحمل: ليفوثيروكسين بجرعة ~1.8 ميكروجرام/كجم (~${recommendedDose} ميكروجرام يومياً) لأهميته لتطور مخ الجنين مع المحافظة على TSH < 2.5.`;
+      rxEn = `Pregnancy (Trimester ${thyroidTrimester}) Levothyroxine replacement: ~1.8 mcg/kg/day (~${recommendedDose} mcg daily). Maintain trimester-specific TSH goal < ${pregTshTarget} mIU/L (<2.5 in T1; <3.0 in T2/T3). Recheck TSH every 4 weeks.`;
+      rxAr = `علاج قصور الغدة أثناء الحمل (الثلث ${thyroidTrimester}): ليفوثيروكسين ~1.8 ميكروجرام/كجم (~${recommendedDose} ميكروجرام يومياً) مع المحافظة على هدف TSH < ${pregTshTarget} mIU/L وإعادة الفحص كل 4 أسابيع.`;
     } else {
       recommendedDose = Math.round(wt * 1.6);
       rxEn = `Full replacement Levothyroxine dose: ~1.6 mcg/kg/day (~${recommendedDose} mcg PO daily). Take first thing in the morning with water, 30–60 minutes before breakfast. Recheck TSH in 6–8 weeks for titration.`;
       rxAr = `جرعة إحلال كاملة من الليفوثيروكسين: ~1.6 ميكروجرام/كجم/يوم (~${recommendedDose} ميكروجرام فموياً يومياً). يُؤخذ صباحاً على الريق مع الماء قبل الإفطار بنصف ساعة إلى ساعة. يعاد فحص TSH بعد 6-8 أسابيع.`;
     }
   } else if (status === 'overt_hyper') {
-    let thionamideEn = 'Carbimazole 15–30 mg daily (or Methimazole 10–20 mg daily) preferred over PTU due to lower hepatotoxicity risk.';
-    let thionamideAr = 'كاربيميزول 15-30 مجم يومياً (أو ميثيمازول 10-20 مجم) هو الخيار الأول لقلة مخاطره على الكبد مقارنة بـ PTU.';
+    const thionamideEn = isPregnant && thyroidTrimester === 1
+      ? 'Trimester 1 pregnancy: Propylthiouracil (PTU) preferred over Carbimazole to minimize embryopathy risk; switch back to Carbimazole in T2.'
+      : 'Carbimazole 15–30 mg daily (or Methimazole 10–20 mg daily) preferred over PTU due to lower hepatotoxicity risk.';
+    const thionamideAr = isPregnant && thyroidTrimester === 1
+      ? 'الثلث الأول من الحمل: يُفضل بروبيل ثيوراسيل (PTU) لتقليل مخاطر التشوهات الجنينية، ثم التحويل لكاربيميزول في الثلث الثاني.'
+      : 'كاربيميزول 15-30 مجم يومياً (أو ميثيمازول 10-20 مجم) هو الخيار الأول لقلة مخاطره على الكبد مقارنة بـ PTU.';
 
     if (hasAsthmaOrCopd) {
-      addAlert({
+      addThyroidAlert({
         id: 'thyroid-propranolol-bronchospasm',
         level: 'critical',
+        removeMedId: 'propranolol',
         titleEn: 'Contraindication: Propranolol (Inderal) in Asthma/COPD - Severe Bronchospasm Risk',
         titleAr: 'موانع استخدام حرجة: حظر البروبرانولول (إندرال) لمرضى الربو والسدة الرئوية - خطر انقباض قصبي',
         messageEn: 'Bronchospasm alert: Non-selective beta-blockers like Propranolol (Inderal) can trigger severe, potentially fatal bronchospasm in patients with Asthma or COPD. For adrenergic symptom relief (palpitations, tremor), use a cardioselective Beta-1 blocker (Bisoprolol 2.5–5 mg) with extreme caution, or preferably use a non-DHP Calcium Channel Blocker (Diltiazem 30–60 mg tid or Verapamil).',
@@ -326,12 +384,75 @@ export function evaluateThyroid(patientInput: any): any {
       rxEn = `${thionamideEn} For symptom control: Propranolol 10–40 mg tid–qid for rapid tremor and tachycardia relief.`;
       rxAr = `${thionamideAr} للسيطرة على الأعراض: بروبرانولول (إندرال) 10-40 مجم 3 مرات يومياً لعلاج الخفقان والرعشة.`;
     }
-  } else if (status === 'subclinical_hypo' && !rxEn) {
-    rxEn = 'Mild subclinical hypothyroidism (TSH 4.5–9.9 mIU/L): Repeat TSH + Free T4 + Anti-TPO in 6–12 weeks. Consider Levothyroxine trial only if symptomatic, pregnant, planning pregnancy, or Anti-TPO positive.';
-    rxAr = 'قصور تحت إكلينيكي خفيف (TSH بين 4.5 و 9.9): يُعاد فحص TSH و Free T4 مع Anti-TPO بعد 6–12 أسبوعاً. لا يبدأ الليفوثيروكسين إلا مع وجود أعراض أو حمل أو التخطيط للحمل.';
+  } else if (status === 'subclinical_hypo') {
+    if (tsh >= 10) {
+      recommendedDose = (hasAscvd || age >= 65) ? 25 : (isPregnant ? Math.round(wt * 1.6) : Math.round(wt * 1.4));
+      rxEn = `Marked subclinical hypothyroidism (TSH ≥ 10 mIU/L; current TSH ${tsh}): Levothyroxine initiation is recommended (approx. ${recommendedDose} mcg/day${hasAscvd || age >= 65 ? ' — conservative start for ASCVD/elderly' : ''}) to reduce progression to overt hypothyroidism and cardiovascular risk. Recheck TSH in 6–8 weeks.`;
+      rxAr = `قصور تحت إكلينيكي مرتفع (TSH ≥ 10؛ القراءة الحالية ${tsh}): يُوصى ببدء الليفوثيروكسين (نحو ${recommendedDose} ميكروجرام/يوم) للوقاية من تطور القصور الصريح ومخاطر القلب، مع إعادة الفحص خلال 6–8 أسابيع.`;
+    } else if (isPregnant && tsh > pregTshTarget) {
+      recommendedDose = 50;
+      rxEn = `Pregnancy subclinical hypothyroidism (TSH ${tsh} > trimester ${thyroidTrimester} goal ${pregTshTarget} mIU/L): Start low-dose Levothyroxine (e.g., 50 mcg daily) and recheck TSH every 4 weeks.`;
+      rxAr = `قصور درقي تحت إكلينيكي أثناء الحمل (TSH ${tsh} أعلى من هدف الثلث ${thyroidTrimester} البالغ ${pregTshTarget}): ابدأ جرعة منخفضة من الليفوثيروكسين (50 ميكروجرام يومياً) وأعد الفحص كل 4 أسابيع.`;
+    } else {
+      rxEn = 'Mild subclinical hypothyroidism (TSH 4.5–9.9 mIU/L): Repeat TSH + Free T4 + Anti-TPO in 6–12 weeks. Consider Levothyroxine trial only if symptomatic, pregnant, planning pregnancy, or Anti-TPO positive.';
+      rxAr = 'قصور تحت إكلينيكي خفيف (TSH بين 4.5 و 9.9): يُعاد فحص TSH و Free T4 مع Anti-TPO بعد 6–12 أسبوعاً. لا يبدأ الليفوثيروكسين إلا مع وجود أعراض أو حمل أو التخطيط للحمل.';
+    }
   } else if (status === 'subclinical_hyper') {
-    rxEn = 'Subclinical hyperthyroidism (TSH 0.1–0.39 mIU/L): Repeat TSH + Free T4/T3 in 6–12 weeks; evaluate for Graves/toxic nodule if persistent, especially if age ≥ 65 or cardiovascular/osteoporosis risk.';
-    rxAr = 'فرط نشاط تحت إكلينيكي: يُعاد فحص TSH و Free T4/T3 خلال 6–12 أسبوعاً؛ تقييم أسباب فرط النشاط ومتابعة نبض القلب وهشاشة العظام (خاصة بعمر ≥ 65).';
+    const degree = tsh < 0.1 ? 'Grade 2 (TSH < 0.1 mIU/L)' : 'Grade 1 (TSH 0.1–0.39 mIU/L)';
+    rxEn = `Subclinical hyperthyroidism — ${degree}: Repeat TSH + Free T4/T3 in 6–12 weeks; treat/refer especially if TSH < 0.1, age ≥ 65, AF/cardiovascular disease, or osteoporosis.`;
+    rxAr = `فرط نشاط تحت إكلينيكي (${tsh < 0.1 ? 'TSH < 0.1' : 'TSH 0.1–0.39'}): يُعاد فحص TSH و Free T4/T3 خلال 6–12 أسبوعاً مع تقييم القلب وهشاشة العظام خاصة بعمر ≥ 65 أو وجود رجفان أذيني.`;
+  } else if (status === 'central_hypo') {
+    addThyroidAlert({
+      id: 'thyroid-central-hypo',
+      level: 'critical',
+      titleEn: 'Critical: Suspected Central Hypothyroidism — Check Cortisol Before Levothyroxine',
+      titleAr: 'تنبيه حرج: اشتباه قصور درقي مركزي — افحص الكورتيزول قبل بدء الليفوثيروكسين',
+      messageEn: `Low TSH (${tsh}) with low FT4 (${ft4}) suggests central (pituitary/hypothalamic) hypothyroidism or severe non-thyroidal illness. Starting Levothyroxine before excluding adrenal insufficiency can precipitate fatal adrenal crisis! Check 8 AM serum cortisol & pituitary panel, order pituitary MRI, and refer urgently to Endocrinology.`,
+      messageAr: `انخفاض TSH (${tsh}) مع انخفاض FT4 (${ft4}) يشير لاحتمال قصور غدة درقية مركزي (نخامي). يُحظر بدء الليفوثيروكسين قبل استبعاد قصور الغدة الكظرية (فحص كورتيزول الساعة 8 صباحاً) لتفادي أزمة كظرية مهددة للحياة! يلزم تحويل عاجل للغدد الصماء.`,
+      actionEn: 'Check 8 AM cortisol first (replace hydrocortisone before LT4 if deficient) and refer to Endocrinology.',
+      actionAr: 'افحص كورتيزول الصباح أولاً واستشر استشاري الغدد الصماء بشكل عاجل.'
+    });
+    rxEn = 'Suspected Central Hypothyroidism: Do NOT rely on TSH for titration. Rule out adrenal insufficiency (8 AM cortisol) BEFORE starting Levothyroxine; refer urgently to Endocrinology & obtain pituitary MRI.';
+    rxAr = 'اشتباه قصور مركزي: لا تعتمد على TSH للمتابعة. استبعد قصور الكظر (كورتيزول الصباح) قبل بدء الليفوثيروكسين مع تحويل عاجل للغدد الصماء ورنين للغدة النخامية.';
+  } else if (status === 'discordant_high_both') {
+    addThyroidAlert({
+      id: 'thyroid-discordant-high',
+      level: 'warning',
+      titleEn: 'Discordant Thyroid Panel: Elevated TSH & Elevated FT4',
+      titleAr: 'اضطراب مخبري غير متطابق: ارتفاع TSH و FT4 معاً',
+      messageEn: `Elevated TSH (${tsh}) alongside elevated FT4 (${ft4}) is discordant. Common causes include non-adherent Levothyroxine taken just before blood draw, biotin/assay interference, TSH-secreting pituitary adenoma (TSHoma), or thyroid hormone resistance. Repeat fasting pre-dose panel and refer to Endocrinology.`,
+      messageAr: `ارتفاع TSH (${tsh}) مع ارتفاع FT4 (${ft4}) نتيجة غير متطابقة؛ قد تنتج عن عدم الانتظام على الليفوثيروكسين أو تداخل البيوتين أو ورم نخامي مفرز لـ TSH. أعد التحليل صباحاً قبل الجرعة واستشر الغدد الصماء.`,
+      actionEn: 'Verify LT4 adherence/timing & biotin use; repeat fasting panel and consult Endocrinology.',
+      actionAr: 'تحقق من توقيت جرعة الليفوثيروكسين وتناول البيوتين وأعد الفحص.'
+    });
+    rxEn = 'Discordant high TSH + high FT4: Verify Levothyroxine timing/adherence, exclude biotin/assay interference, and refer to Endocrinology (TSHoma vs RTH).';
+    rxAr = 'نتيجة غير متطابقة: تحقق من الالتزام بالجرعة وتداخلات التحليل وأحل المريض للغدد الصماء.';
+  } else if (status === 'discordant_high_ft4') {
+    addThyroidAlert({
+      id: 'thyroid-discordant-high-ft4',
+      level: 'warning',
+      titleEn: 'Discordant Thyroid Panel: Normal TSH with Elevated FT4',
+      titleAr: 'نتيجة غير متطابقة: TSH طبيعي مع ارتفاع FT4',
+      messageEn: `Normal TSH (${tsh}) with elevated FT4 (${ft4}) most commonly reflects taking Levothyroxine shortly before phlebotomy, amiodarone/heparin effect, or assay interference. Repeat FT4 fasting prior to daily LT4 dose.`,
+      messageAr: `TSH طبيعي (${tsh}) مع ارتفاع FT4 (${ft4}) غالباً بسبب أخذ حبة الليفوثيروكسين قبل سحب الدم مباشرة أو أدوية مثل الأميودارون. أعد الفحص صائماً قبل الجرعة.`,
+      actionEn: 'Repeat fasting TSH + FT4 before morning Levothyroxine dose; review medications.',
+      actionAr: 'أعد فحص TSH و FT4 قبل تناول جرعة الصباح وراجع الأدوية.'
+    });
+    rxEn = 'Repeat fasting TSH and FT4 before taking morning Levothyroxine; evaluate assay interference or amiodarone use.';
+    rxAr = 'أعد الفحص صائماً قبل جرعة الليفوثيروكسين الصباحية وراجع الأدوية المصاحبة.';
+  } else if (status === 'discordant_low_ft4') {
+    addThyroidAlert({
+      id: 'thyroid-discordant-low-ft4',
+      level: 'warning',
+      titleEn: 'Discordant Thyroid Panel: Normal TSH with Low FT4',
+      titleAr: 'نتيجة غير متطابقة: TSH طبيعي مع انخفاض FT4',
+      messageEn: `Normal TSH (${tsh}) with low FT4 (${ft4}) warrants evaluating for central hypothyroidism (inappropriately normal TSH) versus non-thyroidal illness syndrome (euthyroid sick syndrome) or pregnancy hemodilution. Check 8 AM cortisol and repeat panel.`,
+      messageAr: `TSH طبيعي (${tsh}) مع انخفاض FT4 (${ft4}) قد يشير لقصور درقي مركزي أو متلازمة المرض غير الدرقي. افحص الكورتيزول الصباحي وأعد التقييم.`,
+      actionEn: 'Assess clinical pituitary symptoms, check 8 AM cortisol, and repeat TSH/FT4.',
+      actionAr: 'قيّم وظائف النخامية وافحص كورتيزول الصباح وأعد التحليل.'
+    });
+    rxEn = 'Evaluate central hypothyroidism (inappropriately normal TSH) vs non-thyroidal illness; check morning cortisol before any LT4.';
+    rxAr = 'قيّم احتمال القصور المركزي مقابل متلازمة المرض غير الدرقي مع فحص الكورتيزول أولاً.';
   } else if (status === 'euthyroid') {
     rxEn = 'Euthyroid state: No thyroid hormone replacement or antithyroid therapy required. Routine monitoring only if clinically indicated.';
     rxAr = 'وظائف الغدة الدرقية طبيعية: لا يتطلب علاجاً دوائياً للغدة الدرقية حالياً.';
@@ -346,6 +467,8 @@ export function evaluateThyroid(patientInput: any): any {
     badgeClass,
     tsh,
     ft4,
+    thyroidTrimester,
+    pregTshTarget,
     isPregnant,
     hasAscvd,
     hasAsthmaOrCopd,
@@ -365,9 +488,12 @@ export function evaluatePrimaryCare(patientInput: any): any {
   const copd = evaluateCopdGold(p);
   const thyroid = evaluateThyroid(p);
 
+  const includeAsthma = p.asthma !== false;
+  const includeCopd = p.copd !== false;
+
   const allAlerts = [
-    ...asthma.alerts,
-    ...copd.alerts,
+    ...(includeAsthma ? asthma.alerts : []),
+    ...(includeCopd ? copd.alerts : []),
     ...thyroid.alerts
   ];
 
@@ -376,6 +502,7 @@ export function evaluatePrimaryCare(patientInput: any): any {
     asthma,
     copd,
     thyroid,
-    allAlerts
+    allAlerts,
+    alerts: allAlerts
   };
 }

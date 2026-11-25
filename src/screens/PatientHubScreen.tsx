@@ -17,7 +17,7 @@ export const PatientHubScreen: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const targets = getDynamicTargets(patient);
-  const qrSvg = generateSVG('https://osrawy.app/patient/rx', { size: 220, darkColor: '#0A4F4B', lightColor: '#FFFFFF' });
+  const qrSvg = generateSVG('https://osrawy.app/patient/rx', { size: 220, darkColor: '#0F172A', lightColor: '#FFFFFF' });
 
   const handleCopyLeaflet = async () => {
     try {
@@ -68,8 +68,8 @@ export const PatientHubScreen: React.FC = () => {
               onClick={() => setSelectedLeaflet('rule15')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 border transition-all ${
                 selectedLeaflet === 'rule15'
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)]'
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
               }`}
             >
               {isAr ? 'قاعدة 15 (الهبوط)' : 'Rule of 15'}
@@ -79,8 +79,8 @@ export const PatientHubScreen: React.FC = () => {
               onClick={() => setSelectedLeaflet('sadmans')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 border transition-all ${
                 selectedLeaflet === 'sadmans'
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)]'
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
               }`}
             >
               {isAr ? 'أيام المرض (SADMANS)' : 'SADMANS Rules'}
@@ -90,8 +90,8 @@ export const PatientHubScreen: React.FC = () => {
               onClick={() => setSelectedLeaflet('homebp')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 border transition-all ${
                 selectedLeaflet === 'homebp'
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)]'
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
               }`}
             >
               {isAr ? 'قياس الضغط المنزلي' : 'Home BP Protocol'}
@@ -101,8 +101,8 @@ export const PatientHubScreen: React.FC = () => {
               onClick={() => setSelectedLeaflet('redflags')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 border transition-all ${
                 selectedLeaflet === 'redflags'
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)]'
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
               }`}
             >
               {isAr ? 'علامات الطوارئ' : 'Emergency Red Flags'}
@@ -111,7 +111,7 @@ export const PatientHubScreen: React.FC = () => {
 
           {/* Leaflet Content Cards */}
           {selectedLeaflet === 'rule15' && (
-            <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
+            <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
               <h4 className="text-sm font-bold text-[var(--primary)]">
                 {isAr ? '🍬 قاعدة 15 لعلاج هبوط السكر في الدم (< 70 مجم/dL)' : '🍬 Rule of 15 for Hypoglycemia Treatment (< 70 mg/dL)'}
               </h4>
@@ -130,7 +130,7 @@ export const PatientHubScreen: React.FC = () => {
           )}
 
           {selectedLeaflet === 'sadmans' && (
-            <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
+            <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
               <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400">
                 {isAr ? '⚠️ قواعد أيام المرض والتجفاف (SADMANS Rules)' : '⚠️ SADMANS Sick-Day Dehydration Rules'}
               </h4>
@@ -152,7 +152,7 @@ export const PatientHubScreen: React.FC = () => {
           )}
 
           {selectedLeaflet === 'homebp' && (
-            <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
+            <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2.5 leading-relaxed text-xs">
               <h4 className="text-sm font-bold text-[var(--primary)]">
                 {isAr ? '💓 بروتوكول القياس المنزلي الصحيح لضغط الدم (HBPM)' : '💓 Standardized Home Blood Pressure Protocol (HBPM)'}
               </h4>
@@ -208,7 +208,7 @@ export const PatientHubScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => printClinicalReport(patient, undefined, lang)}
-            className="flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-[var(--primary)] text-white text-xs font-bold shadow-md hover:opacity-90 active:scale-95 transition-all mt-1"
+            className="flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold shadow-md hover:opacity-90 active:scale-95 transition-all mt-1"
           >
             <Printer className="w-4 h-4" />
             <span>{isAr ? 'طباعة التقرير الطبي والوصفة (A4 / PDF)' : 'Print A4 Clinical Report & Rx'}</span>
@@ -219,34 +219,34 @@ export const PatientHubScreen: React.FC = () => {
       {/* 3. TARGETS TAB */}
       {subTab === 'targets' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {isAr ? 'الأهداف العلاجية المخصصة للمريض' : 'Individualized Quality Clinical Targets'}
             </h4>
 
             <div className="flex flex-col gap-2.5 text-xs">
-              <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex justify-between items-center">
+              <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex justify-between items-center">
                 <div>
                   <strong className="text-[var(--text)] block">{isAr ? 'السكر التراكمي المستهدف (HbA1c):' : 'Target HbA1c:'}</strong>
                   <span className="text-[11px] text-[var(--muted)]">{isAr ? targets.dm.targetDescAr : targets.dm.targetDescEn}</span>
                 </div>
-                <span className="text-sm font-bold font-mono text-emerald-600">{targets.dm.targetA1c}</span>
+                <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">{targets.dm.targetA1c}</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex justify-between items-center">
+              <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex justify-between items-center">
                 <div>
                   <strong className="text-[var(--text)] block">{isAr ? 'ضغط الدم المستهدف (BP):' : 'Target Blood Pressure:'}</strong>
                   <span className="text-[11px] text-[var(--muted)]">{targets.htn.targetHomeBpEn}</span>
                 </div>
-                <span className="text-sm font-bold font-mono text-emerald-600">{targets.htn.targetBp}</span>
+                <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">{targets.htn.targetBp}</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex justify-between items-center">
+              <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex justify-between items-center">
                 <div>
                   <strong className="text-[var(--text)] block">{isAr ? 'الكوليسترول الضار المستهدف (LDL):' : 'Target LDL-C:'}</strong>
                   <span className="text-[11px] text-[var(--muted)]">{isAr ? targets.dlp.riskTierAr : targets.dlp.riskTier}</span>
                 </div>
-                <span className="text-sm font-bold font-mono text-emerald-600">{targets.dlp.targetLdl}</span>
+                <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">{targets.dlp.targetLdl}</span>
               </div>
             </div>
           </div>

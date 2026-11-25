@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppStore } from '../../store/useAppStore';
 
 interface HbA1cGaugeProps {
   value: number;
@@ -11,19 +12,22 @@ export const HbA1cGauge: React.FC<HbA1cGaugeProps> = ({
   target = 7.0,
   className = ''
 }) => {
+  const lang = useAppStore(s => s.lang);
+  const isAr = lang === 'ar';
+
   // Map value (4% - 14%) to degrees (-90deg to +90deg)
   const clamped = Math.min(Math.max(value, 4.0), 14.0);
   const percent = (clamped - 4.0) / 10.0;
   const angle = -90 + percent * 180;
 
-  let statusColor = '#10B981'; // Green
-  let statusText = 'At Target';
+  let statusColor = 'var(--safe-text)';
+  let statusText = isAr ? 'ضمن الهدف' : 'At Target';
   if (value > target + 1.5) {
-    statusColor = '#EF4444'; // Red
-    statusText = 'Significantly Above Goal';
+    statusColor = 'var(--danger-text)';
+    statusText = isAr ? 'أعلى من الهدف بشكل ملحوظ' : 'Significantly Above Goal';
   } else if (value > target) {
-    statusColor = '#F59E0B'; // Amber
-    statusText = 'Above Goal';
+    statusColor = 'var(--warn-text)';
+    statusText = isAr ? 'أعلى من الهدف' : 'Above Goal';
   }
 
   return (
@@ -71,12 +75,12 @@ export const HbA1cGauge: React.FC<HbA1cGaugeProps> = ({
       </div>
 
       <div className="flex flex-col items-center -mt-2">
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold font-mono text-[var(--text)]">{value.toFixed(1)}</span>
+        <div className="flex items-baseline gap-1" dir="ltr">
+          <span className="text-2xl font-bold font-mono tabular-nums text-[var(--text)]">{value.toFixed(1)}</span>
           <span className="text-xs text-[var(--muted)] font-semibold">%</span>
         </div>
-        <span className="text-[11px] font-semibold tracking-wide" style={{ color: statusColor }}>
-          {statusText} (Target &lt; {target.toFixed(1)}%)
+        <span className="text-[11px] font-semibold tracking-wide text-center" style={{ color: statusColor }}>
+          {statusText} ({isAr ? `الهدف < ${target.toFixed(1)}%` : `Target < ${target.toFixed(1)}%`})
         </span>
       </div>
     </div>
@@ -96,20 +100,30 @@ export const LdlGapBar: React.FC<LdlGapBarProps> = ({
   unit = 'mg/dL',
   className = ''
 }) => {
+  const lang = useAppStore(s => s.lang);
+  const isAr = lang === 'ar';
+
   const maxDisplay = Math.max(currentLdl * 1.15, targetLdl * 1.5, 160);
   const currentPercent = Math.min((currentLdl / maxDisplay) * 100, 100);
   const targetPercent = Math.min((targetLdl / maxDisplay) * 100, 100);
   const isAtGoal = currentLdl <= targetLdl;
   const gap = Math.max(currentLdl - targetLdl, 0);
+  const reductionPct = currentLdl > 0 ? Math.round((gap / currentLdl) * 100) : 0;
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <div className="flex justify-between items-center text-xs">
+      <div className="flex justify-between items-center text-xs gap-2">
         <span className="text-[var(--muted)] font-medium">
-          Current: <strong className="text-[var(--text)] font-mono">{currentLdl}</strong> {unit}
+          {isAr ? 'الحالي:' : 'Current:'}{' '}
+          <bdi dir="ltr">
+            <strong className="text-[var(--text)] font-mono tabular-nums">{currentLdl}</strong> {unit}
+          </bdi>
         </span>
         <span className="text-[var(--muted)] font-medium">
-          Target: <strong className="text-[var(--primary)] font-mono">&lt; {targetLdl}</strong> {unit}
+          {isAr ? 'الهدف:' : 'Target:'}{' '}
+          <bdi dir="ltr">
+            <strong className="text-[var(--primary)] font-mono tabular-nums">&lt; {targetLdl}</strong> {unit}
+          </bdi>
         </span>
       </div>
 
@@ -118,26 +132,28 @@ export const LdlGapBar: React.FC<LdlGapBarProps> = ({
         {/* Fill bar */}
         <div
           className={`h-full transition-all duration-500 rounded-full ${
-            isAtGoal ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-rose-500'
+            isAtGoal ? 'bg-[#10B981]' : 'bg-gradient-to-r from-[#F59E0B] to-[#EF4444]'
           }`}
           style={{ width: `${currentPercent}%` }}
         />
 
         {/* Target goal indicator line */}
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-sm z-10"
+          className="absolute top-0 bottom-0 w-0.5 bg-[var(--text)] ring-1 ring-[var(--surface)] shadow-sm z-10"
           style={{ insetInlineStart: `${targetPercent}%` }}
         />
       </div>
 
       <div className="flex justify-between items-center text-[11px]">
         {isAtGoal ? (
-          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-            ✓ At or below target
+          <span className="text-[var(--safe-text)] font-semibold">
+            {isAr ? '✓ ضمن أو أقل من الهدف العلاجي' : '✓ At or below target'}
           </span>
         ) : (
-          <span className="text-rose-600 dark:text-rose-400 font-semibold">
-            Gap-to-goal: +{gap} {unit} ({Math.round((gap / currentLdl) * 100)}% reduction needed)
+          <span className="text-[var(--danger-text)] font-semibold">
+            {isAr
+              ? `الفجوة للهدف: +${gap} ${unit} (مطلوب خفض ${reductionPct}%)`
+              : `Gap-to-goal: +${gap} ${unit} (${reductionPct}% reduction needed)`}
           </span>
         )}
       </div>

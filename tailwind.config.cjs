@@ -5,14 +5,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        canvas: 'rgb(var(--bg-rgb) / <alpha-value>)',
+        surface: 'rgb(var(--surface-rgb) / <alpha-value>)',
+        surface2: 'rgb(var(--surface2-rgb) / <alpha-value>)',
+        input: 'rgb(var(--input-bg-rgb) / <alpha-value>)',
+        ink: 'rgb(var(--text-rgb) / <alpha-value>)',
+        muted: 'rgb(var(--muted-rgb) / <alpha-value>)',
+        line: 'rgb(var(--line-rgb) / <alpha-value>)',
+        primary: 'rgb(var(--primary-rgb) / <alpha-value>)',
         brand: {
-          50: '#F0FDF4',
-          100: '#DCFCE7',
-          500: '#16A34A',
-          600: '#0A4F4B',
-          700: '#083E3A',
-          800: '#062E2B',
-          900: '#041F1D',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          500: '#3B82F6',
+          600: '#1D4ED8',
+          700: '#1E40AF',
+          800: '#1E3A8A',
+          900: '#0F172A',
         },
       },
       fontFamily: {

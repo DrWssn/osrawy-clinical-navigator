@@ -192,38 +192,455 @@ export function calculateInsulin(weightKg: number, sensitivity: 'low' | 'mid' | 
   return { basalStart, tddStart };
 }
 
-export function evaluateScreening(p: any): any[] {
-  const egfr = parseFloat(String(p.egfr)) || 90;
-  const uacr = parseFloat(String(p.uacr)) || 0;
-  const a1c = parseFloat(String(p.a1c)) || 7.0;
-  const target = parseFloat(String(p.targetA1c || 7.0));
+export interface ScreeningItem {
+  id: string;
+  test: string;
+  frequency: string;
+  why: string;
+  nameEn: string;
+  nameAr: string;
+  freqEn: string;
+  freqAr: string;
+  dueReasonEn: string;
+  dueReasonAr: string;
+}
 
-  let kidF = 'Yearly';
-  if (egfr < 30) kidF = 'Every 3 months';
-  else if (egfr < 45 || uacr > 300) kidF = 'Every 3–4 months';
-  else if (egfr < 60 || uacr >= 30) kidF = 'Every 6 months';
+export interface ScreeningGroup {
+  group: string;
+  groupEn: string;
+  groupAr: string;
+  items: ScreeningItem[];
+}
+
+export interface DmPlanItem {
+  id: string;
+  action: 'active' | 'start' | 'cap' | 'stop';
+  titleEn: string;
+  titleAr: string;
+  rationaleEn: string;
+  rationaleAr: string;
+  drugId?: string;
+}
+
+export function evaluateScreening(p: any): ScreeningGroup[] {
+  const pt = p || {};
+  const egfrRaw = pt.egfr;
+  const egfr = (egfrRaw === undefined || egfrRaw === null)
+    ? 90
+    : (egfrRaw === '' ? 0 : (Number.isFinite(Number(egfrRaw)) ? Number(egfrRaw) : 0));
+  const uacr = parseFloat(String(pt.uacr)) || 0;
+  const a1c = parseFloat(String(pt.a1c)) || 7.0;
+  const age = parseFloat(String(pt.age)) || 52;
+  const isElderlyOrFrail = age >= 65 || !!pt.frail;
+  const target = parseFloat(String(pt.targetA1c || (isElderlyOrFrail ? 7.5 : 7.0)));
+
+  let kidFEn = 'Yearly';
+  let kidFAr = 'سنوياً';
+  if (egfr < 30) {
+    kidFEn = 'Every 3 months';
+    kidFAr = 'كل 3 أشهر';
+  } else if (egfr < 45 || uacr > 300) {
+    kidFEn = 'Every 3–4 months';
+    kidFAr = 'كل 3–4 أشهر';
+  } else if (egfr < 60 || uacr >= 30) {
+    kidFEn = 'Every 6 months';
+    kidFAr = 'كل 6 أشهر';
+  }
+
+  const a1cFreqEn = a1c > target ? 'Every 3 months (above target)' : 'Every 6 months (at target)';
+  const a1cFreqAr = a1c > target ? 'كل 3 أشهر (أعلى من الهدف)' : 'كل 6 أشهر (ضمن الهدف)';
+  const a1cWhyEn = a1c > target
+    ? `Above individualized target (< ${target}%) — intensify therapy & recheck`
+    : 'Adjust therapy until at goal and maintain stability';
+  const a1cWhyAr = a1c > target
+    ? `أعلى من الهدف المخصص (< ${target}%) — يلزم تعديل العلاج وإعادة الفحص`
+    : 'مراقبة استقرار السكر التراكمي وتعديل الخطة عند الحاجة';
 
   return [
     {
       group: 'Diabetes control',
+      groupEn: 'Diabetes control',
+      groupAr: 'ضبط السكر والمتابعة',
       items: [
-        { test: 'HbA1c', frequency: a1c > target ? 'Every 3 months (above target)' : 'Every 6 months (at target)', why: 'Adjust therapy until at goal' },
-        { test: 'Home glucose log', frequency: '2–3 times per week', why: 'Review at each consultation' }
+        {
+          id: 'screen-hba1c',
+          test: 'HbA1c',
+          frequency: a1cFreqEn,
+          why: a1cWhyEn,
+          nameEn: 'HbA1c',
+          nameAr: 'السكر التراكمي (HbA1c)',
+          freqEn: a1cFreqEn,
+          freqAr: a1cFreqAr,
+          dueReasonEn: a1cWhyEn,
+          dueReasonAr: a1cWhyAr
+        },
+        {
+          id: 'screen-home-glucose',
+          test: 'Home glucose log',
+          frequency: '2–3 times per week',
+          why: 'Review fasting and postprandial patterns at each consultation',
+          nameEn: 'Home glucose log',
+          nameAr: 'سجل قياس السكر المنزلي',
+          freqEn: '2–3 times per week',
+          freqAr: '2–3 مرات أسبوعياً',
+          dueReasonEn: 'Review fasting and postprandial patterns at each consultation',
+          dueReasonAr: 'مراجعة قراءات الصائم وبعد الأكل في كل زيارة'
+        }
       ]
     },
     {
       group: 'Cardiorenal & Vascular',
+      groupEn: 'Cardiorenal & Vascular',
+      groupAr: 'الكلى والقلب والأوعية الدموية',
       items: [
-        { test: 'Kidney check (eGFR & UACR)', frequency: kidF, why: 'Detect and stage diabetic kidney disease early' },
-        { test: 'Lipid panel', frequency: 'Yearly', why: 'Assess ASCVD risk and statin response' }
+        {
+          id: 'screen-ckd',
+          test: 'Kidney check (eGFR & UACR)',
+          frequency: kidFEn,
+          why: 'Detect and stage diabetic kidney disease early per KDIGO cadence',
+          nameEn: 'Kidney check (eGFR & UACR)',
+          nameAr: 'فحص الكلى والزلال (eGFR & UACR)',
+          freqEn: kidFEn,
+          freqAr: kidFAr,
+          dueReasonEn: 'Detect and stage diabetic kidney disease early per KDIGO cadence',
+          dueReasonAr: 'الكشف المبكر عن اعتلال الكلى السكري ومتابعته حسب KDIGO'
+        },
+        {
+          id: 'screen-lipids',
+          test: 'Lipid panel',
+          frequency: 'Yearly',
+          why: 'Assess ASCVD risk and LDL-C response to lipid therapy',
+          nameEn: 'Lipid panel',
+          nameAr: 'ملف الدهون (Lipid Panel)',
+          freqEn: 'Yearly',
+          freqAr: 'سنوياً',
+          dueReasonEn: 'Assess ASCVD risk and LDL-C response to lipid therapy',
+          dueReasonAr: 'تقييم مخاطر القلب ومتابعة استجابة LDL للستاتين'
+        }
       ]
     },
     {
       group: 'Microvascular complications',
+      groupEn: 'Microvascular complications',
+      groupAr: 'المضاعفات الدقيقة (العين والقدم)',
       items: [
-        { test: 'Comprehensive dilated eye exam', frequency: 'Yearly by ophthalmologist', why: 'Diabetic retinopathy screening' },
-        { test: 'Comprehensive foot exam', frequency: 'Yearly (plus visual inspection each visit)', why: 'Neuropathy and PAD ulcer prevention' }
+        {
+          id: 'screen-eye',
+          test: 'Comprehensive dilated eye exam',
+          frequency: 'Yearly by ophthalmologist',
+          why: 'Diabetic retinopathy screening',
+          nameEn: 'Comprehensive dilated eye exam',
+          nameAr: 'فحص قاع العين الشامل',
+          freqEn: 'Yearly by ophthalmologist',
+          freqAr: 'سنوياً لدى طبيب العيون',
+          dueReasonEn: 'Diabetic retinopathy screening',
+          dueReasonAr: 'الكشف المبكر عن اعتلال الشبكية السكري'
+        },
+        {
+          id: 'screen-foot',
+          test: 'Comprehensive foot exam',
+          frequency: 'Yearly (plus visual inspection each visit)',
+          why: 'Neuropathy and PAD ulcer prevention',
+          nameEn: 'Comprehensive foot exam',
+          nameAr: 'فحص القدم السكري الشامل',
+          freqEn: 'Yearly (plus visual inspection each visit)',
+          freqAr: 'سنوياً (مع فحص ظاهري في كل زيارة)',
+          dueReasonEn: 'Neuropathy and PAD ulcer prevention',
+          dueReasonAr: 'الوقاية من اعتلال الأعصاب وقرح القدم السكري'
+        }
       ]
     }
   ];
+}
+
+export function evaluateGeneralDmPlan(pt: any): DmPlanItem[] {
+  const p = pt || {};
+  const items: DmPlanItem[] = [];
+  const medsRaw = Array.isArray(p.activeMeds)
+    ? p.activeMeds
+    : Array.isArray(p.meds)
+      ? p.meds
+      : Array.isArray(p.currentMeds)
+        ? p.currentMeds
+        : Array.isArray(p.medications)
+          ? p.medications
+          : [];
+  const meds: string[] = medsRaw.map((m: unknown) => String(m).toLowerCase().trim());
+  const hasMed = (...tokens: string[]) =>
+    meds.some((m: string) => tokens.some(t => (t.length <= 3 ? m === t || m.startsWith(`${t}_`) || m.startsWith(`${t}-`) : m.includes(t))));
+
+  const egfrRaw = p.egfr;
+  const egfr = (egfrRaw === undefined || egfrRaw === null)
+    ? 90
+    : (egfrRaw === '' ? 0 : (Number.isFinite(Number(egfrRaw)) ? Number(egfrRaw) : 0));
+  const uacr = parseFloat(String(p.uacr ?? 0)) || 0;
+  const a1c = parseFloat(String(p.a1c ?? 7.0)) || 0;
+  const wt = parseFloat(String(p.wt ?? p.weightKg ?? 75)) || 75;
+  const age = parseFloat(String(p.age ?? 52)) || 52;
+  const isFrail = !!p.frail;
+  const isPreg = !!(p.pregnancy || p.preg || p.isPregnant || p.pregHtn);
+  const hasAscvd = !!(p.ascvd || p.cad || p.stroke || p.pad);
+  const hasHf = !!(p.hf && p.hf !== 'none' && p.hf !== false);
+  const targetA1c = isFrail || age >= 65 ? 7.5 : 7.0;
+
+  if (isPreg) {
+    const pregStopList: Array<{ id: string; labelEn: string; labelAr: string }> = [
+      { id: 'metformin', labelEn: 'Metformin', labelAr: 'الميتفورمين' },
+      { id: 'empagliflozin', labelEn: 'Empagliflozin', labelAr: 'إمباغليفلوزين' },
+      { id: 'dapagliflozin', labelEn: 'Dapagliflozin', labelAr: 'داباغليفلوزين' },
+      { id: 'semaglutide', labelEn: 'Semaglutide', labelAr: 'سيماغلوتايد' },
+      { id: 'tirzepatide', labelEn: 'Tirzepatide', labelAr: 'تيرزيباتايد' },
+      { id: 'sitagliptin', labelEn: 'Sitagliptin', labelAr: 'سيتاغليبتين' },
+      { id: 'gliclazide', labelEn: 'Gliclazide', labelAr: 'غليكلازايد' },
+      { id: 'glimepiride', labelEn: 'Glimepiride', labelAr: 'غليميبرايد' }
+    ];
+    for (const agent of pregStopList) {
+      if (hasMed(agent.id)) {
+        items.push({
+          id: `dm-plan-preg-stop-${agent.id}`,
+          action: 'stop',
+          drugId: agent.id,
+          titleEn: `Stop ${agent.labelEn} in Pregnancy`,
+          titleAr: `إيقاف ${agent.labelAr} أثناء الحمل`,
+          rationaleEn: `${agent.labelEn} is not recommended during pregnancy; switch immediately to weight-based basal-bolus insulin.`,
+          rationaleAr: `${agent.labelAr} غير معتمد أثناء الحمل؛ يجب التحويل فوراً إلى نظام الإنسولين.`
+        });
+      }
+    }
+    const hasInsulin = hasMed('insulin', 'insulin_glargine', 'nph', 'glarg');
+    items.push({
+      id: 'dm-plan-preg-insulin',
+      action: hasInsulin ? 'active' : 'start',
+      drugId: 'insulin_glargine',
+      titleEn: hasInsulin ? 'Continue Basal-Bolus Insulin in Pregnancy' : 'Start Basal-Bolus Insulin Therapy',
+      titleAr: hasInsulin ? 'الاستمرار على الإنسولين القاعدي/السريع في الحمل' : 'بدء علاج الإنسولين المكثف للحمل',
+      rationaleEn: 'Insulin is the gold-standard sole recommended pharmacotherapy for diabetes in pregnancy (targets: FPG <95, 1h <140, 2h <120 mg/dL).',
+      rationaleAr: 'الإنسولين هو الخيار الآمن والوحيد المعتمد في الحمل (صائم <95، بعد ساعة <140، بعد ساعتين <120).'
+    });
+    return items;
+  }
+
+  // 1. Metformin status
+  const onMetformin = hasMed('metformin', 'met', 'glucophage', 'cidophage');
+  if (onMetformin) {
+    if (egfr < 30) {
+      items.push({
+        id: 'dm-plan-metformin-stop',
+        action: 'stop',
+        drugId: 'metformin',
+        titleEn: egfr <= 0 ? 'Stop / Hold Metformin (eGFR ≤ 0 / Unverified Renal Function)' : 'Stop Metformin (eGFR < 30)',
+        titleAr: egfr <= 0 ? 'إيقاف الميتفورمين (فشل كلوي حاد / وظائف كلى غير موثقة)' : 'إيقاف الميتفورمين فوراً (eGFR < 30)',
+        rationaleEn: egfr <= 0
+          ? `eGFR is ${egfr} mL/min/1.73m². Do not continue Metformin until renal function is verified ≥ 30 mL/min due to fatal lactic acidosis risk.`
+          : `eGFR is ${egfr} mL/min/1.73m². Discontinue immediately due to fatal lactic acidosis risk.`,
+        rationaleAr: egfr <= 0
+          ? `معدل الترشيح الكبيبي ${egfr} مل/دقيقة؛ يُوقف الميتفورمين فوراً حتى التحقق من سلامة وظائف الكلى (≥ 30) لتفادي الحماض اللبني.`
+          : `معدل الترشيح الكبيبي ${egfr} مل/دقيقة؛ يُمنع الميتفورمين لخطر الحماض اللبني المميت.`
+      });
+    } else if (egfr >= 30 && egfr < 45) {
+      items.push({
+        id: 'dm-plan-metformin-cap',
+        action: 'cap',
+        drugId: 'metformin',
+        titleEn: 'Cap Metformin at ≤ 1000 mg/day (eGFR 30–44)',
+        titleAr: 'تحديد جرعة الميتفورمين بـ ≤ 1000 مجم/يوم (eGFR 30–44)',
+        rationaleEn: `eGFR is ${egfr} mL/min/1.73m² (Stage G3b). Reduce maximum daily dose to 1000 mg/day and monitor eGFR q3 months.`,
+        rationaleAr: `معدل الترشيح ${egfr}؛ الحد الأقصى للجرعة 1000 مجم/يوم مع مراقبة الكلى كل 3 أشهر.`
+      });
+    } else {
+      items.push({
+        id: 'dm-plan-metformin-active',
+        action: 'active',
+        drugId: 'metformin',
+        titleEn: 'Continue Metformin Foundation',
+        titleAr: 'الاستمرار على الميتفورمين كعلاج أساسي',
+        rationaleEn: `Renal function permits continuation (eGFR ${egfr} mL/min). Check B12 periodically on long-term therapy.`,
+        rationaleAr: `وظائف الكلى (${egfr}) تسمح بالاستمرار مع فحص فيتامين B12 دورياً.`
+      });
+    }
+  } else if (egfr >= 45) {
+    items.push({
+      id: 'dm-plan-metformin-start',
+      action: 'start',
+      drugId: 'metformin',
+      titleEn: 'Initiate Metformin (First-Line Foundation)',
+      titleAr: 'بدء الميتفورمين كخيار أول أساسي',
+      rationaleEn: 'First-line foundational therapy for T2DM with eGFR ≥ 45 mL/min (weight-neutral, low hypoglycemia risk).',
+      rationaleAr: 'العلاج الأساسي الأول للسكري من النوع الثاني مع eGFR ≥ 45 دون زيادة وزن أو هبوط سكر.'
+    });
+  }
+
+  // 2. SGLT2i (Cardiorenal protection)
+  const onEmpa = hasMed('empagliflozin', 'empa', 'jardiance');
+  const onDapa = hasMed('dapagliflozin', 'dapa', 'forxiga');
+  const activeSglt2 = onEmpa ? 'empagliflozin' : (onDapa ? 'dapagliflozin' : undefined);
+  const needsCardiorenalSglt2 = (egfr > 0 && egfr < 60) || uacr >= 30 || hasAscvd || hasHf;
+
+  if (activeSglt2) {
+    if (egfr < 20) {
+      items.push({
+        id: 'dm-plan-sglt2-stop',
+        action: 'stop',
+        drugId: activeSglt2,
+        titleEn: 'Review / Hold SGLT2i (eGFR < 20)',
+        titleAr: 'مراجعة أو إيقاف مثبط SGLT2 (eGFR < 20)',
+        rationaleEn: `eGFR is ${egfr} mL/min (< 20). Do not initiate; consult Nephrology regarding continuation.`,
+        rationaleAr: `معدل الترشيح ${egfr} أقل من 20؛ يُستشار أخصائي الكلى قبل الاستمرار.`
+      });
+    } else {
+      items.push({
+        id: 'dm-plan-sglt2-active',
+        action: 'active',
+        drugId: activeSglt2,
+        titleEn: `Continue ${onEmpa ? 'Empagliflozin' : 'Dapagliflozin'} (Cardiorenal Protection)`,
+        titleAr: `الاستمرار على ${onEmpa ? 'إمباغليفلوزين' : 'داباغليفلوزين'} لحماية القلب والكلى`,
+        rationaleEn: 'Active SGLT2 inhibitor slows CKD progression and reduces HF hospitalization and CV death.',
+        rationaleAr: 'مثبط SGLT2 نشط يحمي الكلى ويقلل دخول المستشفى لقصور القلب والوفيات القلبية.'
+      });
+    }
+  } else if (needsCardiorenalSglt2 && egfr >= 20) {
+    items.push({
+      id: 'dm-plan-sglt2-start',
+      action: 'start',
+      drugId: 'empagliflozin',
+      titleEn: 'Start Empagliflozin 10 mg (Cardiorenal Priority)',
+      titleAr: 'بدء إمباغليفلوزين 10 مجم (أولوية قلبية وكلوية)',
+      rationaleEn: `Indicated for organ protection (CKD/albuminuria, ASCVD, or HF) with eGFR ${egfr} ≥ 20 mL/min regardless of baseline HbA1c.`,
+      rationaleAr: `مُوصى به لحماية الكلى والقلب (زلال، اعتلال كلوي، تصلب شرايين أو قصور قلب) عند eGFR ≥ 20.`
+    });
+  }
+
+  // 3. GLP-1 RA / Dual GIP-GLP-1
+  const onSema = hasMed('semaglutide', 'sema', 'ozempic');
+  const onTirz = hasMed('tirzepatide', 'tirz', 'mounjaro');
+  if (onSema || onTirz) {
+    items.push({
+      id: 'dm-plan-glp1-active',
+      action: 'active',
+      drugId: onTirz ? 'tirzepatide' : 'semaglutide',
+      titleEn: `Continue ${onTirz ? 'Tirzepatide' : 'Semaglutide'}`,
+      titleAr: `الاستمرار على ${onTirz ? 'تيرزيباتايد' : 'سيماغلوتايد'}`,
+      rationaleEn: 'Provides high glycemic efficacy, weight reduction, and proven ASCVD/renal protection.',
+      rationaleAr: 'يوفر فعالية عالية في ضبط السكر وإنقاص الوزن وحماية القلب والكلى.'
+    });
+  } else if (hasAscvd || a1c > targetA1c || wt >= 90) {
+    items.push({
+      id: 'dm-plan-glp1-start',
+      action: 'start',
+      drugId: 'semaglutide',
+      titleEn: 'Consider GLP-1 RA (Semaglutide Weekly)',
+      titleAr: 'يُنصح بإضافة ناهض GLP-1 (سيماغلوتايد أسبوعياً)',
+      rationaleEn: hasAscvd
+        ? 'Established ASCVD: GLP-1 RA reduces MACE independently of HbA1c.'
+        : `HbA1c (${a1c}%) above target (< ${targetA1c}%) and/or elevated weight (${wt} kg); high potency without hypoglycemia.`,
+      rationaleAr: hasAscvd
+        ? 'تصلب شرايين مثبت: يخفض الجلطات القلبية بفاعلية.'
+        : `السكر التراكمي (${a1c}%) أعلى من الهدف أو مع زيادة الوزن؛ خفض قوي للسكر دون هبوط.`
+    });
+  }
+
+  // 4. Sulfonylurea (Frail / Elderly / CKD hypoglycemia guardrail)
+  const onGlimepiride = hasMed('glimepiride', 'amaryl');
+  const onGliclazide = hasMed('gliclazide', 'diamicron');
+  const activeSus: Array<{ id: 'glimepiride' | 'gliclazide'; en: string; ar: string }> = [];
+  if (onGlimepiride) activeSus.push({ id: 'glimepiride', en: 'Glimepiride', ar: 'غليميبرايد' });
+  if (onGliclazide) activeSus.push({ id: 'gliclazide', en: 'Gliclazide', ar: 'غليكلازايد' });
+
+  for (const su of activeSus) {
+    const isGlimep = su.id === 'glimepiride';
+    if ((isGlimep && egfr < 30) || isFrail) {
+      items.push({
+        id: `dm-plan-su-stop-${su.id}`,
+        action: isGlimep && (egfr < 30 || isFrail) ? 'stop' : 'cap',
+        drugId: su.id,
+        titleEn: `${isGlimep ? 'Stop / De-intensify' : 'Use Caution / De-intensify'} ${su.en}`,
+        titleAr: `${isGlimep ? 'إيقاف أو تخفيض' : 'تخفيف جرعة'} ${su.ar}`,
+        rationaleEn: isFrail || age >= 65
+          ? `Frail/older adult: Sulfonylureas carry high risk of severe hypoglycemia and falls; de-intensify or switch to low-risk agent.`
+          : `Severe CKD / invalid eGFR (${egfr} < 30): Active Glimepiride metabolites accumulate causing prolonged hypoglycemia.`,
+        rationaleAr: isFrail || age >= 65
+          ? `كبار السن/الهشاشة: السلفونيل يوريا ترفع خطر هبوط السكر الحاد والسقوط؛ يُوصى بتخفيضها أو استبدالها.`
+          : `قصور كلوي شديد (eGFR ${egfr}): تتراكم نواتج غليميبرايد مسببة هبوط سكر مطول.`
+      });
+    } else if (egfr < 45 || age >= 65) {
+      items.push({
+        id: `dm-plan-su-cap-${su.id}`,
+        action: 'cap',
+        drugId: su.id,
+        titleEn: `Caution / Low-Dose Cap for ${su.en}`,
+        titleAr: `الحذر وتخفيض جرعة ${su.ar}`,
+        rationaleEn: 'Monitor closely for hypoglycemia in older adults or Stage G3b CKD; prefer SGLT2i/DPP-4i/GLP-1 RA.',
+        rationaleAr: 'راقب هبوط السكر في كبار السن أو القصور الكلوي؛ يفضل تقليل الجرعة.'
+      });
+    } else {
+      items.push({
+        id: `dm-plan-su-active-${su.id}`,
+        action: 'active',
+        drugId: su.id,
+        titleEn: `Monitor ${su.en} for Hypoglycemia`,
+        titleAr: `متابعة ${su.ar} والوقاية من هبوط السكر`,
+        rationaleEn: 'Educate on Rule of 15 and sick-day rules (SADMANS).',
+        rationaleAr: 'تثقيف المريض بقاعدة 15 وقواعد أيام المرض (SADMANS).'
+      });
+    }
+  }
+
+  // 5. DPP-4i (Sitagliptin) renal dose cap
+  if (hasMed('sitagliptin', 'sita', 'januvia')) {
+    if (egfr < 45) {
+      items.push({
+        id: 'dm-plan-sita-cap',
+        action: 'cap',
+        drugId: 'sitagliptin',
+        titleEn: `Renal Adjust Sitagliptin (${egfr < 30 ? '25 mg' : '50 mg'} daily)`,
+        titleAr: `تعديل جرعة سيتاغليبتين كلوياً (${egfr < 30 ? '25 مجم' : '50 مجم'} يومياً)`,
+        rationaleEn: egfr < 30
+          ? 'eGFR < 30: Reduce Sitagliptin to 25 mg once daily.'
+          : 'eGFR 30–44: Reduce Sitagliptin to 50 mg once daily.',
+        rationaleAr: egfr < 30
+          ? 'تحت eGFR 30: خفّض سيتاغليبتين إلى 25 مجم يومياً.'
+          : 'بين eGFR 30–44: خفّض سيتاغليبتين إلى 50 مجم يومياً.'
+      });
+    } else {
+      items.push({
+        id: 'dm-plan-sita-active',
+        action: 'active',
+        drugId: 'sitagliptin',
+        titleEn: 'Continue Sitagliptin 100 mg Daily',
+        titleAr: 'الاستمرار على سيتاغليبتين 100 مجم يومياً',
+        rationaleEn: 'Weight-neutral, low hypoglycemia risk.',
+        rationaleAr: 'محايد على الوزن ولا يسبب هبوط سكر.'
+      });
+    }
+  }
+
+  // 6. Basal Insulin
+  const onInsulin = hasMed('insulin', 'insulin_glargine', 'nph', 'glarg');
+  if (onInsulin) {
+    items.push({
+      id: 'dm-plan-insulin-active',
+      action: 'active',
+      drugId: 'insulin_glargine',
+      titleEn: 'Continue Basal Insulin & Titrate to Fasting Goal',
+      titleAr: 'الاستمرار على الإنسولين القاعدي ومعايرته لهدف الصائم',
+      rationaleEn: egfr < 30
+        ? 'Reduce insulin dose cautiously in severe CKD due to decreased renal insulin clearance.'
+        : 'Titrate by 2 U every 3 days to reach fasting glucose 80–130 mg/dL without nocturnal hypoglycemia.',
+      rationaleAr: egfr < 30
+        ? 'خفّض جرعة الإنسولين بحذر في الفشل الكلوي الشديد لتفادي هبوط السكر.'
+        : 'عاير الجرعة بمقدار وحدتين كل 3 أيام للوصول لصائم 80–130 مجم/ديسيلتر.'
+    });
+  } else if (a1c >= 9.5) {
+    items.push({
+      id: 'dm-plan-insulin-start',
+      action: 'start',
+      drugId: 'insulin_glargine',
+      titleEn: 'Consider Basal Insulin Initiation (HbA1c ≥ 9.5%)',
+      titleAr: 'النظر في بدء الإنسولين القاعدي (التراكمي ≥ 9.5%)',
+      rationaleEn: `Marked hyperglycemia (HbA1c ${a1c}%): Initiate basal insulin (0.1–0.2 U/kg/day) alongside GLP-1 RA/SGLT2i if symptomatic or catabolic.`,
+      rationaleAr: `ارتفاع شديد بالسكر (${a1c}%): يُنصح ببدء إنسولين قاعدي (0.1–0.2 وحدة/كجم/يوم) خاصة مع الأعراض.`
+    });
+  }
+
+  return items;
 }

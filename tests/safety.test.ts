@@ -129,4 +129,73 @@ describe('Safety Guardrails & CKD Math (Cases 1-3)', () => {
       expect(teratoAlert).toBe(true);
     });
   });
+
+  describe('M1 Safety Precision Fixes', () => {
+    it('does not trigger critical Metformin alert for diabetic with eGFR < 30 when not taking Metformin', () => {
+      const ptNoMet = { diabetes: true, dm: true, egfr: 22, activeMeds: [] };
+      const alerts = evaluateSafetyGuardrails(ptNoMet);
+      expect(alerts.some(a => a.id === 'guardrail-metformin-crit')).toBe(false);
+      expect(alerts.some(a => a.id === 'guardrail-metformin-avoid-info' && a.level === 'info')).toBe(true);
+    });
+
+    it('does not falsely match metoprolol as metformin or carbimazole as ARB', () => {
+      const pt = { egfr: 22, diabetes: false, activeMeds: ['metoprolol', 'ramipril', 'carbimazole'] };
+      const alerts = evaluateSafetyGuardrails(pt);
+      expect(alerts.some(a => a.id === 'guardrail-metformin-crit')).toBe(false);
+      expect(alerts.some(a => a.id === 'guardrail-dual-raas')).toBe(false);
+    });
+
+    it('respects explicit empty activeMeds: [] over stale medications array', () => {
+      const pt = { egfr: 22, diabetes: false, activeMeds: [], medications: ['metformin'] };
+      const alerts = evaluateSafetyGuardrails(pt);
+      expect(alerts.some(a => a.id === 'guardrail-metformin-crit')).toBe(false);
+    });
+
+    it('populates removeMedId and msgEn/msgAr/severity/sourceEngine on critical Metformin alert', () => {
+      const alerts = evaluateSafetyGuardrails({ egfr: 20, activeMeds: ['metformin'] });
+      const metAlert = alerts.find(a => a.id === 'guardrail-metformin-crit');
+      expect(metAlert?.removeMedId).toBe('metformin');
+      expect(metAlert?.severity).toBe('critical');
+      expect(metAlert?.msgEn).toBeTruthy();
+      expect(metAlert?.msgAr).toBeTruthy();
+      expect(metAlert?.sourceEngine).toBe('diabetes');
+    });
+
+    it('preserves explicit uacr: 0 in SGLT2i organ-protection message instead of defaulting to 30', () => {
+      const alerts = evaluateSafetyGuardrails({ egfr: 45, uacr: 0, activeMeds: [] });
+      const sglt2 = alerts.find(a => a.id === 'guardrail-sglt2-organ-protect');
+      expect(sglt2?.messageEn).toContain('UACR 0 mg/g');
+    });
+
+    it('treats explicit egfr: 0 as severe renal impairment (triggers critical Metformin alert) while omitted egfr falls back safely to 90', () => {
+      const zeroEgfrAlerts = evaluateSafetyGuardrails({ egfr: 0, activeMeds: ['metformin'] });
+      expect(zeroEgfrAlerts.some(a => a.id === 'guardrail-metformin-crit')).toBe(true);
+
+      const omittedEgfrAlerts = evaluateSafetyGuardrails({ activeMeds: ['metformin'] });
+      expect(omittedEgfrAlerts.some(a => a.id === 'guardrail-metformin-crit')).toBe(false);
+    });
+
+    it('detects duplicate pure ARB + ARNI without self-flagging standalone sacubitril_valsartan', () => {
+      const dupAlerts = evaluateSafetyGuardrails({ activeMeds: ['valsartan', 'sacubitril_valsartan'] });
+      const dupAlert = dupAlerts.find(a => a.id === 'guardrail-arb-arni-dup-crit');
+      expect(dupAlert).toBeDefined();
+      expect(dupAlert?.level).toBe('critical');
+      expect(dupAlert?.titleAr).toContain('ARNI');
+      expect(dupAlerts.some(a => a.id === 'guardrail-dual-raas')).toBe(false);
+
+      const irbesartanEntrestoAlerts = evaluateSafetyGuardrails({ activeMeds: ['irbesartan', 'entresto'] });
+      expect(irbesartanEntrestoAlerts.some(a => a.id === 'guardrail-arb-arni-dup-crit')).toBe(true);
+
+      const standaloneArniAlerts = evaluateSafetyGuardrails({ activeMeds: ['sacubitril_valsartan'] });
+      expect(standaloneArniAlerts.some(a => a.id === 'guardrail-arb-arni-dup-crit')).toBe(false);
+      expect(standaloneArniAlerts.some(a => a.id === 'guardrail-dual-raas')).toBe(false);
+
+      const aceArniAlerts = evaluateSafetyGuardrails({ activeMeds: ['ramipril', 'sacubitril_valsartan'] });
+      expect(aceArniAlerts.some(a => a.id === 'guardrail-dual-raas')).toBe(true);
+      expect(aceArniAlerts.some(a => a.id === 'guardrail-arb-arni-dup-crit')).toBe(false);
+
+      const aceIrbesartanAlerts = evaluateSafetyGuardrails({ activeMeds: ['ramipril', 'irbesartan'] });
+      expect(aceIrbesartanAlerts.some(a => a.id === 'guardrail-dual-raas')).toBe(true);
+    });
+  });
 });

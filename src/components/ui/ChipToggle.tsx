@@ -23,12 +23,12 @@ export const ChipToggle: React.FC<ChipToggleProps> = ({
     }
     switch (variant) {
       case 'danger':
-        return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/40 font-semibold';
+        return 'bg-[var(--danger-bg)] text-[var(--danger-text)] border-[var(--danger-border)] font-semibold';
       case 'warning':
-        return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40 font-semibold';
+        return 'bg-[var(--warn-bg)] text-[var(--warn-text)] border-[var(--warn-border)] font-semibold';
       case 'primary':
       default:
-        return 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]/40 font-semibold';
+        return 'bg-primary/15 text-[var(--primary)] border-primary/40 font-semibold';
     }
   };
 

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
 
 interface BottomSheetProps {
   id: string;
@@ -19,19 +18,16 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   children,
   maxHeight = 'max-h-[88vh]'
 }) => {
-  const pushOverlay = useAppStore(s => s.pushOverlay);
-  const popOverlay = useAppStore(s => s.popOverlay);
-
   useEffect(() => {
-    if (isOpen) {
-      pushOverlay(id);
-    }
-    return () => {
-      if (isOpen) {
-        popOverlay();
+    if (!isOpen || typeof document === 'undefined') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
       }
     };
-  }, [isOpen, id, pushOverlay, popOverlay]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -46,9 +42,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
       {/* Sheet Container */}
       <div
-        className={`relative z-10 flex flex-col w-full bg-[var(--surface)] text-[var(--text)] rounded-t-2xl shadow-2xl border-t border-[var(--line)] ${maxHeight} animate-in slide-in-from-bottom duration-200`}
+        data-sheet-id={id}
+        className={`relative z-10 flex flex-col w-full sm:max-w-xl sm:mx-auto sm:rounded-2xl sm:mb-4 bg-[var(--surface)] text-[var(--text)] rounded-t-2xl shadow-2xl border-t sm:border border-[var(--line)] ${maxHeight} animate-in slide-in-from-bottom duration-200`}
         role="dialog"
         aria-modal="true"
+        aria-label={title || id}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-2.5 pb-1 cursor-grab" onClick={onClose}>
@@ -61,6 +59,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             {title || ''}
           </h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface2)] active:scale-95 transition-all"
             aria-label="Close"

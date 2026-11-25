@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateKdigoMatrix, calculateFib4, evaluateDoacDosing, buildEmrNote } from '../src/engines/tools';
-import { calculateSteroidEquivalence } from '../src/engines/calculators';
+import {
+  calculateCkdEpi2021,
+  calculateCrCl,
+  calculateBMI,
+  calculateEag,
+  calculateCorrectedCa,
+  calculateSteroidEquivalence
+} from '../src/engines/calculators';
 
 describe('Clinical Tools Engine (Cases 11, 12, 13, 17)', () => {
   describe('Case 11: KDIGO Heat-Map Matrix', () => {
@@ -107,6 +114,64 @@ describe('Clinical Tools Engine (Cases 11, 12, 13, 17)', () => {
       const doac = evaluateDoacDosing(ptUmol);
       expect(doac.apixaban.reducedDose).toBe(true);
       expect(doac.apixaban.criteria.scrGte1_5).toBe(true);
+      expect(doac.scrMg).toBe(1.5);
+      expect(doac.apixaban.reasonEn).toContain('1.5 mg/dL');
+    });
+
+    it('computes live CrCl directly from PatientState-shaped { wt, scr, scrUnit } inputs', () => {
+      const doac = evaluateDoacDosing({ age: 52, wt: 96, scr: 0.9, scrUnit: 'mg', sex: 'm' });
+      expect(doac.crcl).toBeGreaterThan(100);
+      expect(doac.apixaban.dose).toBe('5 mg PO BID');
+      expect(doac.rivaroxaban.dose).toContain('20 mg');
+    });
+  });
+
+  describe('Clinical Calculators (CKD-EPI 2021, CrCl, BMI, eAG, Corrected Ca, Steroids)', () => {
+    it('calculates CKD-EPI 2021 for female sex, umol conversion, and invalid inputs', () => {
+      expect(calculateCkdEpi2021(0, 'mg', 50, 'm')).toBeNull();
+      expect(calculateCkdEpi2021(1.0, 'mg', 0, 'f')).toBeNull();
+      const umolRes = calculateCkdEpi2021(88.4, 'umol', 45, 'f');
+      expect(umolRes).not.toBeNull();
+      expect(umolRes!.scrMg).toBe(1);
+      expect(umolRes!.egfr).toBeGreaterThan(60);
+    });
+
+    it('supports all 3 calculateCrCl signatures and rejects age >= 140', () => {
+      const c1 = calculateCrCl(1.2, 'mg', 60, 'm', 80);
+      const c2 = calculateCrCl({ age: 60, wt: 80, scr: 1.2, scrUnit: 'mg', sex: 'm' });
+      const c3 = calculateCrCl(60, 80, 1.2, 'm');
+      expect(c1?.crcl).toBe(c2?.crcl);
+      expect(c2?.crcl).toBe(c3?.crcl);
+      expect(calculateCrCl(140, 70, 1.0, 'm')).toBeNull();
+    });
+
+    it('computes BMI categories cleanly', () => {
+      expect(calculateBMI(0, 170).category).toBe('Unknown');
+      expect(calculateBMI(68, 175).category).toBe('Normal');
+      expect(calculateBMI(85, 175).isOverweight).toBe(true);
+      expect(calculateBMI(105, 170).isObese).toBe(true);
+    });
+
+    it('computes eAG and clamps non-negative values', () => {
+      expect(calculateEag(7.0).eagMg).toBe(154);
+      expect(calculateEag(0).eagMg).toBe(0);
+      expect(calculateEag(1.0).eagMg).toBe(0);
+    });
+
+    it('computes Payne corrected calcium', () => {
+      const norm = calculateCorrectedCa(8.0, 2.0);
+      expect(norm.correctedCa).toBe(9.6);
+      expect(norm.isNormal).toBe(true);
+
+      const hyper = calculateCorrectedCa(10.0, 2.0);
+      expect(hyper.correctedCa).toBe(11.6);
+      expect(hyper.isNormal).toBe(false);
+    });
+
+    it('calculates steroid equivalence across all 4 agents', () => {
+      expect(calculateSteroidEquivalence(20, 'hydrocortisone').prednisone).toBe(5);
+      expect(calculateSteroidEquivalence(4, 'methylprednisolone').prednisone).toBe(5);
+      expect(calculateSteroidEquivalence(0.75, 'dexamethasone').prednisone).toBe(5);
     });
   });
 

@@ -76,7 +76,7 @@ export const DrugDirectoryScreen: React.FC = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={isAr ? 'ابحث باسم الدواء العلمي أو التجاري (جلوكوفاج، Jardiance...)' : 'Search by generic or trade name (Glucophage, Jardiance)...'}
-          className="w-full h-10 ps-9 pe-8 bg-[var(--surface2)] text-xs text-[var(--text)] placeholder-[var(--muted)] font-medium rounded-xl border border-[var(--line)] focus:outline-none focus:border-[var(--primary)]"
+          className="w-full h-10 ps-9 pe-8 bg-[var(--input-bg)] text-xs text-[var(--text)] placeholder-[var(--muted)] font-medium rounded-xl border border-[var(--line)] focus:outline-none focus:border-[var(--primary)] shadow-sm"
         />
         {query && (
           <button
@@ -98,8 +98,8 @@ export const DrugDirectoryScreen: React.FC = () => {
             onClick={() => setSelectedCategory(cat.id)}
             className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 border transition-all ${
               selectedCategory === cat.id
-                ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)]'
+                ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
             }`}
           >
             {cat.label}
@@ -127,10 +127,10 @@ export const DrugDirectoryScreen: React.FC = () => {
             return (
               <div
                 key={drug.id}
-                className={`p-3.5 rounded-xl border transition-all ${
+                className={`p-3.5 rounded-xl border shadow-sm transition-all ${
                   isSelected
-                    ? 'bg-[var(--primary)]/10 border-[var(--primary)]/50'
-                    : 'bg-[var(--surface2)] border-[var(--line)]'
+                    ? 'bg-primary/10 border-primary/50'
+                    : 'bg-[var(--surface)] border-[var(--line)]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -139,7 +139,7 @@ export const DrugDirectoryScreen: React.FC = () => {
                       <h4 className="text-xs font-bold text-[var(--text)]">
                         {isAr ? drug.genericAr : drug.genericEn}
                       </h4>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[var(--surface)] text-[var(--primary)] border border-[var(--line)] font-mono">
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[var(--surface2)] text-[var(--primary)] border border-[var(--line)] font-mono">
                         Tier {drug.tier}
                       </span>
                     </div>
@@ -161,8 +161,8 @@ export const DrugDirectoryScreen: React.FC = () => {
                     onClick={() => toggleMedication(drug.id)}
                     className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-transform active:scale-95 shrink-0 ${
                       isSelected
-                        ? 'bg-[var(--primary)] text-white shadow-sm'
-                        : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--line)] hover:bg-[var(--line)]'
+                        ? 'bg-[var(--primary)] text-[var(--on-primary)] shadow-sm'
+                        : 'bg-[var(--surface2)] text-[var(--text)] border border-[var(--line)] hover:bg-[var(--line)]'
                     }`}
                   >
                     {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -172,7 +172,7 @@ export const DrugDirectoryScreen: React.FC = () => {
 
                 {/* Renal Rule Badge */}
                 {drug.renal && (
-                  <div className="mt-2.5 pt-2 border-t border-[var(--line)]/60 text-[10px] text-[var(--muted)] flex items-center gap-1.5">
+                  <div className="mt-2.5 pt-2 border-t border-line/60 text-[10px] text-[var(--muted)] flex items-center gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span className="leading-tight">{isAr ? drug.renal.ruleAr : drug.renal.ruleEn}</span>
                   </div>

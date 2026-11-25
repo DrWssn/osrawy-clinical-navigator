@@ -166,7 +166,7 @@ export function calculateCrCl(
     sex = String(arg4 || 'm').toLowerCase() === 'f' ? 'f' : 'm';
   }
 
-  if (scrMg <= 0 || age <= 0 || wt <= 0) return null;
+  if (scrMg <= 0 || age <= 0 || age >= 140 || wt <= 0) return null;
 
   const factor = (sex === 'f') ? 0.85 : 1.0;
   const crcl = ((140 - age) * wt) / (72 * scrMg) * factor;
@@ -231,8 +231,8 @@ export function calculateBMI(wtKg: number, htCm: number) {
  */
 export function calculateEag(a1c: number) {
   if (a1c <= 0) return { eagMg: 0, eagMmol: 0 };
-  const eagMg = Math.round(28.7 * a1c - 46.7);
-  const eagMmol = Math.round((eagMg / 18.018) * 10) / 10;
+  const eagMg = Math.max(0, Math.round(28.7 * a1c - 46.7));
+  const eagMmol = Math.max(0, Math.round((eagMg / 18.018) * 10) / 10);
   return { eagMg, eagMmol };
 }
 

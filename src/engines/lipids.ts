@@ -104,7 +104,21 @@ export function estimate10YrAscvdRisk(patient: any): { riskPercent: number; cate
   const smoker = (p.smoker || p.smk) ? 1 : 0;
   const dm = (p.diabetes || p.dm) ? 1 : 0;
   const sbp = parseNumOr(p.sbp, 130);
-  const tx = (p.medsCount && parseInt(String(p.medsCount), 10) > 0) ? 1 : 0;
+  const medsList: string[] = (
+    Array.isArray(p.activeMeds) ? p.activeMeds :
+    (Array.isArray(p.medications) ? p.medications :
+    (Array.isArray(p.meds) ? p.meds :
+    (Array.isArray(p.currentDrugs) ? p.currentDrugs : [])))
+  ).map((m: unknown) => String(m).toLowerCase());
+  const HTN_TOKENS = [
+    'ramipril', 'perindopril', 'lisinopril', 'enalapril', 'captopril',
+    'valsartan', 'losartan', 'telmisartan', 'candesartan', 'irbesartan',
+    'amlodipine', 'nifedipine', 'indapamide', 'hydrochlorothiazide', 'hctz', 'chlorthalidone',
+    'bisoprolol', 'metoprolol', 'carvedilol', 'labetalol', 'atenolol',
+    'spironolactone', 'eplerenone', 'methyldopa', 'sacubitril', 'coveram', 'exforge', 'twynsta', 'preterax'
+  ];
+  const hasHtnMed = medsList.some(m => HTN_TOKENS.some(t => m.includes(t)));
+  const tx = (p.treatedBp || (p.medsCount && parseInt(String(p.medsCount), 10) > 0) || hasHtnMed) ? 1 : 0;
 
   let tc = parseNumOr(pickDefined(p.totalCholesterol, p.tc), 200);
   let hdl = parseNumOr(pickDefined(p.hdlC, p.hdl), 45);
@@ -173,7 +187,10 @@ export function estimate10YrAscvdRisk(patient: any): { riskPercent: number; cate
 
 export function stratifyRisk(patient: any): any {
   const p = patient || {};
-  const egfr = parseNumOr(p.egfr, 90);
+  const egfrRaw = p.egfr;
+  const egfr = (egfrRaw === undefined || egfrRaw === null)
+    ? 90
+    : (egfrRaw === '' ? 0 : (Number.isFinite(Number(egfrRaw)) ? Number(egfrRaw) : 0));
   const uacr = parseNumOr(p.uacr, 10);
   const age = parseNumOr(p.age, 50);
   const dur = parseNumOr(p.dur, 0);
@@ -265,14 +282,18 @@ export function evaluateLipidPathway(patientInput: any): any {
   }
 
   const nonHdlMg = Math.round((tcMg - hdlMg) * 10) / 10;
-  const egfr = parseNumOr(p.egfr, 90);
+  const egfrRaw = p.egfr;
+  const egfr = (egfrRaw === undefined || egfrRaw === null)
+    ? 90
+    : (egfrRaw === '' ? 0 : (Number.isFinite(Number(egfrRaw)) ? Number(egfrRaw) : 0));
   const altUl = parseNumOr(pickDefined(p.altUl, p.alt), 25);
   const isPregnant = !!(p.pregnancy || p.pregnant || p.preg || p.pregHtn);
 
   const currentDrugs: string[] = (
     Array.isArray(p.currentDrugs) ? p.currentDrugs :
-    (Array.isArray(p.medications) ? p.medications :
-    (Array.isArray(p.activeMeds) ? p.activeMeds : []))
+    (Array.isArray(p.activeMeds) ? p.activeMeds :
+    (Array.isArray(p.meds) ? p.meds :
+    (Array.isArray(p.medications) ? p.medications : [])))
   ).map((d: any) => String(d).toLowerCase());
 
   const hasDrug = (name: string) => currentDrugs.some(d => d.includes(name.toLowerCase()));
@@ -284,7 +305,19 @@ export function evaluateLipidPathway(patientInput: any): any {
 
   const alerts: any[] = [];
   function addAlert(alert: any) {
-    alerts.push(alert);
+    const normalized = {
+      ...alert,
+      severity: alert.severity || alert.level,
+      msgEn: alert.msgEn || alert.messageEn,
+      msgAr: alert.msgAr || alert.messageAr,
+      engine: alert.engine || 'lipids',
+      sourceEngine: alert.sourceEngine || 'lipids',
+      text: `${alert.titleEn}: ${alert.messageEn} | ${alert.titleAr}: ${alert.messageAr}`,
+      message: `${alert.messageEn} | ${alert.messageAr}`,
+      msg: alert.messageEn,
+      title: alert.titleEn,
+    };
+    alerts.push(normalized);
   }
 
   // 1. Pregnancy Statin Contraindication
@@ -337,6 +370,7 @@ export function evaluateLipidPathway(patientInput: any): any {
       id: 'lipid-amlodipine-simvastatin-interaction',
       level: 'critical',
       code: 'AMLODIPINE_SIMVASTATIN_INTERACTION',
+      removeMedId: 'simvastatin',
       titleEn: 'Drug Interaction: Amlodipine + Simvastatin (Dose Cap ≤ 20 mg/day)',
       titleAr: 'تفاعل دوائي خطير: أملوديبين مع سيمفاستاتين (الحد الأقصى للجرعة ≤ 20 مجم)',
       messageEn: 'Amlodipine inhibits CYP3A4 metabolism of Simvastatin, doubling systemic simvastatin exposure and substantially increasing the risk of rhabdomyolysis and fatal myopathy. The daily dose of Simvastatin must NOT exceed 20 mg/day when co-administered with amlodipine. Strong recommendation: Switch to Atorvastatin (40–80 mg) or Rosuvastatin (20–40 mg) which avoid this interaction.',
@@ -348,11 +382,12 @@ export function evaluateLipidPathway(patientInput: any): any {
 
   // 4. Rosuvastatin Renal Dose Cap at eGFR < 30
   const hasRosuvastatin = !!(p.rosuvastatin || hasDrug('rosuva') || String(p.currentStatin).toLowerCase().includes('rosuva'));
-  if (egfr > 0 && egfr < 30 && hasRosuvastatin) {
+  if (egfr < 30 && hasRosuvastatin) {
     addAlert({
       id: 'lipid-rosuvastatin-renal-cap',
       level: 'warning',
       code: 'ROSUVASTATIN_RENAL_DOSE_CAP',
+      removeMedId: 'rosuvastatin',
       titleEn: 'Renal Dose Guardrail: Rosuvastatin Cap ≤ 10 mg/day (eGFR < 30)',
       titleAr: 'تنبيه كلوي: الحد الأقصى لروزوفاستاتين 10 مجم/يوم (eGFR < 30)',
       messageEn: `eGFR is ${egfr} mL/min/1.73m² (Severe CKD). Rosuvastatin systemic plasma concentration increases 3-fold in severe renal impairment. Starting dose is 5 mg daily; maximum renal dose cap is 10 mg daily (20 mg and 40 mg doses are contraindicated due to myopathy and proteinuria risks).`,
@@ -425,7 +460,7 @@ export function evaluateLipidPathway(patientInput: any): any {
   }
 
   const gapMg = Math.round(Math.max(ldlMg - target.ldlTargetMg, 0));
-  const gapPercent = Math.round(((ldlMg - target.ldlTargetMg) / ldlMg) * 100);
+  const gapPercent = ldlMg > 0 ? Math.round(((ldlMg - target.ldlTargetMg) / ldlMg) * 100) : 0;
 
   let recommendation = isPregnant
     ? 'Statins and lipid-lowering drugs are contraindicated in pregnancy / أدوية الدهون ممنوعة تماماً أثناء الحمل'

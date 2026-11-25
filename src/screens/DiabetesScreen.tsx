@@ -42,7 +42,7 @@ export const DiabetesScreen: React.FC = () => {
       {subTab === 'inputs' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Labs Grid 1 */}
-          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label={isAr ? 'التراكمي' : 'HbA1c'}
               value={patient.a1c}
@@ -65,7 +65,7 @@ export const DiabetesScreen: React.FC = () => {
           </div>
 
           {/* Labs Grid 2 (Renal & Vitals) */}
-          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label="eGFR"
               value={patient.egfr}
@@ -91,7 +91,7 @@ export const DiabetesScreen: React.FC = () => {
           </div>
 
           {/* Comorbidities */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
               {isAr ? 'الأمراض المصاحبة وعوامل الخطورة' : 'Comorbidities & Risk Modifiers'}
             </label>
@@ -131,7 +131,7 @@ export const DiabetesScreen: React.FC = () => {
           </div>
 
           {/* Active Diabetes Medications */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
               {isAr ? 'الأدوية الحالية للمريض (انقر للتبديل)' : 'Active DM Medications (Tap to toggle)'}
             </label>
@@ -157,7 +157,7 @@ export const DiabetesScreen: React.FC = () => {
       {subTab === 'plan' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* HbA1c Gauge Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col items-center">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col items-center">
             <HbA1cGauge value={patient.a1c} target={7.0} />
           </div>
 
@@ -179,7 +179,7 @@ export const DiabetesScreen: React.FC = () => {
           )}
 
           {/* Standard Management Recommendation Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
                 {isAr ? 'الخطة العلاجية الدوائية الموصى بها (ADA 2025)' : 'Pharmacotherapy Plan (ADA 2025)'}
@@ -192,7 +192,7 @@ export const DiabetesScreen: React.FC = () => {
             </div>
 
             <div className="text-xs leading-relaxed text-[var(--text)] space-y-2 mt-1">
-              <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+              <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <strong className="text-[var(--text)] block mb-0.5">
                   {isAr ? '1. حماية الأعضاء الحيوية (الكلى والقلب):' : '1. Cardiorenal Protection:'}
                 </strong>
@@ -207,7 +207,7 @@ export const DiabetesScreen: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+              <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <strong className="text-[var(--text)] block mb-0.5">
                   {isAr ? '2. الميتفورمين ووظائف الكلى:' : '2. Metformin Renal Guardrails:'}
                 </strong>
@@ -243,10 +243,10 @@ export const DiabetesScreen: React.FC = () => {
               return (
                 <div
                   key={drug.id}
-                  className={`p-3 rounded-xl border transition-all ${
+                  className={`p-3 rounded-xl border shadow-sm transition-all ${
                     isSelected
-                      ? 'bg-[var(--primary)]/10 border-[var(--primary)]/50'
-                      : 'bg-[var(--surface2)] border-[var(--line)]'
+                      ? 'bg-primary/10 border-primary/50'
+                      : 'bg-[var(--surface)] border-[var(--line)]'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -267,8 +267,8 @@ export const DiabetesScreen: React.FC = () => {
                       onClick={() => toggleMedication(drug.id)}
                       className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-transform active:scale-95 ${
                         isSelected
-                          ? 'bg-[var(--primary)] text-white'
-                          : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--line)]'
+                          ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                          : 'bg-[var(--surface2)] text-[var(--text)] border border-[var(--line)]'
                       }`}
                     >
                       {isSelected ? (isAr ? 'مضاف ✓' : 'Added ✓') : (isAr ? '+ إضافة' : '+ Add')}
@@ -276,7 +276,7 @@ export const DiabetesScreen: React.FC = () => {
                   </div>
 
                   {drug.renal && (
-                    <div className="mt-2 pt-2 border-t border-[var(--line)]/60 text-[10px] text-[var(--muted)] flex items-center gap-1.5">
+                    <div className="mt-2 pt-2 border-t border-line/60 text-[10px] text-[var(--muted)] flex items-center gap-1.5">
                       <span>⚠️</span>
                       <span>{isAr ? drug.renal.ruleAr : drug.renal.ruleEn}</span>
                     </div>
@@ -291,7 +291,7 @@ export const DiabetesScreen: React.FC = () => {
       {/* 4. INSULIN TAB */}
       {subTab === 'insulin' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
               {isAr ? 'حاسبة بدء ومعايرة الإنسولين' : 'Insulin Initiation Calculator'}
             </h4>
@@ -329,7 +329,7 @@ export const DiabetesScreen: React.FC = () => {
 
           {/* Dosing Results Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] text-center">
+            <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] text-center">
               <span className="text-[10px] uppercase font-bold text-[var(--muted)] block mb-1">
                 {isAr ? 'جرعة البدء القاعدية' : 'Start Basal'}
               </span>
@@ -342,7 +342,7 @@ export const DiabetesScreen: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] text-center">
+            <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] text-center">
               <span className="text-[10px] uppercase font-bold text-[var(--muted)] block mb-1">
                 {isAr ? 'إجمالي الجرعة المقدرة' : 'Est. TDD'}
               </span>
@@ -369,18 +369,18 @@ export const DiabetesScreen: React.FC = () => {
 
           <div className="flex flex-col gap-3">
             {screeningList.map((grp, gIdx) => (
-              <div key={gIdx} className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+              <div key={gIdx} className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
                 <h5 className="text-xs font-bold text-[var(--primary)] mb-2 uppercase tracking-wide">
                   {grp.group}
                 </h5>
                 <div className="flex flex-col gap-2">
                   {grp.items.map((item: any, iIdx: number) => (
-                    <div key={iIdx} className="flex justify-between items-start text-xs border-b border-[var(--line)]/50 pb-2 last:border-0 last:pb-0">
+                    <div key={iIdx} className="flex justify-between items-start text-xs border-b border-line/50 pb-2 last:border-0 last:pb-0">
                       <div>
                         <strong className="text-[var(--text)] block">{item.test}</strong>
                         <span className="text-[11px] text-[var(--muted)]">{item.why}</span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--text)] shrink-0">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-[var(--text)] shrink-0">
                         {item.frequency}
                       </span>
                     </div>

@@ -1,3 +1,5 @@
+import { toMgDl } from './lipids';
+
 /**
  * ACC/AHA 10-Year ASCVD Risk Estimator
  * Based on the 2013/2018/2019 ACC/AHA Prevention Guidelines
@@ -12,8 +14,9 @@ export interface AscvdInput {
   age: number; // 40 - 79
   sex: AscvdSex;
   race: AscvdRace;
-  tc: number; // Total Cholesterol in mg/dL (130 - 320)
-  hdl: number; // HDL Cholesterol in mg/dL (20 - 100)
+  tc: number; // Total Cholesterol in mg/dL (130 - 320) or mmol/L if lipidUnit='mmol'
+  hdl: number; // HDL Cholesterol in mg/dL (20 - 100) or mmol/L if lipidUnit='mmol'
+  lipidUnit?: 'mg' | 'mmol' | 'mmol/L';
   sbp: number; // Systolic BP in mmHg (90 - 200)
   treatedBp: boolean;
   smoker: boolean;
@@ -31,14 +34,19 @@ export interface AscvdResult {
     detailsEn: string;
   };
   warning?: string;
+  warningEn?: string;
+  warningAr?: string;
 }
 
 export function calculate10YrAscvdRisk(input: AscvdInput): AscvdResult {
   // Clamp variables within physiological Pooled Cohort Equations limits for numerical stability
   const rawAge = Number(input.age) || 50;
   const age = Math.min(79, Math.max(40, rawAge));
-  const tc = Math.min(320, Math.max(130, Number(input.tc) || 200));
-  const hdl = Math.min(100, Math.max(20, Number(input.hdl) || 50));
+  const isMmol = input.lipidUnit === 'mmol' || input.lipidUnit === 'mmol/L';
+  const rawTc = isMmol ? toMgDl(Number(input.tc) || 0, 'cholesterol') : (Number(input.tc) || 200);
+  const rawHdl = isMmol ? toMgDl(Number(input.hdl) || 0, 'cholesterol') : (Number(input.hdl) || 50);
+  const tc = Math.min(320, Math.max(130, rawTc || 200));
+  const hdl = Math.min(100, Math.max(20, rawHdl || 50));
   const sbp = Math.min(200, Math.max(90, Number(input.sbp) || 120));
 
   const lnAge = Math.log(age);
@@ -109,7 +117,7 @@ export function calculate10YrAscvdRisk(input: AscvdInput): AscvdResult {
         3.114 * lnAge * lnTc -
         13.578 * lnHdl +
         3.149 * lnAge * lnHdl +
-        (isTreated ? 2.019 * lnSbp : 1.857 * lnSbp) +
+        (isTreated ? 2.019 * lnSbp : 1.957 * lnSbp) +
         (isSmoker ? 7.574 - 1.665 * lnAge : 0) +
         (hasDm ? 0.661 : 0);
     }
@@ -157,10 +165,16 @@ export function calculate10YrAscvdRisk(input: AscvdInput): AscvdResult {
   }
 
   let warning: string | undefined;
+  let warningEn: string | undefined;
+  let warningAr: string | undefined;
   if (rawAge < 40 || rawAge > 79) {
-    warning = rawAge < 40 
+    warningAr = rawAge < 40
       ? 'العمر أقل من 40 سنة (خارج النطاق المعتمد لمعادلة PCE 40-79). الحساب تقريبي استرشادي.'
       : 'العمر أكبر من 79 سنة (خارج النطاق المعتمد لمعادلة PCE 40-79). الحساب تقريبي استرشادي.';
+    warningEn = rawAge < 40
+      ? 'Age is below 40 years (outside validated PCE 40–79 range). Risk estimate is approximate.'
+      : 'Age is above 79 years (outside validated PCE 40–79 range). Risk estimate is approximate.';
+    warning = warningAr;
   }
 
   return {
@@ -174,5 +188,7 @@ export function calculate10YrAscvdRisk(input: AscvdInput): AscvdResult {
       detailsEn,
     },
     warning,
+    warningEn,
+    warningAr,
   };
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateAsthmaGina, evaluateCopdGold, evaluateThyroid, evaluatePrimaryCare } from '../src/engines/primaryCare';
+import { DEFAULT_PATIENT } from '../src/store/usePatientStore';
 
 describe('Primary Care Engine (Cases 6, 7, 8, 18)', () => {
   describe('Case 6: Asthma GINA & SABA Overuse', () => {
@@ -153,6 +154,74 @@ describe('Primary Care Engine (Cases 6, 7, 8, 18)', () => {
       expect(pc.asthma).toBeDefined();
       expect(pc.copd).toBeDefined();
       expect(pc.thyroid).toBeDefined();
+    });
+  });
+
+  describe('M1 Thyroid Central Hypo, Discordant Patterns, TSH >= 10 & Alert Gating', () => {
+    it('detects central hypothyroidism (low TSH + low FT4) and requires cortisol check before LT4', () => {
+      const res = evaluateThyroid({ tsh: 0.1, ft4: 0.5 });
+      expect(res.status).toBe('central_hypo');
+      const alert = res.alerts.find((a: any) => a.id === 'thyroid-central-hypo');
+      expect(alert).toBeDefined();
+      expect(alert.level).toBe('critical');
+      expect(alert.messageEn.toLowerCase()).toContain('cortisol');
+    });
+
+    it('detects discordant thyroid panels (high TSH + high FT4, and normal TSH + abnormal FT4)', () => {
+      const bothHigh = evaluateThyroid({ tsh: 8.5, ft4: 2.4 });
+      expect(bothHigh.status).toBe('discordant_high_both');
+      expect(bothHigh.alerts.some((a: any) => a.level === 'warning')).toBe(true);
+
+      const normHighFt4 = evaluateThyroid({ tsh: 2.0, ft4: 2.3 });
+      expect(normHighFt4.status).toBe('discordant_high_ft4');
+      expect(normHighFt4.alerts.some((a: any) => a.level === 'warning')).toBe(true);
+
+      const normLowFt4 = evaluateThyroid({ tsh: 2.0, ft4: 0.5 });
+      expect(normLowFt4.status).toBe('discordant_low_ft4');
+      expect(normLowFt4.alerts.some((a: any) => a.level === 'warning')).toBe(true);
+    });
+
+    it('recommends Levothyroxine initiation and cites TSH >= 10 when subclinical_hypo has TSH >= 10', () => {
+      const res = evaluateThyroid({ tsh: 12.0, ft4: 1.1, wt: 70 });
+      expect(res.status).toBe('subclinical_hypo');
+      expect(res.rxEn).toContain('10');
+      expect(res.rxEn).not.toContain('4.5–9.9');
+      expect(res.recommendedDose).toBeGreaterThan(0);
+    });
+
+    it('gates asthma/COPD alerts cleanly when asthma=false and copd=false', () => {
+      const pcDefault = evaluatePrimaryCare(DEFAULT_PATIENT);
+      expect(pcDefault.allAlerts).toEqual([]);
+
+      const pcDisabled = evaluatePrimaryCare({
+        ...DEFAULT_PATIENT,
+        asthma: false,
+        copd: false,
+        asthmaRelieverPerWk: 5,
+        copdEosinophils: 40
+      });
+      expect(pcDisabled.allAlerts).toEqual([]);
+    });
+
+    it('recognizes PatientState aliases (asthmaDaySymptoms, asthmaSabaCanistersYr, copdHospitalizations, thyroidTrimester)', () => {
+      const asthmaRes = evaluateAsthmaGina({
+        asthmaDaySymptoms: 4,
+        asthmaNightWaking: true,
+        asthmaActivityLimit: true,
+        asthmaSabaCanistersYr: 4
+      });
+      expect(asthmaRes.controlLevel).toBe('uncontrolled');
+      expect(asthmaRes.alerts.some((a: any) => a.id === 'asthma-saba-overuse')).toBe(true);
+      expect(asthmaRes.recommendationEn).toBeTruthy();
+      expect(asthmaRes.recommendationAr).toBeTruthy();
+
+      const copdRes = evaluateCopdGold({ copdHospitalizations: 1, copdEosinophils: 350 });
+      expect(copdRes.group).toBe('E');
+      expect(copdRes.recommendationEn).toBeTruthy();
+      expect(copdRes.recommendationAr).toBeTruthy();
+
+      const pregThyroid = evaluateThyroid({ tsh: 3.1, ft4: 1.1, pregnancy: true, thyroidTrimester: 1 });
+      expect(pregThyroid.pregTshTarget).toBe(2.5);
     });
   });
 });

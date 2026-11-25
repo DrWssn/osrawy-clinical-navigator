@@ -243,23 +243,26 @@ export function calculateFib4(arg1: any, arg2?: any, arg3?: any, arg4?: any): an
 export function evaluateDoacDosing(patientInput: any): any {
   const pt = patientInput || {};
   const age = parseFloat(String(pt.age)) || 0;
-  const wt = parseFloat(String(pt.weightKg || pt.wt || pt.weight)) || 0;
-  const scrVal = parseFloat(String(pt.creatinineMgDl || pt.scr || pt.creatinine || pt.scrMg)) || 0;
-  const unit = pt.scrUnit || pt.unit || 'mg';
-  const scrMg = (unit === 'umol') ? (scrVal / 88.4) : scrVal;
+  const wtRaw = pt.weightKg ?? pt.wt ?? pt.weight;
+  const wt = wtRaw !== undefined && wtRaw !== null && wtRaw !== '' ? parseFloat(String(wtRaw)) || 0 : 0;
+  const scrRaw = pt.creatinineMgDl ?? pt.scr ?? pt.creatinine ?? pt.scrMg;
+  const scrVal = scrRaw !== undefined && scrRaw !== null && scrRaw !== '' ? parseFloat(String(scrRaw)) || 0 : 0;
+  const unit = pt.scrUnit ?? pt.unit ?? 'mg';
+  const scrMgRaw = (unit === 'umol') ? (scrVal / 88.4) : scrVal;
+  const scrMg = Math.round(scrMgRaw * 100) / 100;
   const sexRaw = String(pt.sex || pt.gender || 'm').toLowerCase();
   const sex = (sexRaw === 'f' || sexRaw === 'female') ? 'f' : 'm';
 
   let crcl = parseFloat(String(pt.crcl));
   if (isNaN(crcl) || crcl <= 0) {
-    const calc = calculateCrCl(age, wt, scrMg, sex);
+    const calc = calculateCrCl(age, wt, scrMgRaw, sex);
     crcl = calc ? calc.crcl : 0;
   }
 
   // Apixaban (Eliquis)
   const critAge = (age >= 80);
   const critWeight = (wt > 0 && wt <= 60);
-  const critScr = (scrMg >= 1.5);
+  const critScr = (scrMgRaw >= 1.5);
   const criteriaCount = (critAge ? 1 : 0) + (critWeight ? 1 : 0) + (critScr ? 1 : 0);
   const meets2of3 = (criteriaCount >= 2);
 
@@ -371,6 +374,7 @@ export function evaluateDoacDosing(patientInput: any): any {
 
   return {
     crcl,
+    scrMg,
     apixabanEn,
     apixabanAr,
     rivaroxabanEn,

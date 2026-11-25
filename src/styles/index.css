@@ -3,14 +3,192 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --app-primary: #0A4F4B;
+  /* ==========================================================================
+     Osrawy Clinical Navigator — Semantic 3-Palette Design System
+     Default Palette: sapphire | Options: sapphire, teal, navy
+     Themes: light (default) | dark ([data-theme="dark"])
+     ========================================================================== */
+
+  :root,
+  :root[data-palette="sapphire"] {
+    color-scheme: light;
+
+    /* RGB Channels (for Tailwind alpha modifiers like bg-primary/15) */
+    --bg-rgb: 241 245 249;        /* #F1F5F9 Cool Alabaster Canvas */
+    --surface-rgb: 255 255 255;   /* #FFFFFF Elevated Card & Bar */
+    --surface2-rgb: 235 241 248;  /* #EBF1F8 Recessed Well */
+    --input-bg-rgb: 248 250 252;  /* #F8FAFC Input Field */
+    --text-rgb: 15 23 42;         /* #0F172A Primary Ink */
+    --muted-rgb: 71 85 105;       /* #475569 Secondary Ink */
+    --line-rgb: 203 213 225;      /* #CBD5E1 Hairline Border */
+    --primary-rgb: 29 78 216;     /* #1D4ED8 Clinical Sapphire */
+
+    /* Resolved Tokens */
+    --bg: rgb(var(--bg-rgb));
+    --surface: rgb(var(--surface-rgb));
+    --surface2: rgb(var(--surface2-rgb));
+    --input-bg: rgb(var(--input-bg-rgb));
+    --text: rgb(var(--text-rgb));
+    --muted: rgb(var(--muted-rgb));
+    --line: rgb(var(--line-rgb));
+    --primary: rgb(var(--primary-rgb));
+    --primary-hover: #1E40AF;
+    --primary-soft: #DBEAFE;
+    --on-primary: #FFFFFF;
+
+    /* TopBar Brand Header (harmonizes with Android system bar) */
+    --topbar-bg: #1E3A8A;
+    --topbar-text: #FFFFFF;
+    --topbar-muted: #BFDBFE;
+    --topbar-border: #1E40AF;
+
+    /* Legacy Aliases */
+    --app-primary: var(--primary);
+    --app-primary-dark: #1E3A8A;
+    --brand-teal: var(--primary);
+
+    /* Clinical Status Tokens */
+    --danger-bg: #FEF2F2;
+    --danger-border: #FCA5A5;
+    --danger-text: #991B1B;
+    --warn-bg: #FFFBEB;
+    --warn-border: #FCD34D;
+    --warn-text: #92400E;
+    --safe-bg: #ECFDF5;
+    --safe-border: #A7F3D0;
+    --safe-text: #065F46;
+    --info-bg: #F0F9FF;
+    --info-border: #7DD3FC;
+    --info-text: #075985;
+  }
+
+  :root[data-palette="teal"] {
+    color-scheme: light;
+    --bg-rgb: 242 247 246;        /* #F2F7F6 Clinical Mist */
+    --surface-rgb: 255 255 255;   /* #FFFFFF */
+    --surface2-rgb: 233 242 240;  /* #E9F2F0 */
+    --input-bg-rgb: 247 251 250;  /* #F7FBFA */
+    --text-rgb: 15 43 42;         /* #0F2B2A */
+    --muted-rgb: 75 104 101;      /* #4B6865 */
+    --line-rgb: 205 224 220;      /* #CDE0DC */
+    --primary-rgb: 13 122 114;    /* #0D7A72 Refined Medical Teal */
+
+    --primary-hover: #0A5F58;
+    --primary-soft: #CCFBF1;
+    --on-primary: #FFFFFF;
+
+    --topbar-bg: #0A4F4B;
+    --topbar-text: #FFFFFF;
+    --topbar-muted: #99F6E4;
+    --topbar-border: #0E6660;
     --app-primary-dark: #062E2B;
-    --brand-teal: #0A4F4B;
+  }
+
+  :root[data-palette="navy"] {
+    color-scheme: light;
+    --bg-rgb: 244 246 249;        /* #F4F6F9 Crisp Paper */
+    --surface-rgb: 255 255 255;   /* #FFFFFF */
+    --surface2-rgb: 236 241 247;  /* #ECF1F7 */
+    --input-bg-rgb: 248 250 252;  /* #F8FAFC */
+    --text-rgb: 15 23 42;         /* #0F172A */
+    --muted-rgb: 71 85 105;       /* #475569 */
+    --line-rgb: 203 213 225;      /* #CBD5E1 */
+    --primary-rgb: 2 132 199;     /* #0284C7 Clinical Sky Cyan */
+
+    --primary-hover: #0369A1;
+    --primary-soft: #E0F2FE;
+    --on-primary: #FFFFFF;
+
+    --topbar-bg: #0F172A;
+    --topbar-text: #FFFFFF;
+    --topbar-muted: #94A3B8;
+    --topbar-border: #1E293B;
+    --app-primary-dark: #0F172A;
+  }
+
+  /* ==========================================================================
+     DARK MODE OVERRIDES
+     ========================================================================== */
+  :root[data-theme="dark"],
+  :root[data-theme="dark"][data-palette="sapphire"],
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg-rgb: 11 17 32;           /* #0B1120 Deep Midnight Slate */
+    --surface-rgb: 19 28 46;      /* #131C2E Elevated Dark Card */
+    --surface2-rgb: 27 38 59;     /* #1B263B Recessed Well */
+    --input-bg-rgb: 15 23 42;     /* #0F172A Dark Input Well */
+    --text-rgb: 241 245 249;      /* #F1F5F9 Primary Ink */
+    --muted-rgb: 148 163 184;     /* #94A3B8 Muted Ink */
+    --line-rgb: 42 57 80;         /* #2A3950 Border */
+    --primary-rgb: 59 130 246;    /* #3B82F6 Luminous Sapphire */
+
+    --primary-hover: #60A5FA;
+    --primary-soft: rgba(59, 130, 246, 0.16);
+    --on-primary: #FFFFFF;
+
+    --topbar-bg: #111A2E;
+    --topbar-text: #F1F5F9;
+    --topbar-muted: #94A3B8;
+    --topbar-border: #24334D;
+
+    --danger-bg: rgba(220, 38, 38, 0.16);
+    --danger-border: rgba(248, 113, 113, 0.38);
+    --danger-text: #FCA5A5;
+    --warn-bg: rgba(217, 119, 6, 0.16);
+    --warn-border: rgba(251, 191, 36, 0.35);
+    --warn-text: #FDE68A;
+    --safe-bg: rgba(16, 185, 129, 0.16);
+    --safe-border: rgba(52, 211, 153, 0.35);
+    --safe-text: #6EE7B7;
+    --info-bg: rgba(14, 165, 233, 0.16);
+    --info-border: rgba(56, 189, 248, 0.35);
+    --info-text: #7DD3FC;
+  }
+
+  :root[data-theme="dark"][data-palette="teal"] {
+    --bg-rgb: 9 19 19;            /* #091313 Deep Obsidian Teal */
+    --surface-rgb: 16 32 31;      /* #10201F */
+    --surface2-rgb: 24 44 43;     /* #182C2B */
+    --input-bg-rgb: 12 24 23;     /* #0C1817 */
+    --text-rgb: 229 243 240;      /* #E5F3F0 */
+    --muted-rgb: 142 175 170;     /* #8EAFAA */
+    --line-rgb: 36 64 60;         /* #24403C */
+    --primary-rgb: 45 212 191;    /* #2DD4BF Bright Clinical Teal */
+
+    --primary-hover: #5EEAD4;
+    --primary-soft: rgba(45, 212, 191, 0.16);
+    --on-primary: #062825;
+
+    --topbar-bg: #0D1D1C;
+    --topbar-text: #E5F3F0;
+    --topbar-muted: #8EAFAA;
+    --topbar-border: #203A37;
+  }
+
+  :root[data-theme="dark"][data-palette="navy"] {
+    --bg-rgb: 9 13 22;            /* #090D16 OLED Slate */
+    --surface-rgb: 17 24 39;      /* #111827 */
+    --surface2-rgb: 30 41 59;     /* #1E293B */
+    --input-bg-rgb: 15 23 42;     /* #0F172A */
+    --text-rgb: 248 250 252;      /* #F8FAFC */
+    --muted-rgb: 148 163 184;     /* #94A3B8 */
+    --line-rgb: 51 65 85;         /* #334155 */
+    --primary-rgb: 56 189 248;    /* #38BDF8 Bright Sky Cyan */
+
+    --primary-hover: #7DD3FC;
+    --primary-soft: rgba(56, 189, 248, 0.16);
+    --on-primary: #082032;
+
+    --topbar-bg: #0F172A;
+    --topbar-text: #F8FAFC;
+    --topbar-muted: #94A3B8;
+    --topbar-border: #1E293B;
   }
 
   body {
     font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
@@ -19,5 +197,66 @@
   input, textarea, select {
     user-select: text;
     -webkit-user-select: text;
+  }
+}
+
+.qr-svg-box {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+.qr-svg-box svg {
+  color: #0F172A !important;
+}
+
+@keyframes osrawy-enter {
+  from {
+    opacity: var(--osrawy-enter-opacity, 1);
+    transform: translate3d(0, var(--osrawy-enter-y, 0), 0) scale(var(--osrawy-enter-scale, 1));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-in {
+    animation: osrawy-enter var(--osrawy-dur, 150ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .fade-in {
+    --osrawy-enter-opacity: 0;
+  }
+
+  .zoom-in-95 {
+    --osrawy-enter-scale: 0.95;
+  }
+
+  .slide-in-from-bottom {
+    --osrawy-enter-y: 16px;
+  }
+
+  .duration-150 {
+    --osrawy-dur: 150ms;
+  }
+
+  .duration-200 {
+    --osrawy-dur: 200ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none !important;
   }
 }

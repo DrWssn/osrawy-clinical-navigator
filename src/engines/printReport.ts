@@ -6,10 +6,10 @@
 
 import { PatientState } from '../store/usePatientStore';
 import { DoctorSettings, loadSettings } from './exporters';
-import { FORMULARY_CATALOG, FormularyDrug } from '../data/formulary';
+import { getDrugById } from '../data/formulary';
 import { calculateBMI } from './calculators';
 import { getDynamicTargets } from './leaflets';
-import { generateSVG } from './qr';
+import { generateSVG, buildOfflinePatientQrPayload } from './qr';
 
 export function generatePrintableHtml(
   patient: PatientState,
@@ -29,8 +29,7 @@ export function generatePrintableHtml(
 
   // Resolve Active Medications from Formulary
   const resolvedMeds = (patient.activeMeds || []).map((medId) => {
-    const clean = medId.toLowerCase().trim();
-    const found = FORMULARY_CATALOG.find((f: FormularyDrug) => f.id.toLowerCase() === clean);
+    const found = getDrugById(medId);
     if (found) {
       return {
         id: found.id,
@@ -62,7 +61,7 @@ export function generatePrintableHtml(
   if (diagnoses.length === 0) diagnoses.push(isAr ? 'استشارة طبية وفحص دوري' : 'Routine Clinical Consultation');
 
   // QR code content for offline leaflets
-  const qrSummary = `Osrawy Rx | Pt: ${patient.name || 'Pt'} | BP: ${patient.sbp}/${patient.dbp} | A1c: ${patient.a1c}% | eGFR: ${patient.egfr} | Meds: ${(patient.activeMeds || []).join(', ')}`;
+  const qrSummary = buildOfflinePatientQrPayload(patient, targets);
   const qrSvg = generateSVG(qrSummary, { size: 90, margin: 2, darkColor: '#0f172a', lightColor: '#ffffff' });
 
   return `<!DOCTYPE html>
@@ -254,7 +253,7 @@ export function generatePrintableHtml(
     </div>
     <div class="header-right">
       <div><strong>${isAr ? 'التاريخ:' : 'Date:'}</strong> ${dateStr}</div>
-      <div><strong>Osrawy Clinical Navigator</strong> · v2.0</div>
+      <div><strong>Osrawy Clinical Navigator</strong> · v2.1.0</div>
     </div>
   </div>
 
@@ -291,7 +290,7 @@ export function generatePrintableHtml(
       <div class="vital-val">${patient.egfr}</div>
     </div>
     <div class="vital-box">
-      <div class="vital-label">K+ (البوتاسيوم)</div>
+      <div class="vital-label">${isAr ? 'K+ (البوتاسيوم)' : 'Serum K+'}</div>
       <div class="vital-val">${patient.k}</div>
     </div>
     <div class="vital-box">
@@ -345,7 +344,7 @@ export function generatePrintableHtml(
   <div class="targets-box">
     <div><strong>${isAr ? 'الهدف العلاجي للضغط:' : 'Target BP:'}</strong> ${targets.htn.targetBp}</div>
     <div><strong>${isAr ? 'الهدف العلاجي للتراكمي:' : 'Target A1c:'}</strong> ${targets.dm.targetA1c}</div>
-    <div><strong>${isAr ? 'الهدف العلاجي للكوليسترول:' : 'Target LDL:'}</strong> &lt; ${targets.dlp.targetLdl} mg/dL</div>
+    <div><strong>${isAr ? 'الهدف العلاجي للكوليسترول:' : 'Target LDL:'}</strong> ${targets.dlp.targetLdl}</div>
   </div>
 
   <div class="footer">
@@ -392,6 +391,11 @@ export function printClinicalReport(
 
   const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
   if (!iframeDoc) {
+    const androidPrint = (window as unknown as { AndroidPrint?: { print?: () => void } }).AndroidPrint;
+    if (androidPrint && typeof androidPrint.print === 'function') {
+      androidPrint.print();
+      return;
+    }
     window.print();
     return;
   }
@@ -402,6 +406,11 @@ export function printClinicalReport(
 
   // Allow styles and SVG to layout before calling print
   setTimeout(() => {
+    const androidPrint = (window as unknown as { AndroidPrint?: { print?: () => void } }).AndroidPrint;
+    if (androidPrint && typeof androidPrint.print === 'function') {
+      androidPrint.print();
+      return;
+    }
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();

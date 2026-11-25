@@ -29,7 +29,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
 }) => {
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1">
         <label className="text-[11px] font-semibold text-[var(--muted)] truncate uppercase tracking-wider">
           {label}
         </label>
@@ -38,7 +38,7 @@ export const NumericField: React.FC<NumericFieldProps> = ({
             type="button"
             onClick={onAction}
             title={actionTitle}
-            className="p-0.5 text-[var(--primary)] hover:opacity-80 active:scale-95 transition-transform"
+            className="p-0.5 text-[var(--primary)] hover:opacity-80 active:scale-95 transition-transform shrink-0"
           >
             {actionIcon}
           </button>
@@ -48,18 +48,20 @@ export const NumericField: React.FC<NumericFieldProps> = ({
       <div className="relative flex items-center">
         <input
           type="number"
+          dir="ltr"
+          inputMode="decimal"
           min={min}
           max={max}
           step={step}
-          value={value === 0 ? '' : value}
+          value={value === '' || value === undefined || value === null ? '' : value}
           onChange={(e) => {
             const val = parseFloat(e.target.value);
             onChange(isNaN(val) ? 0 : val);
           }}
-          className="w-full h-10 px-3 bg-[var(--surface2)] text-[var(--text)] font-mono text-sm rounded-lg border border-[var(--line)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
+          className={`w-full h-10 px-3 ${unit ? 'pe-14' : ''} bg-[var(--input-bg)] text-[var(--text)] font-mono tabular-nums text-sm rounded-lg border border-[var(--line)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all`}
         />
         {unit && (
-          <span className="absolute end-2.5 text-[11px] font-medium text-[var(--muted)] pointer-events-none select-none">
+          <span className="absolute end-2.5 text-[10px] font-medium text-[var(--muted)] pointer-events-none select-none">
             {unit}
           </span>
         )}

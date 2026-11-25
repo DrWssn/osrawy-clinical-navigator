@@ -1,4 +1,7 @@
+import { getDynamicTargets } from './leaflets';
+
 const SIZE = 41; // Version 6 matrix dimension = 21 + (6-1)*4 = 41
+export const QR_MAX_UTF8_BYTES = 134;
 
 const gfExp = new Uint8Array(512);
 const gfLog = new Uint8Array(256);
@@ -256,8 +259,144 @@ export function generateSVG(text: string, options?: { size?: number; margin?: nu
 </svg>`;
 }
 
+export function getUtf8ByteLength(str: string): number {
+  const s = String(str || '');
+  let len = 0;
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    if (code < 0x80) len += 1;
+    else if (code < 0x800) len += 2;
+    else if (code < 0xd800 || code >= 0xe000) len += 3;
+    else {
+      i++;
+      len += 4;
+    }
+  }
+  return len;
+}
+
+const MED_SHORT_CODES: Record<string, string> = {
+  metformin: 'MET',
+  empagliflozin: 'EMPA',
+  dapagliflozin: 'DAPA',
+  semaglutide: 'SEMA',
+  tirzepatide: 'TIRZ',
+  sitagliptin: 'SITA',
+  gliclazide: 'GLIC',
+  glimepiride: 'GLIM',
+  insulin_glargine: 'GLAR',
+  insulin: 'INS',
+  perindopril: 'PER',
+  ramipril: 'RAM',
+  lisinopril: 'LIS',
+  enalapril: 'ENA',
+  valsartan: 'VAL',
+  losartan: 'LOS',
+  telmisartan: 'TEL',
+  sacubitril_valsartan: 'ARNI',
+  amlodipine: 'AML',
+  indapamide: 'IND',
+  bisoprolol: 'BIS',
+  spironolactone: 'SPIR',
+  labetalol: 'LAB',
+  nifedipine_er: 'NIF',
+  methyldopa: 'MDOPA',
+  atorvastatin: 'ATOR',
+  rosuvastatin: 'ROSU',
+  simvastatin: 'SIMV',
+  ezetimibe: 'EZE',
+  fenofibrate: 'FENO',
+  evolocumab: 'EVOL',
+  budesonide_formoterol: 'BUD/F',
+  salbutamol: 'SALB',
+  tiotropium: 'TIO',
+  levothyroxine: 'LT4',
+  carbimazole: 'CARB',
+  propranolol: 'PROP',
+  apixaban: 'APIX',
+  rivaroxaban: 'RIVA'
+};
+
+function sanitizeAsciiTag(name: string): string {
+  const cleaned = String(name || '')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/[|:,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return 'PT';
+  const parts = cleaned.split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0].slice(0, 8)} ${parts[1][0].toUpperCase()}.`.slice(0, 14);
+  }
+  return parts[0].slice(0, 12);
+}
+
+export function buildOfflinePatientQrPayload(pt?: any, targetsInput?: any): string {
+  const p = pt || {};
+  const targets = targetsInput || getDynamicTargets(p);
+
+  const sbp = p.sbp ?? 148;
+  const dbp = p.dbp ?? 94;
+  const a1c = p.a1c ?? '-';
+  const egfr = p.egfr ?? '-';
+  const k = p.k ?? '-';
+
+  const bpGoal = targets?.isElderlyOrFrail ? '<140/90' : '<130/80';
+  const a1cGoal = targets?.isElderlyOrFrail ? '<7.5%' : '<7.0%';
+  const ldlGoalNum = targets?.dlp?.ldlTargetMg ?? 70;
+
+  const flagsList: string[] = [];
+  if (p.pregnancy) flagsList.push('PREG');
+  if (p.frail) flagsList.push('FRAIL');
+  if (p.asthma) flagsList.push('ASTH');
+  if (p.copd) flagsList.push('COPD');
+  if (p.ascvd) flagsList.push('ASCVD');
+  const flagsStr = flagsList.length > 0 ? `|F:${flagsList.join(',')}` : '';
+
+  const rawMeds: string[] = Array.isArray(p.activeMeds)
+    ? p.activeMeds
+    : Array.isArray(p.meds)
+      ? p.meds
+      : Array.isArray(p.medications)
+        ? p.medications
+        : [];
+  const medCodes = rawMeds.map(m => {
+    const clean = String(m || '').trim().toLowerCase();
+    return MED_SHORT_CODES[clean] || clean.replace(/[^a-z0-9]/gi, '').slice(0, 5).toUpperCase();
+  }).filter(Boolean);
+
+  let ptTag = sanitizeAsciiTag(p.name || 'Pt');
+  const buildCore = (tag: string, rx: string) =>
+    `OSRAWY|${tag}|BP:${sbp}/${dbp}(${bpGoal})|A1c:${a1c}%(${a1cGoal})|LDL<${ldlGoalNum}|eGFR:${egfr}|K:${k}${flagsStr}|Rx:${rx}`;
+
+  // Try fitting all med codes, progressively trimming trailing codes if needed
+  for (let count = medCodes.length; count >= 0; count--) {
+    const remaining = medCodes.length - count;
+    const rxStr = medCodes.length === 0
+      ? 'NONE'
+      : count === medCodes.length
+        ? medCodes.join(',')
+        : count === 0
+          ? `+${remaining}`
+          : `${medCodes.slice(0, count).join(',')}+${remaining}`;
+    const candidate = buildCore(ptTag, rxStr);
+    if (getUtf8ByteLength(candidate) <= QR_MAX_UTF8_BYTES) {
+      return candidate;
+    }
+  }
+
+  // Fallback: shorten patient tag & flags if still over 134 bytes
+  ptTag = 'PT';
+  const compact = `OSRAWY|${ptTag}|BP:${sbp}/${dbp}|A1c:${a1c}%|LDL<${ldlGoalNum}|eGFR:${egfr}|K:${k}|Rx:${medCodes.slice(0, 3).join(',') || 'NONE'}`;
+  if (getUtf8ByteLength(compact) <= QR_MAX_UTF8_BYTES) return compact;
+
+  return compact.slice(0, QR_MAX_UTF8_BYTES);
+}
+
 export const OsrawyQRCode = {
   SIZE,
+  MAX_BYTES: QR_MAX_UTF8_BYTES,
   createMatrix: createQrMatrix,
-  generateSVG
+  generateSVG,
+  buildOfflinePatientQrPayload
 };

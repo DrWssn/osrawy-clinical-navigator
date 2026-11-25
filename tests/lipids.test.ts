@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { stratifyRisk, evaluateLipidPathway } from '../src/engines/lipids';
+import { stratifyRisk, evaluateLipidPathway, estimate10YrAscvdRisk } from '../src/engines/lipids';
+import { DEFAULT_PATIENT } from '../src/store/usePatientStore';
 
 describe('Lipids Engine (Cases 4 & 5)', () => {
   describe('Case 4: Very High Risk ASCVD & Pathway Escalations', () => {
@@ -116,6 +117,64 @@ describe('Lipids Engine (Cases 4 & 5)', () => {
                            JSON.stringify(lipidRes).includes('حمل') ||
                            JSON.stringify(lipidRes).toLowerCase().includes('contraindicat');
       expect(statinContra).toBe(true);
+    });
+  });
+
+  describe('M1 Lipids Normalization, Treated-BP Detection & Zero-Guard', () => {
+    it('emits normalized bilingual alert objects with severity, msgEn/msgAr, sourceEngine, and removeMedId', () => {
+      const res = evaluateLipidPathway({
+        activeMeds: ['amlodipine', 'simvastatin'],
+        egfr: 70
+      });
+      expect(res.alerts.length).toBeGreaterThanOrEqual(1);
+      const alert = res.alerts[0];
+      expect(alert.severity).toBe('critical');
+      expect(alert.msgEn).toBe(alert.messageEn);
+      expect(alert.msgAr).toBe(alert.messageAr);
+      expect(alert.sourceEngine).toBe('lipids');
+      expect(alert.removeMedId).toBe('simvastatin');
+    });
+
+    it('emits zero alerts on DEFAULT_PATIENT', () => {
+      const res = evaluateLipidPathway(DEFAULT_PATIENT);
+      expect(res.alerts).toEqual([]);
+    });
+
+    it('detects treatedBp and active HTN medications in estimate10YrAscvdRisk', () => {
+      const untreated = estimate10YrAscvdRisk({ age: 58, sex: 'm', tc: 210, hdl: 45, sbp: 150 });
+      const treatedFlag = estimate10YrAscvdRisk({ age: 58, sex: 'm', tc: 210, hdl: 45, sbp: 150, treatedBp: true });
+      const treatedMed = estimate10YrAscvdRisk({ age: 58, sex: 'm', tc: 210, hdl: 45, sbp: 150, activeMeds: ['ramipril'] });
+      expect(treatedFlag.riskPercent).toBeGreaterThan(untreated.riskPercent);
+      expect(treatedMed.riskPercent).toBe(treatedFlag.riskPercent);
+    });
+
+    it('guards against divide-by-zero when LDL is 0', () => {
+      const res = evaluateLipidPathway({ tc: 0, hdl: 0, ldlC: 0, triglycerides: 0 });
+      expect(Number.isNaN(res.gap.neededReductionPercent)).toBe(false);
+      expect(res.gap.neededReductionPercent).toBe(0);
+    });
+
+    it('respects explicit empty activeMeds: [] over stale medications and detects methyldopa in HTN_TOKENS', () => {
+      const noInteractionRes = evaluateLipidPathway({
+        activeMeds: [],
+        medications: ['amlodipine', 'simvastatin'],
+        egfr: 75
+      });
+      expect(noInteractionRes.alerts.some((a: any) => a.id === 'lipid-amlodipine-simvastatin-interaction')).toBe(false);
+
+      const untreated = estimate10YrAscvdRisk({ age: 58, sex: 'f', tc: 210, hdl: 45, sbp: 150 });
+      const treatedFlag = estimate10YrAscvdRisk({ age: 58, sex: 'f', tc: 210, hdl: 45, sbp: 150, treatedBp: true });
+      const methyldopaMed = estimate10YrAscvdRisk({ age: 58, sex: 'f', tc: 210, hdl: 45, sbp: 150, activeMeds: ['methyldopa'] });
+      expect(methyldopaMed.riskPercent).toBeGreaterThan(untreated.riskPercent);
+      expect(methyldopaMed.riskPercent).toBe(treatedFlag.riskPercent);
+    });
+
+    it('triggers Rosuvastatin renal cap when egfr is explicitly 0 while omitted egfr defaults to 90', () => {
+      const zeroEgfrRes = evaluateLipidPathway({ egfr: 0, activeMeds: ['rosuvastatin'] });
+      expect(zeroEgfrRes.alerts.some((a: any) => a.id === 'lipid-rosuvastatin-renal-cap')).toBe(true);
+
+      const omittedEgfrRes = evaluateLipidPathway({ activeMeds: ['rosuvastatin'] });
+      expect(omittedEgfrRes.alerts.some((a: any) => a.id === 'lipid-rosuvastatin-renal-cap')).toBe(false);
     });
   });
 });

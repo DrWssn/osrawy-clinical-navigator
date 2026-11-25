@@ -36,22 +36,22 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
     switch (level) {
       case 'critical':
         return {
-          wrapper: 'bg-red-500/10 border-red-500/40 text-red-900 dark:text-red-200',
-          icon: <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />,
-          btn: 'bg-red-600 hover:bg-red-700 text-white'
+          wrapper: 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)]',
+          icon: <AlertCircle className="w-5 h-5 text-[var(--danger-text)] shrink-0" />,
+          btn: 'bg-[#DC2626] hover:bg-[#B91C1C] text-white'
         };
       case 'warning':
         return {
-          wrapper: 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200',
-          icon: <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />,
-          btn: 'bg-amber-600 hover:bg-amber-700 text-white'
+          wrapper: 'bg-[var(--warn-bg)] border-[var(--warn-border)] text-[var(--warn-text)]',
+          icon: <AlertTriangle className="w-5 h-5 text-[var(--warn-text)] shrink-0" />,
+          btn: 'bg-[#D97706] hover:bg-[#B45309] text-white'
         };
       case 'info':
       default:
         return {
-          wrapper: 'bg-sky-500/10 border-sky-500/40 text-sky-900 dark:text-sky-200',
-          icon: <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" />,
-          btn: 'bg-sky-600 hover:bg-sky-700 text-white'
+          wrapper: 'bg-[var(--info-bg)] border-[var(--info-border)] text-[var(--info-text)]',
+          icon: <Info className="w-5 h-5 text-[var(--info-text)] shrink-0" />,
+          btn: 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)]'
         };
     }
   };
@@ -62,7 +62,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
     <div className={`flex flex-col gap-2 p-3 rounded-xl border text-xs sm:text-sm ${style.wrapper} ${className}`}>
       <div className="flex items-start gap-2.5">
         {style.icon}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h4 className="font-bold text-sm mb-0.5">{title}</h4>
           <p className="text-xs leading-relaxed opacity-90">{message}</p>
         </div>

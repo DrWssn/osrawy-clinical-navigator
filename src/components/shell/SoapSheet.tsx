@@ -23,9 +23,9 @@ export const SoapSheet: React.FC = () => {
 
   const handleCopy = async () => {
     try {
-      if (navigator?.clipboard?.writeText) {
+      if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(contentText);
-      } else {
+      } else if (typeof document !== 'undefined') {
         const textarea = document.createElement('textarea');
         textarea.value = contentText;
         document.body.appendChild(textarea);
@@ -41,6 +41,7 @@ export const SoapSheet: React.FC = () => {
   };
 
   const handleWhatsApp = () => {
+    if (typeof window === 'undefined') return;
     const url = buildWhatsAppShareUrl('', contentText);
     window.open(url, '_blank');
   };
@@ -75,28 +76,32 @@ export const SoapSheet: React.FC = () => {
             onClick={handleCopy}
             className={`flex-1 flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
               copied
-                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/40'
+                ? 'bg-[var(--safe-bg)] text-[var(--safe-text)] border-[var(--safe-border)]'
                 : 'bg-[var(--surface2)] text-[var(--text)] border-[var(--line)] hover:bg-[var(--surface)]'
             }`}
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-[var(--muted)]" />}
+            {copied ? (
+              <Check className="w-4 h-4 text-[var(--safe-text)]" />
+            ) : (
+              <Copy className="w-4 h-4 text-[var(--muted)]" />
+            )}
             <span>{copied ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ النص' : 'Copy')}</span>
           </button>
 
           <button
             type="button"
             onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold active:scale-95 transition-all shadow-sm"
+            className="flex-1 flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-semibold active:scale-95 transition-all shadow-sm"
           >
             <Share2 className="w-4 h-4" />
-            <span>WhatsApp</span>
+            <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
           </button>
 
           <button
             type="button"
             onClick={handlePrint}
             className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl border border-[var(--line)] bg-[var(--surface2)] text-[var(--text)] hover:bg-[var(--surface)] active:scale-95 transition-all text-xs font-semibold shrink-0"
-            title="Print A4 / PDF"
+            title={isAr ? 'طباعة A4 / PDF' : 'Print A4 / PDF'}
           >
             <Printer className="w-4 h-4 text-[var(--primary)]" />
             <span>{isAr ? 'طباعة A4' : 'Print A4'}</span>
@@ -105,7 +110,10 @@ export const SoapSheet: React.FC = () => {
 
         {/* Formatted Text Box */}
         <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] max-h-96 overflow-y-auto">
-          <pre className="text-xs font-mono leading-relaxed whitespace-pre-wrap text-[var(--text)] select-text">
+          <pre
+            dir={mode === 'soap' ? 'ltr' : (isAr ? 'rtl' : 'ltr')}
+            className="text-xs font-mono leading-relaxed whitespace-pre-wrap text-[var(--text)] select-text"
+          >
             {contentText}
           </pre>
         </div>

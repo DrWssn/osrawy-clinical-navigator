@@ -44,7 +44,7 @@ export const ToolsScreen: React.FC = () => {
       {/* 1. KDIGO MATRIX */}
       {subTab === 'kdigo' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label="eGFR"
               value={patient.egfr}
@@ -60,7 +60,7 @@ export const ToolsScreen: React.FC = () => {
           </div>
 
           {/* KDIGO Stage & Risk Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">
@@ -71,16 +71,16 @@ export const ToolsScreen: React.FC = () => {
                 </h4>
               </div>
               <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                kdigo.color === 'red' ? 'bg-red-500/15 text-red-600' :
-                kdigo.color === 'orange' ? 'bg-amber-500/15 text-amber-600' :
-                kdigo.color === 'yellow' ? 'bg-yellow-500/15 text-yellow-600' :
-                'bg-emerald-500/15 text-emerald-600'
+                kdigo.color === 'red' ? 'bg-red-500/15 text-red-700 dark:text-red-400' :
+                kdigo.color === 'orange' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                kdigo.color === 'yellow' ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-300' :
+                'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
                 {isAr ? kdigo.riskLabelAr : kdigo.riskLabelEn}
               </span>
             </div>
 
-            <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
+            <div className="p-3 rounded-lg bg-[var(--surface2)] border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
               <strong className="text-[var(--text)] block mb-1">
                 {isAr ? 'التوصية والمتابعة السريرية:' : 'Clinical Action & Surveillance:'}
               </strong>
@@ -100,7 +100,7 @@ export const ToolsScreen: React.FC = () => {
       {/* 2. FIB-4 LIVER FIBROSIS */}
       {subTab === 'fib4' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label="AST"
               value={ast}
@@ -122,7 +122,7 @@ export const ToolsScreen: React.FC = () => {
           </div>
 
           {fib4 && (
-            <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+            <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">
@@ -133,15 +133,15 @@ export const ToolsScreen: React.FC = () => {
                   </h4>
                 </div>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                  fib4.riskTier === 'HIGH' ? 'bg-red-500/15 text-red-600' :
-                  fib4.riskTier === 'INTERMEDIATE' ? 'bg-amber-500/15 text-amber-600' :
-                  'bg-emerald-500/15 text-emerald-600'
+                  fib4.riskTier === 'HIGH' ? 'bg-red-500/15 text-red-700 dark:text-red-400' :
+                  fib4.riskTier === 'INTERMEDIATE' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                  'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                 }`}>
                   {isAr ? fib4.riskLabelAr : fib4.riskLabelEn}
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
+              <div className="p-3 rounded-lg bg-[var(--surface2)] border border-[var(--line)] text-xs text-[var(--muted)] leading-relaxed">
                 <strong className="text-[var(--text)] block mb-1">
                   {isAr ? fib4.interpretationAr : fib4.interpretationEn}
                 </strong>
@@ -155,7 +155,7 @@ export const ToolsScreen: React.FC = () => {
       {/* 3. DOAC ANTICOAGULATION */}
       {subTab === 'doac' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex items-center justify-between">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--text)]">
               {isAr ? 'تصفية الكرياتينين المقدرة (CrCl):' : 'Calculated CrCl (Cockcroft-Gault):'}
             </span>
@@ -165,15 +165,15 @@ export const ToolsScreen: React.FC = () => {
           </div>
 
           {/* Apixaban Card */}
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-[var(--text)]">
                 {isAr ? doac.apixaban.drugAr : doac.apixaban.drug}
               </h4>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                doac.apixaban.contraindicated ? 'bg-red-500/15 text-red-600' :
-                doac.apixaban.reducedDose ? 'bg-amber-500/15 text-amber-600' :
-                'bg-emerald-500/15 text-emerald-600'
+                doac.apixaban.contraindicated ? 'bg-red-500/15 text-red-700 dark:text-red-400' :
+                doac.apixaban.reducedDose ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
                 {doac.apixaban.reducedDose ? 'Reduced Dose' : (doac.apixaban.contraindicated ? 'Contraindicated' : 'Standard Dose')}
               </span>
@@ -189,15 +189,15 @@ export const ToolsScreen: React.FC = () => {
           </div>
 
           {/* Rivaroxaban Card */}
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-[var(--text)]">
                 {isAr ? doac.rivaroxaban.drugAr : doac.rivaroxaban.drug}
               </h4>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                doac.rivaroxaban.contraindicated ? 'bg-red-500/15 text-red-600' :
-                doac.rivaroxaban.reducedDose ? 'bg-amber-500/15 text-amber-600' :
-                'bg-emerald-500/15 text-emerald-600'
+                doac.rivaroxaban.contraindicated ? 'bg-red-500/15 text-red-700 dark:text-red-400' :
+                doac.rivaroxaban.reducedDose ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
                 {doac.rivaroxaban.reducedDose ? 'Reduced Dose' : (doac.rivaroxaban.contraindicated ? 'Contraindicated' : 'Standard Dose')}
               </span>
@@ -217,7 +217,7 @@ export const ToolsScreen: React.FC = () => {
       {/* 4. STEROIDS EQUIVALENCE */}
       {subTab === 'steroids' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {isAr ? 'حاسبة التكافؤ بين مركبات الكورتيزون' : 'Steroid Equivalence Calculator'}
             </h4>
@@ -237,7 +237,7 @@ export const ToolsScreen: React.FC = () => {
                 <select
                   value={steroidDrug}
                   onChange={(e) => setSteroidDrug(e.target.value as any)}
-                  className="h-10 px-2 bg-[var(--surface)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium text-xs"
+                  className="h-10 px-2 bg-[var(--input-bg)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium text-xs"
                 >
                   <option value="prednisone">Prednisone</option>
                   <option value="hydrocortisone">Hydrocortisone</option>
@@ -250,19 +250,19 @@ export const ToolsScreen: React.FC = () => {
 
           {/* Equivalence Grid */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-3 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-center">
+            <div className="p-3 rounded-xl bg-[var(--surface)] shadow-sm border border-[var(--line)] text-center">
               <span className="text-[10px] text-[var(--muted)] uppercase font-bold block mb-1">Hydrocortisone</span>
               <strong className="text-xl font-bold font-mono text-[var(--primary)]">{steroidResult.hydrocortisone} <small>mg</small></strong>
             </div>
-            <div className="p-3 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-center">
+            <div className="p-3 rounded-xl bg-[var(--surface)] shadow-sm border border-[var(--line)] text-center">
               <span className="text-[10px] text-[var(--muted)] uppercase font-bold block mb-1">Prednisone</span>
               <strong className="text-xl font-bold font-mono text-[var(--primary)]">{steroidResult.prednisone} <small>mg</small></strong>
             </div>
-            <div className="p-3 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-center">
+            <div className="p-3 rounded-xl bg-[var(--surface)] shadow-sm border border-[var(--line)] text-center">
               <span className="text-[10px] text-[var(--muted)] uppercase font-bold block mb-1">Methylprednisolone</span>
               <strong className="text-xl font-bold font-mono text-[var(--primary)]">{steroidResult.methylprednisolone} <small>mg</small></strong>
             </div>
-            <div className="p-3 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-center">
+            <div className="p-3 rounded-xl bg-[var(--surface)] shadow-sm border border-[var(--line)] text-center">
               <span className="text-[10px] text-[var(--muted)] uppercase font-bold block mb-1">Dexamethasone</span>
               <strong className="text-xl font-bold font-mono text-[var(--primary)]">{steroidResult.dexamethasone} <small>mg</small></strong>
             </div>

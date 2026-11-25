@@ -6,7 +6,9 @@ export function evaluatePregnancyHtnProtocol(patientInput: any): any {
   const isPostpartum = !!(pt.postpartum || (pt.comorbidities && pt.comorbidities.postpartum));
   const weeks = parseFloat(String(pt.gestationalWeeks !== undefined ? pt.gestationalWeeks : (pt.weeks !== undefined ? pt.weeks : 16))) || 16;
   const hasAsthma = !!(pt.asthma || (pt.comorbidities && pt.comorbidities.asthma));
-  const medsRaw = pt.medications || pt.activeMeds || pt.meds || pt.currentMeds || [];
+  const medsRaw = Array.isArray(pt.activeMeds)
+    ? pt.activeMeds
+    : (pt.medications || pt.meds || pt.currentMeds || []);
   const meds: string[] = Array.isArray(medsRaw) ? medsRaw.map(m => String(m).toLowerCase()) : [];
 
   const alerts: any[] = [];
@@ -16,9 +18,23 @@ export function evaluatePregnancyHtnProtocol(patientInput: any): any {
     'MRAs (e.g. Spironolactone)',
     'Thiazides / Thiazide-like diuretics (e.g. Indapamide, HCTZ)'
   ];
+  const stoppedDrugsAr: string[] = [
+    'مثبطات الإنزيم المحول للأنجيوتنسين ACEi (مثل بيريندوبريل، راميبريل)',
+    'حاصرات مستقبلات الأنجيوتنسين ARB (مثل فالسارتان، لوسارتان)',
+    'مضادات الألدوستيرون MRA (مثل سبيرونولاكتون)',
+    'مدرات البول الثيازيدية (مثل إنداباميد، هيدروكلوروثيازيد)'
+  ];
 
+  const TERATOGEN_TOKENS = [
+    'valsartan', 'losartan', 'telmisartan', 'candesartan', 'irbesartan', 'olmesartan', 'azilsartan',
+    'perindopril', 'ramipril', 'lisinopril', 'enalapril', 'captopril', 'quinapril', 'fosinopril',
+    'indapamide', 'hydrochlorothiazide', 'hctz', 'chlorthalidone',
+    'spironolactone', 'eplerenone',
+    'sacubitril', 'exforge', 'coveram', 'twynsta', 'preterax'
+  ];
   const detectedTeratogens = meds.filter(m =>
-    m.includes('valsartan') || m.includes('ramipril') || m.includes('indapamide') || m.includes('ace') || m.includes('arb')
+    m === 'ace' || m === 'acei' || m === 'arb' || m === 'arbs' || m === 'mra' ||
+    TERATOGEN_TOKENS.some(tok => m.includes(tok))
   );
   if (detectedTeratogens.length > 0 || isPregnant) {
     alerts.push({
@@ -193,43 +209,178 @@ export function evaluatePregnancyHtnProtocol(patientInput: any): any {
     aspirinProphylaxis,
     methyldopaDepressionWarning,
     stoppedDrugs,
+    stoppedDrugsAr,
     alerts,
     steps
   };
 }
 
-export function classifyBp(sbp: number, dbp: number, lens: 'acc' | 'esc' = 'acc'): { label: string; stage: number; isSevere: boolean } {
+export type HtnClass = 'ace' | 'arb' | 'arni' | 'ccb' | 'thiazide' | 'bb' | 'mra' | 'unknown';
+
+export interface SwitchResult extends Array<string> {
+  ok: boolean;
+  washoutHours: number;
+  requiresWashout: boolean;
+  fromClass: HtnClass;
+  toClass: HtnClass;
+  noteEn: string;
+  noteAr: string;
+  notes: string[];
+}
+
+export function resolveHtnClass(input: string): HtnClass {
+  const s = (input || '').trim().toLowerCase().replace(/[\s/-]+/g, '_');
+  if (!s) return 'unknown';
+
+  if (s === 'ace' || s === 'acei' || s === 'ace_i' || s === 'ace_inhibitor') return 'ace';
+  if (s === 'arb' || s === 'arbs') return 'arb';
+  if (s === 'arni') return 'arni';
+  if (s === 'ccb' || s === 'dhp_ccb') return 'ccb';
+  if (s === 'thiazide' || s === 'thz' || s === 'diuretic') return 'thiazide';
+  if (s === 'bb' || s === 'beta_blocker') return 'bb';
+  if (s === 'mra') return 'mra';
+
+  const ARNI_DRUGS = ['sacubitril_valsartan', 'sacubitril', 'entresto'];
+  if (ARNI_DRUGS.some(d => s.includes(d)) || s.includes('arni')) return 'arni';
+
+  const ACE_DRUGS = ['perindopril', 'ramipril', 'lisinopril', 'enalapril', 'captopril', 'quinapril', 'benazepril', 'fosinopril', 'trandolapril', 'zofenopril', 'coveram', 'preterax', 'coversyl', 'tritace'];
+  if (ACE_DRUGS.some(d => s.includes(d))) return 'ace';
+
+  const ARB_DRUGS = ['valsartan', 'losartan', 'telmisartan', 'candesartan', 'irbesartan', 'olmesartan', 'azilsartan', 'eprosartan', 'exforge', 'twynsta', 'diovan', 'tareg', 'cozaar'];
+  if (ARB_DRUGS.some(d => s.includes(d))) return 'arb';
+
+  const CCB_DRUGS = ['amlodipine', 'nifedipine', 'nifedipine_er', 'felodipine', 'lercanidipine', 'diltiazem', 'verapamil'];
+  if (CCB_DRUGS.some(d => s.includes(d))) return 'ccb';
+
+  const THZ_DRUGS = ['indapamide', 'indapamidesr', 'indapamide_sr', 'hctz', 'hydrochlorothiazide', 'chlorthalidone'];
+  if (THZ_DRUGS.some(d => s.includes(d))) return 'thiazide';
+
+  const BB_DRUGS = ['bisoprolol', 'metoprolol', 'carvedilol', 'nebivolol', 'atenolol', 'labetalol', 'propranolol'];
+  if (BB_DRUGS.some(d => s.includes(d))) return 'bb';
+
+  const MRA_DRUGS = ['spironolactone', 'eplerenone', 'finerenone'];
+  if (MRA_DRUGS.some(d => s.includes(d))) return 'mra';
+
+  return 'unknown';
+}
+
+export function classifyBp(
+  sbp: number,
+  dbp: number,
+  lens: 'acc' | 'esc' = 'acc'
+): {
+  label: string;
+  labelEn: string;
+  labelAr: string;
+  stage: number;
+  isSevere: boolean;
+  colorClass: 'badge-danger' | 'badge-warning' | 'badge-success';
+} {
   if (sbp >= 180 || dbp >= 120) {
-    return { label: 'Severe hypertension', stage: 3, isSevere: true };
+    const labelEn = 'Severe hypertension';
+    const labelAr = 'ارتفاع ضغط دم شديد (طارئ)';
+    return { label: labelEn, labelEn, labelAr, stage: 3, isSevere: true, colorClass: 'badge-danger' };
   }
   if (lens === 'acc') {
-    if (sbp >= 140 || dbp >= 90) return { label: 'Stage 2 hypertension', stage: 2, isSevere: false };
-    if (sbp >= 130 || dbp >= 80) return { label: 'Stage 1 hypertension', stage: 1, isSevere: false };
-    if (sbp >= 120) return { label: 'Elevated BP', stage: 0.5, isSevere: false };
-    return { label: 'Normal BP', stage: 0, isSevere: false };
+    if (sbp >= 140 || dbp >= 90) {
+      const labelEn = 'Stage 2 hypertension';
+      return { label: labelEn, labelEn, labelAr: 'ارتفاع ضغط الدم — المرحلة الثانية', stage: 2, isSevere: false, colorClass: 'badge-danger' };
+    }
+    if (sbp >= 130 || dbp >= 80) {
+      const labelEn = 'Stage 1 hypertension';
+      return { label: labelEn, labelEn, labelAr: 'ارتفاع ضغط الدم — المرحلة الأولى', stage: 1, isSevere: false, colorClass: 'badge-warning' };
+    }
+    if (sbp >= 120) {
+      const labelEn = 'Elevated BP';
+      return { label: labelEn, labelEn, labelAr: 'ضغط دم مرتفع قليلاً', stage: 0.5, isSevere: false, colorClass: 'badge-warning' };
+    }
+    const labelEn = 'Normal BP';
+    return { label: labelEn, labelEn, labelAr: 'ضغط دم طبيعي', stage: 0, isSevere: false, colorClass: 'badge-success' };
   } else {
-    if (sbp >= 140 || dbp >= 90) return { label: 'Hypertension', stage: 2, isSevere: false };
-    if (sbp >= 120 || dbp >= 70) return { label: 'Elevated BP', stage: 1, isSevere: false };
-    return { label: 'Non-elevated BP', stage: 0, isSevere: false };
+    if (sbp >= 140 || dbp >= 90) {
+      const labelEn = 'Hypertension';
+      return { label: labelEn, labelEn, labelAr: 'ارتفاع ضغط الدم', stage: 2, isSevere: false, colorClass: 'badge-danger' };
+    }
+    if (sbp >= 120 || dbp >= 70) {
+      const labelEn = 'Elevated BP';
+      return { label: labelEn, labelEn, labelAr: 'ضغط دم مرتفع', stage: 1, isSevere: false, colorClass: 'badge-warning' };
+    }
+    const labelEn = 'Non-elevated BP';
+    return { label: labelEn, labelEn, labelAr: 'ضغط دم غير مرتفع', stage: 0, isSevere: false, colorClass: 'badge-success' };
   }
 }
 
-export function calculateSwitch(fromDrug: string, toDrug: string): string[] {
-  const notes: string[] = [];
-  const from = (fromDrug || '').toLowerCase();
-  const to = (toDrug || '').toLowerCase();
+export function calculateSwitch(fromDrug: string, toDrug: string): SwitchResult {
+  const fromNorm = (fromDrug || '').trim().toLowerCase().replace(/[\s/-]+/g, '_');
+  const toNorm = (toDrug || '').trim().toLowerCase().replace(/[\s/-]+/g, '_');
+  const fromClass = resolveHtnClass(fromDrug);
+  const toClass = resolveHtnClass(toDrug);
 
-  if (from === to) return ['Same drug selected.'];
-  if (from.includes('ace') && to.includes('arni')) {
-    notes.push('Stop the ACE inhibitor and wait at least 36 hours before the first dose of sacubitril/valsartan (angioedema risk).');
-  } else if (from.includes('arni') && to.includes('ace')) {
-    notes.push('Wait at least 36 hours after the last sacubitril/valsartan dose before starting the ACE inhibitor.');
-  } else if (from.includes('arb') && to.includes('arni')) {
-    notes.push('Stop the ARB and give sacubitril/valsartan at the time of the next scheduled dose. Do not give both.');
-  } else if (from.includes('ace') && to.includes('arb')) {
-    notes.push('Stop the ACE inhibitor and start the ARB the next day; no washout needed. If the reason is angioedema, an ARB carries a small risk of recurrence: discuss with a specialist or use another class.');
+  let ok = true;
+  let washoutHours = 0;
+  let noteEn = '';
+  let noteAr = '';
+
+  if (!fromNorm || !toNorm || fromNorm === toNorm) {
+    ok = false;
+    washoutHours = 0;
+    noteEn = 'Same drug selected — no switch required.';
+    noteAr = 'تم اختيار نفس الدواء — لا يلزم تبديل.';
+  } else if (fromClass === 'ace' && toClass === 'arni') {
+    ok = true;
+    washoutHours = 36;
+    noteEn = 'CRITICAL: Stop the ACE inhibitor and wait at least 36 hours (mandatory washout) before the first dose of sacubitril/valsartan to avoid life-threatening angioedema.';
+    noteAr = 'تنبيه حرج: أوقف مثبط الإنزيم المحول للأنجيوتنسين (ACEi) وانتظر 36 ساعة على الأقل (فترة غسل إلزامية) قبل الجرعة الأولى من ساكوبيتريل/فالسارتان لتجنب الوذمة الوعائية المميتة.';
+  } else if (fromClass === 'arni' && toClass === 'ace') {
+    ok = true;
+    washoutHours = 36;
+    noteEn = 'CRITICAL: Wait at least 36 hours after the last sacubitril/valsartan dose before starting the ACE inhibitor (angioedema risk).';
+    noteAr = 'تنبيه حرج: انتظر 36 ساعة على الأقل بعد آخر جرعة من ساكوبيتريل/فالسارتان قبل بدء مثبط ACEi لتجنب الوذمة الوعائية.';
+  } else if (fromClass === 'arb' && toClass === 'arni') {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Stop the ARB and give sacubitril/valsartan at the time of the next scheduled dose (no 36-hour washout needed). Do not administer both together.';
+    noteAr = 'أوقف دواء ARB وابدأ ساكوبيتريل/فالسارتان في موعد الجرعة التالية (لا تلزم فترة انتظار 36 ساعة). يُمنع الجمع بينهما.';
+  } else if (fromClass === 'arni' && toClass === 'arb') {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Stop sacubitril/valsartan and start the ARB at the next scheduled dose (no washout needed). Monitor BP, creatinine, and K+ in 1–2 weeks.';
+    noteAr = 'أوقف ساكوبيتريل/فالسارتان وابدأ دواء ARB في موعد الجرعة التالية (دون فترة انتظار). راقب الضغط والكرياتينين والبوتاسيوم خلال أسبوع إلى أسبوعين.';
+  } else if (fromClass === 'ace' && toClass === 'arb') {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Stop the ACE inhibitor and start the ARB the next day; no washout needed. If switching due to ACEi angioedema, an ARB carries a small recurrence risk — monitor closely.';
+    noteAr = 'أوقف مثبط ACEi وابدأ ARB في اليوم التالي دون فترة انتظار. إذا كان سبب التبديل هو الوذمة الوعائية، فإن ARB يحمل خطراً ضئيلاً لتكرارها — راقب المريض عن كثب.';
+  } else if (fromClass === 'arb' && toClass === 'ace') {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Stop the ARB and start the ACE inhibitor at the next scheduled dose; monitor renal function and K+ in 1–2 weeks.';
+    noteAr = 'أوقف ARB وابدأ مثبط ACEi في موعد الجرعة التالية؛ راقب وظائف الكلى والبوتاسيوم خلال 1–2 أسبوع.';
+  } else if (fromClass !== 'unknown' && fromClass === toClass) {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Within-class equivalent switch: stop the prior agent and start the new agent at an equivalent dose at the next scheduled time; no washout required.';
+    noteAr = 'تبديل مكافئ ضمن نفس الفئة الدوائية: أوقف الدواء السابق وابدأ البديل بجرعة مكافئة في الموعد التالي دون فترة انتظار.';
+  } else if (fromClass === 'bb' && toClass !== 'bb') {
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Caution: Taper beta-blocker gradually over 1–2 weeks (do not stop abruptly to avoid rebound tachycardia/angina) while initiating the new agent and monitoring BP/HR.';
+    noteAr = 'تنبيه: قم بتخفيض حاصر بيتا تدريجياً خلال أسبوع إلى أسبوعين (تجنب الإيقاف المفاجئ لمنع تسارع النبض أو الذبحة الارتدادية) بالتزامن مع بدء الدواء الجديد.';
   } else {
-    notes.push('Stop the old drug and start the new one at the next scheduled dose; monitor BP and electrolytes within 2–4 weeks.');
+    ok = true;
+    washoutHours = 0;
+    noteEn = 'Stop the old drug and start the new one at the next scheduled dose; monitor BP and electrolytes within 2–4 weeks.';
+    noteAr = 'أوقف الدواء السابق وابدأ الجديد في موعد الجرعة التالية؛ راقب ضغط الدم والأملاح خلال 2–4 أسابيع.';
   }
-  return notes;
+
+  return Object.assign([noteEn], {
+    ok,
+    washoutHours,
+    requiresWashout: washoutHours > 0,
+    fromClass,
+    toClass,
+    noteEn,
+    noteAr,
+    notes: [noteEn]
+  }) as SwitchResult;
 }

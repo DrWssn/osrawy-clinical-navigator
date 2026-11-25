@@ -55,7 +55,7 @@ export const LipidsScreen: React.FC = () => {
       {subTab === 'inputs' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Unit Toggle Card */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex items-center justify-between">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--text)]">
               {isAr ? 'وحدة قياس الدهون:' : 'Lipid Measurement Unit:'}
             </span>
@@ -72,7 +72,7 @@ export const LipidsScreen: React.FC = () => {
           </div>
 
           {/* Lipid Labs Grid */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-2 gap-3 p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label={isAr ? 'الكوليسترول الكلي TC' : 'Total Cholesterol (TC)'}
               value={patient.totalCholesterol || patient.tc}
@@ -104,7 +104,7 @@ export const LipidsScreen: React.FC = () => {
           </div>
 
           {/* Safety Labs & Modifiers */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
               {isAr ? 'عوامل الخطورة والمعدلات' : 'Risk Modifiers & Safety Labs'}
             </label>
@@ -153,7 +153,7 @@ export const LipidsScreen: React.FC = () => {
       {subTab === 'pathway' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Risk Tier & Gap Bar Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">
@@ -185,12 +185,12 @@ export const LipidsScreen: React.FC = () => {
             </h4>
 
             {pathway.steps.map((st: any) => (
-              <div key={st.stepNumber} className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+              <div key={st.stepNumber} className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
                 <div className="flex items-center justify-between mb-1">
                   <h5 className="text-xs font-bold text-[var(--primary)]">
                     {isAr ? st.titleAr : st.titleEn}
                   </h5>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--line)]">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface2)] border border-[var(--line)]">
                     Step {st.stepNumber}
                   </span>
                 </div>
@@ -210,7 +210,7 @@ export const LipidsScreen: React.FC = () => {
       {subTab === 'ascvd' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Hero Risk Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">
@@ -228,7 +228,7 @@ export const LipidsScreen: React.FC = () => {
             </div>
 
             {/* Score & Visual Gauge */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface)] border border-[var(--line)]">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface2)] border border-[var(--line)]">
               <div>
                 <div className="text-3xl font-black font-mono tracking-tight text-[var(--text)]">
                   {ascvd.riskScorePercent}%
@@ -255,7 +255,7 @@ export const LipidsScreen: React.FC = () => {
             </div>
 
             {/* Guideline Statin Recommendation */}
-            <div className="p-3 bg-[var(--surface)] rounded-xl border border-[var(--line)] flex flex-col gap-1.5">
+            <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
                 {isAr ? 'التوصية الدوائية للستاتين (ACC/AHA 2019 & ADA 2025)' : 'Guideline Statin Recommendation'}
               </span>
@@ -272,7 +272,7 @@ export const LipidsScreen: React.FC = () => {
           </div>
 
           {/* Parameters & Modifiers */}
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
               {isAr ? 'المحددات والمعاملات السريرية' : 'Clinical Predictors & Cohort'}
             </h4>
@@ -309,15 +309,15 @@ export const LipidsScreen: React.FC = () => {
 
             {/* Active Values Summary */}
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--line)] text-center">
-              <div className="p-2 rounded-lg bg-[var(--surface)]">
+              <div className="p-2 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <span className="text-[10px] text-[var(--muted)] block">{isAr ? 'العمر' : 'Age'}</span>
                 <strong className="text-xs font-mono">{patient.age}y</strong>
               </div>
-              <div className="p-2 rounded-lg bg-[var(--surface)]">
+              <div className="p-2 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <span className="text-[10px] text-[var(--muted)] block">SBP</span>
                 <strong className="text-xs font-mono">{patient.sbp} mmHg</strong>
               </div>
-              <div className="p-2 rounded-lg bg-[var(--surface)]">
+              <div className="p-2 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <span className="text-[10px] text-[var(--muted)] block">TC / HDL</span>
                 <strong className="text-xs font-mono">{patient.tc || patient.totalCholesterol || 200} / {patient.hdl || patient.hdlC || 50}</strong>
               </div>
@@ -329,19 +329,19 @@ export const LipidsScreen: React.FC = () => {
       {/* 4. RISK MATRIX TAB */}
       {subTab === 'matrix' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {isAr ? 'مصفوفة أهداف الكوليسترول (ESC/EAS 2023)' : 'ESC/EAS 2023 Lipid Target Matrix'}
             </h4>
 
             <div className="flex flex-col gap-2 text-xs">
               {Object.values(RISK_TIERS).map((tier) => (
-                <div key={tier.key} className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex items-center justify-between">
+                <div key={tier.key} className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex items-center justify-between">
                   <div>
                     <strong className="text-[var(--text)] block">{isAr ? tier.nameAr : tier.nameEn}</strong>
                     <span className="text-[11px] text-[var(--muted)]">Target LDL: &lt; {tier.ldlTargetMg} mg/dL (&lt; {tier.ldlTargetMmol} mmol/L)</span>
                   </div>
-                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[var(--surface2)] text-[var(--primary)]">
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--primary)]">
                     -{tier.reductionPercent}%
                   </span>
                 </div>

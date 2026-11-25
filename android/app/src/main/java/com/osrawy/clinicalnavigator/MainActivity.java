@@ -23,6 +23,12 @@ public class MainActivity extends BridgeActivity {
     private boolean webViewConfigured = false;
     private OnBackPressedCallback backCallback;
 
+    // Track active system bar theme so onStart() preserves dynamic palette choices
+    private String currentStatusHex = "#1E3A8A";
+    private String currentNavHex = "#FFFFFF";
+    private boolean currentLightStatus = false;
+    private boolean currentLightNav = true;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,16 +54,14 @@ public class MainActivity extends BridgeActivity {
             WindowCompat.setDecorFitsSystemWindows(window, true);
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
 
-            int brandTeal = Color.parseColor("#0A4F4B");
-            window.setStatusBarColor(brandTeal);
-            window.setNavigationBarColor(brandTeal);
+            window.setStatusBarColor(Color.parseColor(currentStatusHex));
+            window.setNavigationBarColor(Color.parseColor(currentNavHex));
 
-            // Force crisp white status & navigation icons over dark #0A4F4B bars
             WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(window, window.getDecorView());
             if (controller != null) {
-                controller.setAppearanceLightStatusBars(false);
-                controller.setAppearanceLightNavigationBars(false);
+                controller.setAppearanceLightStatusBars(currentLightStatus);
+                controller.setAppearanceLightNavigationBars(currentLightNav);
             }
         } catch (Exception e) {
             Log.w(TAG, "Failed to configure system bars", e);
@@ -80,6 +84,7 @@ public class MainActivity extends BridgeActivity {
                 }
 
                 webView.addJavascriptInterface(new PrintInterface(), "AndroidPrint");
+                webView.addJavascriptInterface(new ThemeInterface(), "AndroidTheme");
                 webViewConfigured = true;
             }
         } catch (Exception e) {
@@ -112,6 +117,18 @@ public class MainActivity extends BridgeActivity {
             }
         };
         getOnBackPressedDispatcher().addCallback(this, backCallback);
+    }
+
+    public class ThemeInterface {
+        @JavascriptInterface
+        public void setSystemBars(String statusHex, String navHex, boolean lightStatusIcons, boolean lightNavIcons) {
+            if (statusHex == null || navHex == null) return;
+            currentStatusHex = statusHex;
+            currentNavHex = navHex;
+            currentLightStatus = lightStatusIcons;
+            currentLightNav = lightNavIcons;
+            runOnUiThread(() -> setupSystemBars());
+        }
     }
 
     public class PrintInterface {

@@ -4,7 +4,8 @@ import { evaluateLipidPathway } from './lipids';
 import { evaluatePrimaryCare } from './primaryCare';
 import { evaluatePregnancyHtnProtocol } from './htn';
 import { evaluatePregnancyDmProtocol } from './diabetes';
-import { FORMULARY } from '../data/formulary';
+import { getDynamicTargets } from './leaflets';
+import { FORMULARY, getDrugById } from '../data/formulary';
 
 export interface DoctorSettings {
   doctorName?: string;
@@ -47,6 +48,7 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
   const dateStr = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   const syncGuardrails = evaluateSafetyGuardrails(pt);
+  const targets = getDynamicTargets(pt);
   let lipidReport: any = null;
   try {
     lipidReport = evaluateLipidPathway(pt);
@@ -85,8 +87,8 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
     text += `🎯 *الأهداف العلاجية المستهدفة (Targets):*\n`;
-    text += `• ضغط الدم المستهدف: أقل من 130/80 mmHg\n`;
-    text += `• السكر التراكمي المستهدف: أقل من 7.0% (أو حسب الحالة)\n`;
+    text += `• ضغط الدم المستهدف: ${targets.htn.targetBp}\n`;
+    text += `• السكر التراكمي المستهدف: ${targets.dm.targetA1c}\n`;
     if (lipidReport) {
       text += `• الكوليسترول الضار المستهدف: < ${lipidReport.target.ldlTargetMg} مجم/dL (${lipidReport.target.nameAr})\n`;
       text += `• الكوليسترول غير المفيد (Non-HDL): < ${lipidReport.target.nonHdlTargetMg} مجم/dL\n`;
@@ -95,14 +97,20 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
 
     text += `💊 *الخطة الدوائية المعتمدة (Rx):*\n\n`;
 
-    const activeMedsList: string[] = (pt.activeMeds && pt.activeMeds.length > 0)
+    const activeMedsList: string[] = Array.isArray(pt.activeMeds)
       ? pt.activeMeds
-      : (pt.meds || pt.currentMeds || pt.medications || []);
+      : Array.isArray(pt.meds)
+        ? pt.meds
+        : Array.isArray(pt.currentMeds)
+          ? pt.currentMeds
+          : Array.isArray(pt.medications)
+            ? pt.medications
+            : [];
 
     if (activeMedsList.length > 0) {
       text += `🔹 *الأدوية الحالية للمريض (Active Medications):*\n`;
       activeMedsList.forEach((medId, idx) => {
-        const drug = FORMULARY.find((f: any) => f.id.toLowerCase() === medId.toLowerCase() || (f.genericEn && f.genericEn.toLowerCase().includes(medId.toLowerCase())));
+        const drug = getDrugById(medId) || FORMULARY.find((f: any) => f.id.toLowerCase() === medId.toLowerCase() || (f.genericEn && f.genericEn.toLowerCase().includes(medId.toLowerCase())));
         if (drug) {
           const brand = drug.tradeNamesAr?.[0] || drug.tradeNamesEn?.[0] || drug.genericAr || drug.genericEn;
           text += `  ${idx + 1}. *${drug.genericAr || drug.genericEn}* (${brand}) - ${drug.doseAr || drug.doseEn}\n`;
@@ -136,8 +144,9 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
         if (htnPreg.aspirinProphylaxis?.indicated) {
           text += `• الوقاية من تسمم الحمل: أسبرين أطفال (81-150 مجم يومياً قبل النوم حتى الأسبوع 36)\n`;
         }
-        if (htnPreg.stoppedDrugs?.length) {
-          text += `• أدوية محظورة وموقوفة فوراً: ${htnPreg.stoppedDrugs.join('، ')}\n`;
+        const stoppedAr = htnPreg.stoppedDrugsAr || htnPreg.stoppedDrugs;
+        if (stoppedAr?.length) {
+          text += `• أدوية محظورة وموقوفة فوراً: ${stoppedAr.join('، ')}\n`;
         }
       }
 
@@ -191,8 +200,8 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
     text += `🎯 *Clinical Targets & Quality Measures:*\n`;
-    text += `• Target Blood Pressure: < 130/80 mmHg\n`;
-    text += `• Target HbA1c: < 7.0% (individualized)\n`;
+    text += `• Target Blood Pressure: ${targets.htn.targetBp}\n`;
+    text += `• Target HbA1c: ${targets.dm.targetA1c} (individualized)\n`;
     if (lipidReport) {
       text += `• Target LDL-C: < ${lipidReport.target.ldlTargetMg} mg/dL (${lipidReport.target.nameEn})\n`;
       text += `• Target Non-HDL: < ${lipidReport.target.nonHdlTargetMg} mg/dL\n`;
@@ -201,17 +210,23 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
 
     text += `💊 *Prescribed Medications & Management Plan (Rx):*\n\n`;
 
-    const activeMedsList: string[] = (pt.activeMeds && pt.activeMeds.length > 0)
+    const activeMedsList: string[] = Array.isArray(pt.activeMeds)
       ? pt.activeMeds
-      : (pt.meds || pt.currentMeds || pt.medications || []);
+      : Array.isArray(pt.meds)
+        ? pt.meds
+        : Array.isArray(pt.currentMeds)
+          ? pt.currentMeds
+          : Array.isArray(pt.medications)
+            ? pt.medications
+            : [];
 
     if (activeMedsList.length > 0) {
       text += `🔹 *Active Patient Medications:*\n`;
       activeMedsList.forEach((medId, idx) => {
-        const drug = FORMULARY.find((f: any) => f.id.toLowerCase() === medId.toLowerCase() || (f.genericEn && f.genericEn.toLowerCase().includes(medId.toLowerCase())));
+        const drug = getDrugById(medId) || FORMULARY.find((f: any) => f.id.toLowerCase() === medId.toLowerCase() || (f.genericEn && f.genericEn.toLowerCase().includes(medId.toLowerCase())));
         if (drug) {
-          const brand = drug.tradeNamesAr?.[0] || drug.tradeNamesEn?.[0] || drug.genericAr || drug.genericEn;
-          text += `  ${idx + 1}. *${drug.genericAr || drug.genericEn}* (${brand}) - ${drug.doseAr || drug.doseEn}\n`;
+          const brand = drug.tradeNamesEn?.[0] || drug.tradeNamesAr?.[0] || drug.genericEn;
+          text += `  ${idx + 1}. *${drug.genericEn}* (${brand}) - ${drug.doseEn}\n`;
         } else {
           text += `  ${idx + 1}. *${medId}*\n`;
         }
@@ -285,6 +300,16 @@ export function buildPrescriptionReport(lang: 'ar' | 'en' = 'ar', patientOverrid
 export function buildStructuredSoapNote(patient: any, engines?: { diabetes?: any; htn?: any; lipids?: any; primaryCare?: any }): string {
   const p = patient || {};
   const dateStr = new Date().toISOString().split('T')[0];
+  const targets = getDynamicTargets(p);
+
+  let lipidData = engines?.lipids;
+  if (!lipidData) {
+    try { lipidData = evaluateLipidPathway(p); } catch {}
+  }
+  let pcData = engines?.primaryCare;
+  if (!pcData) {
+    try { pcData = evaluatePrimaryCare(p); } catch {}
+  }
 
   let note = `═══════════════════════════════════════════════════════════════\n`;
   note += `OSRAWY CLINICAL SOAP NOTE · ${dateStr}\n`;
@@ -295,36 +320,47 @@ export function buildStructuredSoapNote(patient: any, engines?: { diabetes?: any
   note += `• Primary complaints & chronic disease follow-up.\n`;
   if (p.smoker) note += `• Active smoker.\n`;
   if (p.ascvd) note += `• Established ASCVD history.\n`;
+  if (p.hf && p.hf !== 'none') note += `• Heart failure (${String(p.hf).toUpperCase()}).\n`;
+  if (p.frail) note += `• Clinical frailty present (individualized relaxed targets).\n`;
+  if (p.asthma) note += `• Bronchial asthma.\n`;
+  if (p.copd) note += `• Chronic obstructive pulmonary disease (COPD).\n`;
   if (p.pregnancy) note += `• Active pregnancy (Gestational age: ${p.gestationalWeeks || '-'} weeks).\n`;
   note += `\n`;
 
   note += `[O] OBJECTIVE:\n`;
   note += `• BP: ${p.sbp || '-'}/${p.dbp || '-'} mmHg | K+: ${p.k || '-'} mEq/L\n`;
   note += `• Weight: ${p.wt || '-'} kg | Height: ${p.ht || '-'} cm\n`;
-  note += `• Renal: eGFR ${p.egfr || '-'} mL/min/1.73m² | UACR ${p.uacr || '-'} mg/g\n`;
+  note += `• Renal: eGFR ${p.egfr || '-'} mL/min/1.73m²${p.scr ? ` (SCr ${p.scr} ${p.scrUnit === 'umol' ? 'µmol/L' : 'mg/dL'})` : ''} | UACR ${p.uacr || '-'} mg/g\n`;
   if (p.a1c) note += `• Glycemic: HbA1c ${p.a1c}% | FPG ${p.fpg || '-'} mg/dL\n`;
   if (p.tc || p.totalCholesterol) note += `• Lipids: TC ${p.tc || p.totalCholesterol} | LDL ${p.ldlC || p.ldl || '-'} | HDL ${p.hdlC || p.hdl || '-'} | TG ${p.triglycerides || p.tg || '-'}\n`;
+  if (p.tsh !== undefined || p.ft4 !== undefined) note += `• Thyroid: TSH ${p.tsh ?? '-'} mIU/L | FT4 ${p.ft4 ?? '-'} ng/dL\n`;
   note += `\n`;
 
   note += `[A] ASSESSMENT:\n`;
   const guardrails = evaluateSafetyGuardrails(p);
-  if (guardrails.length > 0) {
-    note += `• Safety Alerts:\n`;
-    guardrails.forEach(g => {
-      note += `  - [${g.level.toUpperCase()}] ${g.titleEn}: ${g.actionEn}\n`;
+  const lipidAlerts = Array.isArray(lipidData?.alerts) ? lipidData.alerts : [];
+  const pcAlerts = Array.isArray(pcData?.allAlerts) ? pcData.allAlerts : [];
+  const combinedAlerts = [...guardrails, ...lipidAlerts, ...pcAlerts];
+  if (combinedAlerts.length > 0) {
+    note += `• Safety & Clinical Alerts:\n`;
+    combinedAlerts.forEach(g => {
+      note += `  - [${String(g.level || 'info').toUpperCase()}] ${g.titleEn}: ${g.actionEn || g.messageEn}\n`;
     });
   }
-  if (engines?.lipids?.stratification) {
-    note += `• Dyslipidemia: ${engines.lipids.stratification.tier} Risk (LDL Target < ${engines.lipids.target.ldlTargetMg} mg/dL)\n`;
+  if (lipidData?.stratification) {
+    note += `• Dyslipidemia: ${lipidData.stratification.tier} Risk (LDL Target < ${lipidData.target.ldlTargetMg} mg/dL)\n`;
+  }
+  if (pcData?.thyroid && pcData.thyroid.status !== 'euthyroid') {
+    note += `• Thyroid: ${pcData.thyroid.statusNameEn}\n`;
   }
   note += `\n`;
 
   note += `[P] PLAN:\n`;
-  const activeMeds = p.medications || p.activeMeds || [];
+  const activeMeds = p.activeMeds || p.medications || [];
   if (activeMeds.length > 0) {
     note += `• Active Medications: ${activeMeds.join(', ')}\n`;
   }
-  note += `• Targets: BP < 130/80 mmHg, HbA1c < 7.0%\n`;
+  note += `• Targets: BP ${targets.htn.targetBp}, HbA1c ${targets.dm.targetA1c}, LDL ${targets.dlp.targetLdl}\n`;
   note += `• Follow-up: Repeat labs in 4–12 weeks. Reinforce SADMANS sick-day rules.\n`;
 
   return note;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculate10YrAscvdRisk } from '../src/engines/ascvd';
+import { estimate10YrAscvdRisk } from '../src/engines/lipids';
 
 describe('ACC/AHA 10-Year ASCVD Risk Calculator (PCE)', () => {
   it('calculates low risk for a young non-smoker with optimal lipids and blood pressure', () => {
@@ -122,5 +123,59 @@ describe('ACC/AHA 10-Year ASCVD Risk Calculator (PCE)', () => {
 
     expect(youngRes.warning).toBeDefined();
     expect(youngRes.warning).toContain('40');
+    expect(youngRes.warningEn).toContain('40');
+    expect(youngRes.warningAr).toContain('40');
+  });
+
+  it('converts mmol/L lipid inputs accurately when lipidUnit is mmol', () => {
+    const mgRes = calculate10YrAscvdRisk({
+      age: 58,
+      sex: 'M',
+      race: 'white_other',
+      tc: 239.8,
+      hdl: 38.7,
+      sbp: 138,
+      treatedBp: false,
+      smoker: false,
+      diabetes: true,
+    });
+    const mmolRes = calculate10YrAscvdRisk({
+      age: 58,
+      sex: 'M',
+      race: 'white_other',
+      tc: 6.2,
+      hdl: 1.0,
+      lipidUnit: 'mmol',
+      sbp: 138,
+      treatedBp: false,
+      smoker: false,
+      diabetes: true,
+    });
+    expect(mmolRes.riskScorePercent).toBeCloseTo(mgRes.riskScorePercent, 1);
+  });
+
+  it('aligns White/Other untreated female SBP coefficient (1.957) with lipids.ts estimate10YrAscvdRisk', () => {
+    const ascvdRes = calculate10YrAscvdRisk({
+      age: 62,
+      sex: 'F',
+      race: 'white_other',
+      tc: 220,
+      hdl: 45,
+      sbp: 145,
+      treatedBp: false,
+      smoker: false,
+      diabetes: true,
+    });
+    const lipidEst = estimate10YrAscvdRisk({
+      age: 62,
+      sex: 'f',
+      tc: 220,
+      hdl: 45,
+      sbp: 145,
+      treatedBp: false,
+      smoker: false,
+      diabetes: true,
+    });
+    expect(ascvdRes.riskScorePercent).toBe(lipidEst.riskPercent);
   });
 });

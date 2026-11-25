@@ -43,13 +43,13 @@ export const HtnScreen: React.FC = () => {
       {subTab === 'inputs' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* BP Hero Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <div className="flex justify-between items-center mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
                 {isAr ? 'قراءة ضغط الدم الحالية' : 'Current Blood Pressure'}
               </span>
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                classification.isSevere ? 'bg-red-500/15 text-red-600' : 'bg-emerald-500/15 text-emerald-600'
+                classification.isSevere ? 'bg-red-500/15 text-red-700 dark:text-red-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
                 {classification.label}
               </span>
@@ -76,11 +76,11 @@ export const HtnScreen: React.FC = () => {
 
             {/* Micro hemodynamic readouts */}
             <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--line)] text-center text-xs">
-              <div className="p-2 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+              <div className="p-2 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <span className="text-[10px] text-[var(--muted)] block">Mean Arterial Pressure (MAP)</span>
                 <strong className="text-sm font-mono text-[var(--text)]">{map} <small>mmHg</small></strong>
               </div>
-              <div className="p-2 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+              <div className="p-2 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
                 <span className="text-[10px] text-[var(--muted)] block">Pulse Pressure (PP)</span>
                 <strong className="text-sm font-mono text-[var(--text)]">{pp} <small>mmHg</small></strong>
               </div>
@@ -88,7 +88,7 @@ export const HtnScreen: React.FC = () => {
           </div>
 
           {/* Labs: Renal & K+ */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)]">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
               label={isAr ? 'وظائف الكلى eGFR' : 'Renal eGFR'}
               value={patient.egfr}
@@ -105,7 +105,7 @@ export const HtnScreen: React.FC = () => {
           </div>
 
           {/* Comorbidities */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
               {isAr ? 'الحالات السريرية المصاحبة' : 'Comorbidities'}
             </label>
@@ -146,7 +146,7 @@ export const HtnScreen: React.FC = () => {
           </div>
 
           {/* Active HTN Meds */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-2">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-2">
             <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
               {isAr ? 'أدوية الضغط النشطة للمريض' : 'Active Antihypertensive Meds'}
             </label>
@@ -172,7 +172,7 @@ export const HtnScreen: React.FC = () => {
       {subTab === 'plan' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Guideline Lens Selector */}
-          <div className="p-3 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex items-center justify-between">
+          <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--text)]">
               {isAr ? 'الدليل الإرشادي المعتمد:' : 'Clinical Guideline Lens:'}
             </span>
@@ -206,7 +206,7 @@ export const HtnScreen: React.FC = () => {
           )}
 
           {/* Recommendation Card */}
-          <div className="p-4 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
                 {isAr ? 'الخطة العلاجية الدوائية الموصى بها' : 'Blood Pressure Plan & Target'}
@@ -219,7 +219,7 @@ export const HtnScreen: React.FC = () => {
               />
             </div>
 
-            <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+            <div className="p-3 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
               <strong className="text-xs text-[var(--text)] block mb-1">
                 {isAr ? 'الهدف العلاجي لضغط الدم:' : 'Blood Pressure Target:'} &lt; 130/80 mmHg
               </strong>
@@ -241,7 +241,7 @@ export const HtnScreen: React.FC = () => {
       {subTab === 'switch' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Drug Switch Calculator Card */}
-          <div className="p-3.5 bg-[var(--surface2)] rounded-xl border border-[var(--line)] flex flex-col gap-3">
+          <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {isAr ? 'حاسبة التبديل الآمن بين أدوية الضغط' : 'Antihypertensive Switch Calculator'}
             </h4>
@@ -252,7 +252,7 @@ export const HtnScreen: React.FC = () => {
                 <select
                   value={switchFrom}
                   onChange={(e) => setSwitchFrom(e.target.value)}
-                  className="h-9 px-2 bg-[var(--surface)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium"
+                  className="h-9 px-2 bg-[var(--input-bg)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium"
                 >
                   <option value="perindopril">Perindopril (ACEi)</option>
                   <option value="ramipril">Ramipril (ACEi)</option>
@@ -267,7 +267,7 @@ export const HtnScreen: React.FC = () => {
                 <select
                   value={switchTo}
                   onChange={(e) => setSwitchTo(e.target.value)}
-                  className="h-9 px-2 bg-[var(--surface)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium"
+                  className="h-9 px-2 bg-[var(--input-bg)] text-[var(--text)] rounded-lg border border-[var(--line)] font-medium"
                 >
                   <option value="sacubitril_valsartan">Sacubitril/Valsartan (ARNI)</option>
                   <option value="valsartan">Valsartan (ARB)</option>
@@ -278,7 +278,7 @@ export const HtnScreen: React.FC = () => {
             </div>
 
             {/* Washout & Switch Notes */}
-            <div className="p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line)]">
+            <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)]">
               {switchNotes.map((note, idx) => (
                 <p key={idx} className="text-xs text-[var(--text)] leading-relaxed flex items-start gap-1.5">
                   <span className="text-amber-500 font-bold shrink-0">⚠️</span>
@@ -303,10 +303,10 @@ export const HtnScreen: React.FC = () => {
               return (
                 <div
                   key={drug.id}
-                  className={`p-3 rounded-xl border transition-all ${
+                  className={`p-3 rounded-xl border shadow-sm transition-all ${
                     isSelected
-                      ? 'bg-[var(--primary)]/10 border-[var(--primary)]/50'
-                      : 'bg-[var(--surface2)] border-[var(--line)]'
+                      ? 'bg-primary/10 border-primary/50'
+                      : 'bg-[var(--surface)] border-[var(--line)]'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -327,8 +327,8 @@ export const HtnScreen: React.FC = () => {
                       onClick={() => toggleMedication(drug.id)}
                       className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-transform active:scale-95 ${
                         isSelected
-                          ? 'bg-[var(--primary)] text-white'
-                          : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--line)]'
+                          ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                          : 'bg-[var(--surface2)] text-[var(--text)] border border-[var(--line)]'
                       }`}
                     >
                       {isSelected ? (isAr ? 'مضاف ✓' : 'Added ✓') : (isAr ? '+ إضافة' : '+ Add')}

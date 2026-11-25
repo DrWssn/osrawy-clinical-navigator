@@ -13,6 +13,6 @@ describe('App Updater Engine', () => {
   });
 
   it('validates current version definition', () => {
-    expect(CURRENT_VERSION).toBe('2.1.0');
+    expect(CURRENT_VERSION).toBe('2.2.0');
   });
 });
