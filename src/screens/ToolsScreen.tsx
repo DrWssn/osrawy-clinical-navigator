@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { usePatientStore } from '../store/usePatientStore';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, ToolsSubTab } from '../store/useAppStore';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { NumericField } from '../components/ui/NumericField';
 import { evaluateKdigoMatrix, calculateFib4, evaluateDoacDosing } from '../engines/tools';
-import { calculateSteroidEquivalence } from '../engines/calculators';
+import {
+  calculateSteroidEquivalence,
+  calculateCkdEpi2021,
+  calculateEag,
+  calculateCorrectedCa
+} from '../engines/calculators';
 
 export const ToolsScreen: React.FC = () => {
   const { patient, setField } = usePatientStore();
-  const { lang } = useAppStore();
+  const { lang, toolsSubTab, setToolsSubTab } = useAppStore();
   const isAr = lang === 'ar';
-
-  const [subTab, setSubTab] = useState<'kdigo' | 'fib4' | 'doac' | 'steroids'>('kdigo');
 
   // Local state for FIB-4
   const [ast, setAst] = useState(patient.altUl || 32);
   const [alt, setAlt] = useState(patient.altUl || 28);
   const [plt, setPlt] = useState(220);
+
+  // Local state for Corrected Calcium
+  const [totalCa, setTotalCa] = useState(8.8);
+  const [albumin, setAlbumin] = useState(3.2);
 
   // Local state for Steroids
   const [steroidDose, setSteroidDose] = useState(20);
@@ -24,17 +31,21 @@ export const ToolsScreen: React.FC = () => {
 
   // Tool evaluations
   const kdigo = evaluateKdigoMatrix(patient.egfr, patient.uacr);
+  const ckdRes = calculateCkdEpi2021(patient.scr, patient.scrUnit, patient.age, patient.sex);
+  const eagRes = calculateEag(patient.a1c);
+  const corrCaRes = calculateCorrectedCa(totalCa, albumin);
   const fib4 = calculateFib4(patient.age, ast, alt, plt);
   const doac = evaluateDoacDosing(patient);
   const steroidResult = calculateSteroidEquivalence(steroidDose, steroidDrug);
 
   return (
     <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-24">
-      <SegmentedControl
-        value={subTab}
-        onChange={(val) => setSubTab(val as any)}
+      <SegmentedControl<ToolsSubTab>
+        value={toolsSubTab}
+        onChange={setToolsSubTab}
         options={[
           { id: 'kdigo', label: 'KDIGO' },
+          { id: 'egfr', label: 'eGFR / Ca' },
           { id: 'fib4', label: 'FIB-4' },
           { id: 'doac', label: 'DOAC' },
           { id: 'steroids', label: isAr ? 'الكورتيزون' : 'Steroids' }
@@ -42,7 +53,7 @@ export const ToolsScreen: React.FC = () => {
       />
 
       {/* 1. KDIGO MATRIX */}
-      {subTab === 'kdigo' && (
+      {toolsSubTab === 'kdigo' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
@@ -97,8 +108,111 @@ export const ToolsScreen: React.FC = () => {
         </div>
       )}
 
+      {/* 1b. CKD-EPI 2021 eGFR, eAG & CORRECTED CALCIUM */}
+      {toolsSubTab === 'egfr' && (
+        <div className="flex flex-col gap-3 animate-in fade-in duration-150">
+          {/* CKD-EPI 2021 Card */}
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
+              {isAr ? 'حاسبة الترشيح الكبيبي (CKD-EPI 2021)' : 'CKD-EPI 2021 Race-Free eGFR'}
+            </h4>
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <NumericField
+                label={isAr ? 'الكرياتينين SCr' : 'Serum Creatinine'}
+                value={patient.scr}
+                onChange={(v) => setField('scr', v)}
+                unit={patient.scrUnit === 'umol' ? 'µmol/L' : 'mg/dL'}
+                min={0.1}
+                max={patient.scrUnit === 'umol' ? 2000 : 25}
+                step={patient.scrUnit === 'umol' ? 5 : 0.1}
+              />
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider">
+                  {isAr ? 'وحدة القياس' : 'Unit'}
+                </label>
+                <SegmentedControl<'mg' | 'umol'>
+                  value={patient.scrUnit}
+                  onChange={(val) => setField('scrUnit', val)}
+                  options={[
+                    { id: 'mg', label: 'mg/dL' },
+                    { id: 'umol', label: 'µmol/L' }
+                  ]}
+                />
+              </div>
+            </div>
+
+            {ckdRes && (
+              <div className="p-3 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xl font-bold font-mono text-[var(--primary)]">
+                    {ckdRes.egfrInt} <span className="text-xs font-normal text-[var(--muted)]">mL/min/1.73m² ({ckdRes.stage.stage})</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--muted)]">
+                    {isAr ? ckdRes.stage.descAr : ckdRes.stage.descEn}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setField('egfr', ckdRes.egfrInt)}
+                  className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold shrink-0 active:scale-95 transition-all"
+                >
+                  {isAr ? 'تطبيق للمريض' : 'Apply'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* eAG from HbA1c Card */}
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-[var(--muted)] block">
+                {isAr ? `متوسط السكر المقدر (eAG من A1c ${patient.a1c}%)` : `Estimated Average Glucose (eAG from A1c ${patient.a1c}%)`}
+              </span>
+              <div className="text-lg font-bold font-mono text-[var(--primary)] mt-0.5">
+                {eagRes.eagMg} <small>mg/dL</small> · {eagRes.eagMmol} <small>mmol/L</small>
+              </div>
+            </div>
+          </div>
+
+          {/* Corrected Calcium Card */}
+          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
+              {isAr ? 'الكالسيوم المصحح (Payne Formula)' : 'Corrected Calcium (Payne Formula)'}
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <NumericField
+                label={isAr ? 'الكالسيوم الكلي' : 'Total Calcium'}
+                value={totalCa}
+                onChange={setTotalCa}
+                unit="mg/dL"
+                min={3}
+                max={18}
+                step={0.1}
+              />
+              <NumericField
+                label={isAr ? 'الألبومين Albumin' : 'Albumin'}
+                value={albumin}
+                onChange={setAlbumin}
+                unit="g/dL"
+                min={0.5}
+                max={6.5}
+                step={0.1}
+              />
+            </div>
+            <div className="p-2.5 rounded-lg bg-[var(--surface2)] border border-[var(--line)] flex items-center justify-between text-xs">
+              <span className="font-semibold text-[var(--text)]">
+                {isAr ? 'الكالسيوم المصحح:' : 'Corrected Ca:'}
+              </span>
+              <span className={`font-bold font-mono text-sm ${corrCaRes.isNormal ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                {corrCaRes.correctedCa} mg/dL ({corrCaRes.isNormal ? (isAr ? 'طبيعي' : 'Normal') : (isAr ? 'غير طبيعي' : 'Abnormal')})
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 2. FIB-4 LIVER FIBROSIS */}
-      {subTab === 'fib4' && (
+      {toolsSubTab === 'fib4' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
             <NumericField
@@ -153,7 +267,7 @@ export const ToolsScreen: React.FC = () => {
       )}
 
       {/* 3. DOAC ANTICOAGULATION */}
-      {subTab === 'doac' && (
+      {toolsSubTab === 'doac' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           <div className="p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--text)]">
@@ -175,7 +289,11 @@ export const ToolsScreen: React.FC = () => {
                 doac.apixaban.reducedDose ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
                 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
-                {doac.apixaban.reducedDose ? 'Reduced Dose' : (doac.apixaban.contraindicated ? 'Contraindicated' : 'Standard Dose')}
+                {doac.apixaban.reducedDose
+                  ? (isAr ? 'جرعة مخفضة' : 'Reduced Dose')
+                  : doac.apixaban.contraindicated
+                    ? (isAr ? 'ممنوع' : 'Contraindicated')
+                    : (isAr ? 'جرعة قياسية' : 'Standard Dose')}
               </span>
             </div>
 
@@ -199,7 +317,11 @@ export const ToolsScreen: React.FC = () => {
                 doac.rivaroxaban.reducedDose ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
                 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               }`}>
-                {doac.rivaroxaban.reducedDose ? 'Reduced Dose' : (doac.rivaroxaban.contraindicated ? 'Contraindicated' : 'Standard Dose')}
+                {doac.rivaroxaban.reducedDose
+                  ? (isAr ? 'جرعة مخفضة' : 'Reduced Dose')
+                  : doac.rivaroxaban.contraindicated
+                    ? (isAr ? 'ممنوع' : 'Contraindicated')
+                    : (isAr ? 'جرعة قياسية' : 'Standard Dose')}
               </span>
             </div>
 
@@ -215,7 +337,7 @@ export const ToolsScreen: React.FC = () => {
       )}
 
       {/* 4. STEROIDS EQUIVALENCE */}
-      {subTab === 'steroids' && (
+      {toolsSubTab === 'steroids' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           <div className="p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] flex flex-col gap-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
@@ -233,7 +355,9 @@ export const ToolsScreen: React.FC = () => {
                 step={0.5}
               />
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-semibold text-[var(--muted)]">Selected Drug:</label>
+                <label className="text-[11px] font-semibold text-[var(--muted)]">
+                  {isAr ? 'الدواء المختار:' : 'Selected Drug:'}
+                </label>
                 <select
                   value={steroidDrug}
                   onChange={(e) => setSteroidDrug(e.target.value as any)}

@@ -48,10 +48,14 @@ export const HtnScreen: React.FC = () => {
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
                 {isAr ? 'قراءة ضغط الدم الحالية' : 'Current Blood Pressure'}
               </span>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                classification.isSevere ? 'bg-red-500/15 text-red-700 dark:text-red-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                classification.colorClass === 'badge-danger'
+                  ? 'bg-[var(--danger-bg)] text-[var(--danger-text)] border-[var(--danger-border)]'
+                  : classification.colorClass === 'badge-warning'
+                    ? 'bg-[var(--warn-bg)] text-[var(--warn-text)] border-[var(--warn-border)]'
+                    : 'bg-[var(--safe-bg)] text-[var(--safe-text)] border-[var(--safe-border)]'
               }`}>
-                {classification.label}
+                {isAr ? classification.labelAr : classification.labelEn}
               </span>
             </div>
 

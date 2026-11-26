@@ -32,6 +32,7 @@ export const LipidsScreen: React.FC = () => {
     race,
     tc: patient.tc || patient.totalCholesterol || 200,
     hdl: patient.hdl || patient.hdlC || 50,
+    lipidUnit: patient.lipidUnit,
     sbp: patient.sbp || 130,
     treatedBp,
     smoker: Boolean(patient.smoker),

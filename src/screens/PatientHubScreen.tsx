@@ -3,7 +3,7 @@ import { usePatientStore } from '../store/usePatientStore';
 import { useAppStore } from '../store/useAppStore';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { getDynamicTargets, buildShareText } from '../engines/leaflets';
-import { generateSVG } from '../engines/qr';
+import { generateSVG, buildOfflinePatientQrPayload } from '../engines/qr';
 import { Copy, Check, Printer } from 'lucide-react';
 import { printClinicalReport } from '../engines/printReport';
 
@@ -17,13 +17,21 @@ export const PatientHubScreen: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const targets = getDynamicTargets(patient);
-  const qrSvg = generateSVG('https://osrawy.app/patient/rx', { size: 220, darkColor: '#0F172A', lightColor: '#FFFFFF' });
+  const qrPayload = buildOfflinePatientQrPayload(patient, targets);
+  const qrSvg = generateSVG(qrPayload, { size: 220, darkColor: '#0F172A', lightColor: '#FFFFFF' });
 
   const handleCopyLeaflet = async () => {
     try {
       const text = buildShareText(targets, lang, 'all');
-      if (navigator?.clipboard?.writeText) {
+      if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
+      } else if (typeof document !== 'undefined') {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

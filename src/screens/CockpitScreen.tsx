@@ -412,7 +412,7 @@ export const CockpitScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => pushOverlay('vitals-drawer')}
-              className="px-3 py-1.5 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-xs font-semibold text-[var(--text)] hover:bg-[var(--line)]/40 active:scale-95 transition-all"
+              className="px-3 py-1.5 rounded-xl bg-[var(--surface2)] border border-[var(--line)] text-xs font-semibold text-[var(--text)] hover:bg-line/40 active:scale-95 transition-all"
             >
               {isAr ? 'تعديل المؤشرات' : 'Edit Vitals'}
             </button>
@@ -572,7 +572,7 @@ export const CockpitScreen: React.FC = () => {
                 return (
                   <div
                     key={step.id}
-                    className="p-3 rounded-xl border border-[var(--line)] bg-[var(--surface2)]/60 flex flex-col gap-2"
+                    className="p-3 rounded-xl border border-[var(--line)] bg-surface2/60 flex flex-col gap-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -674,7 +674,7 @@ export const CockpitScreen: React.FC = () => {
             {careGaps.map((gap) => (
               <div
                 key={gap.id}
-                className="p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface2)]/60 flex flex-col gap-1.5"
+                className="p-2.5 rounded-xl border border-[var(--line)] bg-surface2/60 flex flex-col gap-1.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold text-[var(--text)]">
@@ -756,7 +756,7 @@ export const CockpitScreen: React.FC = () => {
               key={qj.id}
               type="button"
               onClick={qj.onClick}
-              className="flex items-center gap-2 p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface2)]/70 hover:bg-[var(--surface2)] hover:border-[var(--primary)] text-start transition-all active:scale-95"
+              className="flex items-center gap-2 p-2.5 rounded-xl border border-[var(--line)] bg-surface2/70 hover:bg-[var(--surface2)] hover:border-[var(--primary)] text-start transition-all active:scale-95"
             >
               <span className="text-[var(--primary)] shrink-0">{qj.icon}</span>
               <span className="text-xs font-semibold text-[var(--text)] truncate">

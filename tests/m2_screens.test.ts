@@ -24,6 +24,9 @@ import { App } from '../src/App';
 import { CockpitScreen } from '../src/screens/CockpitScreen';
 import { PrimaryCareScreen } from '../src/screens/PrimaryCareScreen';
 import { CrmScreen } from '../src/screens/CrmScreen';
+import { HtnScreen } from '../src/screens/HtnScreen';
+import { ToolsScreen } from '../src/screens/ToolsScreen';
+import { LipidsScreen } from '../src/screens/LipidsScreen';
 import { SafetyBanner } from '../src/components/shell/SafetyBanner';
 import { BottomNav } from '../src/components/shell/BottomNav';
 import { TopBar } from '../src/components/shell/TopBar';
@@ -275,5 +278,44 @@ describe('M2 UI, Shell, Cockpit & Primary Care Rendering', () => {
     const html = renderToStaticMarkup(el(SoapSheet));
     expect(html).toContain('dir="ltr"');
     expect(html).toContain('OSRAWY CLINICAL SOAP NOTE');
+  });
+
+  it('renders HtnScreen Stage 2 hypertension with danger badge and bilingual label', () => {
+    usePatientStore.getState().updatePatient({ ...DEFAULT_PATIENT, sbp: 148, dbp: 94 });
+    useAppStore.getState().setLang('en');
+    const enHtml = renderToStaticMarkup(el(HtnScreen));
+    expect(enHtml).toContain('Stage 2 hypertension');
+    expect(enHtml).toContain('--danger-bg');
+
+    useAppStore.getState().setLang('ar');
+    const arHtml = renderToStaticMarkup(el(HtnScreen));
+    expect(arHtml).toContain('المرحلة الثانية');
+  });
+
+  it('syncs ToolsScreen subTab with store navigateTo for egfr and fib4', () => {
+    useAppStore.getState().navigateTo('tools', 'egfr');
+    const egfrHtml = renderToStaticMarkup(el(ToolsScreen));
+    expect(egfrHtml).toContain('CKD-EPI 2021');
+    expect(egfrHtml).toContain('Corrected Calcium');
+
+    useAppStore.getState().navigateTo('tools', 'fib4');
+    const fibHtml = renderToStaticMarkup(el(ToolsScreen));
+    expect(fibHtml).toContain('FIB-4 Fibrosis Score');
+  });
+
+  it('renders LipidsScreen with mmol/L unit passed to 10-Yr ASCVD risk', () => {
+    usePatientStore.getState().updatePatient({
+      ...DEFAULT_PATIENT,
+      lipidUnit: 'mmol',
+      tc: 6.5,
+      totalCholesterol: 6.5,
+      hdl: 1.0,
+      hdlC: 1.0,
+      sbp: 150,
+      age: 62
+    });
+    const html = renderToStaticMarkup(el(LipidsScreen));
+    expect(html).toContain('mmol/L');
+    expect(html).toContain('10-Yr ASCVD');
   });
 });
