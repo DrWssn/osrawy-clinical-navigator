@@ -185,7 +185,7 @@ describe('M2 UI, Shell, Cockpit & Primary Care Rendering', () => {
     }
   });
 
-  it('renders expandable SafetyBanner with critical, warning, and info counts', () => {
+  it('renders expandable SafetyBanner with critical, warning, and info counts and safety-sheet modal', () => {
     usePatientStore.getState().updatePatient({
       ...DEFAULT_PATIENT,
       egfr: 24,
@@ -202,6 +202,21 @@ describe('M2 UI, Shell, Cockpit & Primary Care Rendering', () => {
     expect(html).toContain('Critical');
     expect(html).toContain('Warn');
     expect(html).toContain('Info');
+
+    useAppStore.getState().pushOverlay('safety-sheet');
+    const sheetHtml = renderToStaticMarkup(el(SafetyBanner));
+    expect(sheetHtml).toContain('data-sheet-id="safety-sheet"');
+    expect(sheetHtml).toContain('Acknowledge');
+  });
+
+  it('renders thumb-zone SOAP floating pill when no overlay is active', () => {
+    const html = renderToStaticMarkup(el(App));
+    expect(html).toContain('id="osrawy-soap-fab"');
+    expect(html).toContain('id="osrawy-soap-count"');
+
+    useAppStore.getState().pushOverlay('soap-sheet');
+    const hiddenHtml = renderToStaticMarkup(el(App));
+    expect(hiddenHtml).not.toContain('id="osrawy-soap-fab"');
   });
 
   it('does not double-push BottomSheet id onto overlayStack when open', () => {

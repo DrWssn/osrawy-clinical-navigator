@@ -381,7 +381,7 @@ export const CockpitScreen: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-5xl mx-auto pb-24 animate-in fade-in duration-150">
+    <div className="flex flex-col gap-3 p-3 max-w-5xl mx-auto pb-28 animate-in fade-in duration-150">
       {/* 1. Visit Context Header + Frailty Quick Toggle */}
       <section className="p-3.5 bg-[var(--surface)] rounded-2xl border border-[var(--line)] shadow-sm flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">

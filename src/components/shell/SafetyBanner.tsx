@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { AlertCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Check, Trash2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Info, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { usePatientStore } from '../../store/usePatientStore';
 import { useAppStore } from '../../store/useAppStore';
+import { BottomSheet } from '../ui/BottomSheet';
 
 const SEVERITY_ORDER: Record<'critical' | 'warning' | 'info', number> = {
   critical: 0,
@@ -35,9 +36,12 @@ export const SafetyBanner: React.FC = () => {
   const patient = usePatientStore(s => s.patient);
   const setField = usePatientStore(s => s.setField);
   const lang = useAppStore(s => s.lang);
+  const overlayStack = useAppStore(s => s.overlayStack);
+  const pushOverlay = useAppStore(s => s.pushOverlay);
+  const popOverlay = useAppStore(s => s.popOverlay);
   const isAr = lang === 'ar';
 
-  const [expanded, setExpanded] = useState(false);
+  const sheetOpen = overlayStack.includes('safety-sheet');
   const [ackedMap, setAckedMap] = useState<Record<string, string>>({});
 
   const sortedAlerts = useMemo(() => {
@@ -86,12 +90,12 @@ export const SafetyBanner: React.FC = () => {
   return (
     <div className="w-full bg-[var(--surface)] border-b border-[var(--line)] px-3 py-1.5">
       <div className="max-w-5xl mx-auto">
-        {/* Compact 1-Line Severity Summary Bar */}
+        {/* Compact 1-Line Severity Summary Bar (opens modal review sheet) */}
         <button
           type="button"
-          aria-expanded={expanded}
-          onClick={() => setExpanded(prev => !prev)}
-          className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl border text-xs transition-all ${barTone}`}
+          aria-expanded={sheetOpen}
+          onClick={() => pushOverlay('safety-sheet')}
+          className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl border text-xs transition-all active:scale-[0.99] ${barTone}`}
         >
           <div className="flex items-center gap-2 min-w-0">
             {critCount > 0 ? (
@@ -121,15 +125,25 @@ export const SafetyBanner: React.FC = () => {
               </span>
             )}
             <span className="text-[10px] font-semibold opacity-80 hidden sm:inline">
-              {expanded ? (isAr ? 'إخفاء' : 'Hide') : (isAr ? 'مراجعة' : 'Review')}
+              {isAr ? 'مراجعة' : 'Review'}
             </span>
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <ChevronRight className="w-4 h-4 rtl:rotate-180" />
           </div>
         </button>
 
-        {/* Expandable Multi-Alert Drawer */}
-        {expanded && (
-          <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto overscroll-contain pe-0.5 animate-in fade-in duration-150">
+        {/* Dedicated Safety Review Modal Sheet (zero inline scroll shift) */}
+        <BottomSheet
+          id="safety-sheet"
+          isOpen={sheetOpen}
+          onClose={() => popOverlay()}
+          title={
+            isAr
+              ? `تنبيهات السلامة السريرية (${sortedAlerts.length})`
+              : `Clinical Safety Guardrails (${sortedAlerts.length})`
+          }
+          maxHeight="max-h-[85vh]"
+        >
+          <div className="flex flex-col gap-2.5 py-1">
             {sortedAlerts.map((g) => {
               const sig = `${g.level}:${g.titleEn}`;
               const acked = isAlertAcked(g.id, sig);
@@ -214,7 +228,7 @@ export const SafetyBanner: React.FC = () => {
               );
             })}
           </div>
-        )}
+        </BottomSheet>
       </div>
     </div>
   );

@@ -40,8 +40,9 @@ export const LipidsScreen: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-24">
+    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-28">
       <SegmentedControl
+        variant="underline"
         value={subTab}
         onChange={(val) => setSubTab(val as any)}
         options={[
@@ -73,7 +74,26 @@ export const LipidsScreen: React.FC = () => {
           </div>
 
           {/* Lipid Labs Grid */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
+          <div className={`p-3.5 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] border-s-4 ${
+            pathway.gap?.needsIntensification
+              ? 'border-s-[var(--warn-border)]'
+              : 'border-s-[var(--safe-border)]'
+          } flex flex-col gap-2.5`}>
+            <div className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-semibold flex items-center justify-between gap-2 ${
+              pathway.gap?.needsIntensification
+                ? 'bg-[var(--surface2)] border-[var(--line)] text-[var(--warn-text)]'
+                : 'bg-[var(--safe-bg)] border-[var(--safe-border)] text-[var(--safe-text)]'
+            }`}>
+              <span className="font-sans font-semibold text-[var(--muted)]">
+                {isAr ? `هدف LDL (<${target.ldlTargetMg} mg/dL):` : `LDL Target (<${target.ldlTargetMg} mg/dL):`}
+              </span>
+              <bdi dir="ltr">
+                {pathway.gap?.needsIntensification
+                  ? `+${Math.round(pathway.gap.gapMg)} mg/dL ${isAr ? 'فوق الهدف' : 'above target'}`
+                  : (isAr ? 'ضمن الهدف ✓' : 'At Target ✓')}
+              </bdi>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
             <NumericField
               label={isAr ? 'الكوليسترول الكلي TC' : 'Total Cholesterol (TC)'}
               value={patient.totalCholesterol || patient.tc}
@@ -102,6 +122,7 @@ export const LipidsScreen: React.FC = () => {
               unit={patient.lipidUnit === 'mmol' ? 'mmol/L' : 'mg/dL'}
               step={patient.lipidUnit === 'mmol' ? 0.1 : 1}
             />
+            </div>
           </div>
 
           {/* Safety Labs & Modifiers */}

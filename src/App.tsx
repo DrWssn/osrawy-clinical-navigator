@@ -5,9 +5,11 @@ import {
   Stethoscope,
   Calculator,
   ClipboardCheck,
+  ClipboardList,
   Pill
 } from 'lucide-react';
 import { useAppStore, AppTab } from './store/useAppStore';
+import { usePatientStore } from './store/usePatientStore';
 
 // Shell components
 import { TopBar } from './components/shell/TopBar';
@@ -33,8 +35,11 @@ export const App: React.FC = () => {
   const crmSubTab = useAppStore(s => s.crmSubTab);
   const pcSubTab = useAppStore(s => s.pcSubTab);
   const lang = useAppStore(s => s.lang);
+  const overlayStack = useAppStore(s => s.overlayStack);
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const navigateTo = useAppStore(s => s.navigateTo);
+  const pushOverlay = useAppStore(s => s.pushOverlay);
+  const activeMedsCount = usePatientStore(s => s.patient.activeMeds.length);
   const isAr = lang === 'ar';
 
   const renderActiveScreen = () => {
@@ -172,7 +177,32 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* 5. Clean 5-Tab Mobile Bottom Navigation (hidden on desktop and drug directory) */}
+      {/* 5. Thumb-Zone Floating Quick SOAP & Rx Pill (mobile only, auto-hidden when overlays open) */}
+      {activeTab !== 'drugs' && overlayStack.length === 0 && (
+        <div
+          id="osrawy-docked-command-bar"
+          className="md:hidden fixed bottom-16 inset-x-0 z-20 px-3 flex justify-end pointer-events-none pb-[env(safe-area-inset-bottom)]"
+        >
+          <button
+            id="osrawy-soap-fab"
+            type="button"
+            onClick={() => pushOverlay('soap-sheet')}
+            className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--primary)] text-[var(--on-primary)] border border-white/20 shadow-lg text-xs font-bold active:scale-95 transition-all"
+            aria-label={isAr ? 'ملاحظة SOAP والوصفة' : 'SOAP & Rx'}
+          >
+            <ClipboardList className="w-3.5 h-3.5 shrink-0" />
+            <span>{isAr ? 'ملخص SOAP' : 'SOAP & Rx'}</span>
+            <span
+              id="osrawy-soap-count"
+              className="px-1.5 py-0.2 rounded-full bg-white/20 font-mono text-[10px]"
+            >
+              {activeMedsCount}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* 6. Clean 5-Tab Mobile Bottom Navigation (hidden on desktop and drug directory) */}
       {activeTab !== 'drugs' && <BottomNav />}
 
       {/* 6. Global Interactive Sheets & Modals */}

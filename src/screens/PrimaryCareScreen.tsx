@@ -127,10 +127,11 @@ export const PrimaryCareScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-3xl mx-auto pb-24 animate-in fade-in duration-150">
+    <div className="flex flex-col gap-3 p-3 max-w-3xl mx-auto pb-28 animate-in fade-in duration-150">
       {/* Sub-Tab Switcher */}
-      <div className="w-full py-1.5">
+      <div className="w-full py-1">
         <SegmentedControl<PcSubTab>
+          variant="chips"
           value={pcSubTab}
           onChange={setPcSubTab}
           options={[

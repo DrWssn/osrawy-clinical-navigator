@@ -17,6 +17,7 @@ export const CrmScreen: React.FC = () => {
       <div className="w-full bg-[var(--surface)] border-b border-[var(--line)] px-3 py-2.5 shadow-sm">
         <div className="max-w-lg mx-auto">
           <SegmentedControl<CrmSubTab>
+            variant="chips"
             value={crmSubTab}
             onChange={setCrmSubTab}
             options={[

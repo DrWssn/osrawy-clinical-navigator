@@ -26,10 +26,23 @@ export const HtnScreen: React.FC = () => {
   const switchNotes = calculateSwitch(switchFrom, switchTo);
   const isPreg = patient.pregnancy;
   const pregProtocol = isPreg ? evaluatePregnancyHtnProtocol(patient) : null;
+  const isRelaxedBp = patient.frail || patient.age >= 65;
+  const targetSbp = isRelaxedBp ? 140 : 130;
+  const targetDbp = isRelaxedBp ? 90 : 80;
+  const deltaSbp = patient.sbp - targetSbp;
+  const deltaDbp = patient.dbp - targetDbp;
+  const bpAboveTarget = deltaSbp >= 0 || deltaDbp >= 0;
+  const bpHeroBorder =
+    classification.colorClass === 'badge-danger'
+      ? 'border-s-4 border-s-[var(--danger-border)]'
+      : classification.colorClass === 'badge-warning'
+        ? 'border-s-4 border-s-[var(--warn-border)]'
+        : 'border-s-4 border-s-[var(--safe-border)]';
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-24">
+    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-28">
       <SegmentedControl
+        variant="underline"
         value={subTab}
         onChange={(val) => setSubTab(val as any)}
         options={[
@@ -43,8 +56,8 @@ export const HtnScreen: React.FC = () => {
       {subTab === 'inputs' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* BP Hero Card */}
-          <div className="p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
-            <div className="flex justify-between items-center mb-3">
+          <div className={`p-4 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] ${bpHeroBorder}`}>
+            <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
                 {isAr ? 'قراءة ضغط الدم الحالية' : 'Current Blood Pressure'}
               </span>
@@ -57,6 +70,22 @@ export const HtnScreen: React.FC = () => {
               }`}>
                 {isAr ? classification.labelAr : classification.labelEn}
               </span>
+            </div>
+
+            {/* Live Target Gap Strip */}
+            <div className={`mb-3 px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-semibold flex items-center justify-between gap-2 ${
+              bpAboveTarget
+                ? 'bg-[var(--surface2)] border-[var(--line)] text-[var(--danger-text)]'
+                : 'bg-[var(--safe-bg)] border-[var(--safe-border)] text-[var(--safe-text)]'
+            }`}>
+              <span className="font-sans font-semibold text-[var(--muted)]">
+                {isAr ? `الهدف (<${targetSbp}/${targetDbp}):` : `Target (<${targetSbp}/${targetDbp}):`}
+              </span>
+              <bdi dir="ltr">
+                {bpAboveTarget
+                  ? `+${Math.max(0, deltaSbp)}/+${Math.max(0, deltaDbp)} mmHg ${isAr ? 'فوق الهدف' : 'above target'}`
+                  : (isAr ? 'ضمن الهدف ✓' : 'At Target ✓')}
+              </bdi>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

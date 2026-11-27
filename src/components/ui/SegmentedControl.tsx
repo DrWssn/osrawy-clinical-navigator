@@ -11,6 +11,7 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentOption<T>[];
   value: T;
   onChange: (val: T) => void;
+  variant?: 'pill' | 'chips' | 'underline';
   className?: string;
 }
 
@@ -18,8 +19,91 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  variant = 'pill',
   className = ''
 }: SegmentedControlProps<T>) {
+  if (variant === 'chips') {
+    return (
+      <div
+        className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar ${className}`}
+        role="tablist"
+      >
+        {options.map((opt) => {
+          const isActive = opt.id === value;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onChange(opt.id)}
+              className={`flex-1 min-w-fit shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-full border transition-all active:scale-[0.98] select-none whitespace-nowrap ${
+                isActive
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)] shadow-sm'
+                  : 'bg-[var(--surface2)] text-[var(--muted)] border-[var(--line)] hover:text-[var(--text)]'
+              }`}
+            >
+              {opt.icon && <span className="w-4 h-4 shrink-0">{opt.icon}</span>}
+              <span>{opt.label}</span>
+              {opt.badge !== undefined && (
+                <span
+                  className={`ms-1 px-1.5 py-0.5 text-[10px] rounded-full font-bold ${
+                    isActive
+                      ? 'bg-white/20 text-[var(--on-primary)]'
+                      : 'bg-[var(--line)] text-[var(--muted)]'
+                  }`}
+                >
+                  {opt.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (variant === 'underline') {
+    return (
+      <div
+        className={`flex items-center gap-2 border-b border-[var(--line)] overflow-x-auto no-scrollbar ${className}`}
+        role="tablist"
+      >
+        {options.map((opt) => {
+          const isActive = opt.id === value;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onChange(opt.id)}
+              className={`flex-1 min-w-fit shrink-0 flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs sm:text-sm border-b-2 transition-all active:scale-[0.98] select-none whitespace-nowrap ${
+                isActive
+                  ? 'border-[var(--primary)] text-[var(--primary)] font-bold'
+                  : 'border-transparent text-[var(--muted)] hover:text-[var(--text)] font-medium'
+              }`}
+            >
+              {opt.icon && <span className="w-4 h-4 shrink-0">{opt.icon}</span>}
+              <span>{opt.label}</span>
+              {opt.badge !== undefined && (
+                <span
+                  className={`ms-1 px-1.5 py-0.5 text-[10px] rounded-full font-bold ${
+                    isActive
+                      ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                      : 'bg-[var(--line)] text-[var(--muted)]'
+                  }`}
+                >
+                  {opt.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex p-1 bg-[var(--surface2)] rounded-xl border border-[var(--line)] overflow-x-auto no-scrollbar gap-0.5 ${className}`}

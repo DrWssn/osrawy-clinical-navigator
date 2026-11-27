@@ -39,7 +39,7 @@ export const ToolsScreen: React.FC = () => {
   const steroidResult = calculateSteroidEquivalence(steroidDose, steroidDrug);
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-24">
+    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-28">
       <SegmentedControl<ToolsSubTab>
         value={toolsSubTab}
         onChange={setToolsSubTab}

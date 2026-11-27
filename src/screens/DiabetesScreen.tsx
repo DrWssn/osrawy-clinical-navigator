@@ -22,11 +22,20 @@ export const DiabetesScreen: React.FC = () => {
   const pregProtocol = isPreg ? evaluatePregnancyDmProtocol(patient) : null;
   const screeningList = evaluateScreening(patient);
   const insulinCalc = calculateInsulin(patient.wt, insSens);
+  const a1cGoal = (patient.frail || patient.age >= 65) ? 7.5 : 7.0;
+  const a1cDiff = Math.round((patient.a1c - a1cGoal) * 10) / 10;
+  const a1cSeverityBorder =
+    patient.a1c > 8.5
+      ? 'border-s-4 border-s-[var(--danger-border)]'
+      : patient.a1c > a1cGoal
+        ? 'border-s-4 border-s-[var(--warn-border)]'
+        : 'border-s-4 border-s-[var(--safe-border)]';
 
   return (
-    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-24">
+    <div className="flex flex-col gap-3 p-3 max-w-lg mx-auto pb-28">
       {/* Sub-tab bar */}
       <SegmentedControl
+        variant="underline"
         value={subTab}
         onChange={(val) => setSubTab(val as any)}
         options={[
@@ -42,7 +51,22 @@ export const DiabetesScreen: React.FC = () => {
       {subTab === 'inputs' && (
         <div className="flex flex-col gap-3 animate-in fade-in duration-150">
           {/* Labs Grid 1 */}
-          <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)]">
+          <div className={`p-3 bg-[var(--surface)] shadow-sm rounded-xl border border-[var(--line)] ${a1cSeverityBorder} flex flex-col gap-2.5`}>
+            <div className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-semibold flex items-center justify-between gap-2 ${
+              a1cDiff > 0
+                ? 'bg-[var(--surface2)] border-[var(--line)] text-[var(--warn-text)]'
+                : 'bg-[var(--safe-bg)] border-[var(--safe-border)] text-[var(--safe-text)]'
+            }`}>
+              <span className="font-sans font-semibold text-[var(--muted)]">
+                {isAr ? `هدف التراكمي (<${a1cGoal}%):` : `HbA1c Target (<${a1cGoal}%):`}
+              </span>
+              <bdi dir="ltr">
+                {a1cDiff > 0
+                  ? `+${a1cDiff}% ${isAr ? 'فوق الهدف' : 'above target'}`
+                  : (isAr ? 'ضمن الهدف ✓' : 'At Target ✓')}
+              </bdi>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
             <NumericField
               label={isAr ? 'التراكمي' : 'HbA1c'}
               value={patient.a1c}
@@ -62,6 +86,7 @@ export const DiabetesScreen: React.FC = () => {
               onChange={(v) => setField('dur', v)}
               unit="yrs"
             />
+            </div>
           </div>
 
           {/* Labs Grid 2 (Renal & Vitals) */}
